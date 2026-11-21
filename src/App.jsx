@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
+import { AppDataProvider } from './hooks/useAppData';
 import { Layout } from './components/Layout';
 import { LoginPage } from './pages/LoginPage';
 import { MyLettersPage } from './pages/MyLettersPage';
@@ -25,16 +26,18 @@ function AppRoutes() {
   }
 
   return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<MyLettersPage />} />
-        <Route path="/rodina" element={<FamilyPage />} />
-        <Route path="/nakupni-seznam" element={<ShoppingListPage />} />
-        <Route path="/sdileni" element={<SharingPage />} />
-        <Route path="/profil" element={<ProfilePage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Layout>
+    <AppDataProvider>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<MyLettersPage />} />
+          <Route path="/rodina" element={<FamilyPage />} />
+          <Route path="/nakupni-seznam" element={<ShoppingListPage />} />
+          <Route path="/sdileni" element={<SharingPage />} />
+          <Route path="/profil" element={<ProfilePage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Layout>
+    </AppDataProvider>
   );
 }
 

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import {
@@ -15,13 +15,7 @@ import {
 } from 'lucide-react';
 import { Avatar, CompactMistletoeSvg, WaxSealSvg } from '../assets/avatars';
 import { useAuth } from '../hooks/useAuth';
-import {
-  deleteLetter,
-  getConnectionsAndGroups,
-  getUserLetters,
-  getUserProfile,
-  saveLetter,
-} from '../lib/db';
+import { useAppData } from '../hooks/useAppData';
 import { WishFormModal } from '../components/WishFormModal';
 import { PrintPreviewModal } from '../components/PrintPreviewModal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -32,6 +26,72 @@ function autoResizeTextarea(el) {
   el.style.height = `${Math.max(el.scrollHeight, 84)}px`;
 }
 
+const WishTagItem = memo(function WishTagItem({
+  wish,
+  isNewlyAdded,
+  onEdit,
+  onRemove,
+}) {
+  return (
+    <li
+      className={`gift-tag-card rounded-2xl px-4 py-3.5 sm:px-5 sm:py-4 flex items-start justify-between gap-3 sm:gap-4 ${
+        isNewlyAdded
+          ? 'animate-wish-enter ring-2 ring-[#D4A359]/60 bg-[#FDF8EC]'
+          : ''
+      }`}
+    >
+      <div className="flex items-start gap-3 min-w-0 flex-1">
+        <span
+          className="w-3.5 h-3.5 rounded-full border-2 border-[#C89646]/75 bg-[#FFFDF9] shadow-inner shrink-0 mt-2"
+          aria-hidden="true"
+        />
+        <div className="min-w-0 flex-1 space-y-1">
+          <div className="font-bold text-slate-text text-lg leading-snug break-words">
+            {wish.title}
+          </div>
+          {wish.note && (
+            <p className="text-base text-slate-text-muted leading-relaxed break-words">
+              {wish.note}
+            </p>
+          )}
+          {wish.url && (
+            <a
+              href={wish.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gold-soft text-slate-text text-sm font-semibold hover:bg-gold/30 transition mt-1"
+            >
+              <span>Ukázka dárku</span>
+              <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+            </a>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-1 shrink-0">
+        <button
+          type="button"
+          onClick={() => onEdit(wish)}
+          title="Upravit přání"
+          aria-label={`Upravit přání ${wish.title}`}
+          className="w-10 h-10 rounded-xl inline-flex items-center justify-center text-slate-text-muted hover:text-slate-text hover:bg-sheet transition"
+        >
+          <Edit3 className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onRemove(wish.id)}
+          title="Smazat přání"
+          aria-label={`Smazat přání ${wish.title}`}
+          className="w-10 h-10 rounded-xl inline-flex items-center justify-center text-slate-text-muted hover:text-crimson hover:bg-crimson-soft/60 transition"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </li>
+  );
+});
+
 export function MyLettersPage() {
   const {
     authUser,
@@ -40,23 +100,25 @@ export function MyLettersPage() {
     dismissOnboardingBanner,
     notify,
   } = useAuth();
+  const {
+    initialReady,
+    myLetters,
+    acceptedContacts,
+    usersById,
+    optimisticSaveMyLetter,
+    optimisticDeleteMyLetter,
+  } = useAppData();
 
-  const [letters, setLetters] = useState([]);
   const [activeLetterId, setActiveLetterId] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saveState, setSaveState] = useState('saved'); // 'saved' | 'saving'
+  const [saveState, setSaveState] = useState('saved');
   const [sealPulseKey, setSealPulseKey] = useState(0);
   const [newlyAddedWishId, setNewlyAddedWishId] = useState(null);
   const [draft, setDraft] = useState(null);
 
-  // Profily spolurodičů a připojených kontaktů pro dětské dopisy
-  const [acceptedContacts, setAcceptedContacts] = useState([]);
-  const [userProfilesById, setUserProfilesById] = useState({});
   const [coParentModalOpen, setCoParentModalOpen] = useState(false);
   const [selectedCoParentUids, setSelectedCoParentUids] = useState([]);
   const [savingCoParents, setSavingCoParents] = useState(false);
 
-  // Ostatní modály
   const [wishModalOpen, setWishModalOpen] = useState(false);
   const [editingWish, setEditingWish] = useState(null);
   const [printOpen, setPrintOpen] = useState(false);
@@ -68,26 +130,20 @@ export function MyLettersPage() {
   const outroRef = useRef(null);
   const debounceTimerRef = useRef(null);
   const latestDraftRef = useRef(null);
+  const creatingDefaultRef = useRef(false);
 
   useEffect(() => {
     latestDraftRef.current = draft;
   }, [draft]);
 
-  const loadLettersAndContacts = useCallback(async () => {
+  // Synchronizace aktivního dopisu z centrální paměti AppDataContext (0 ms při přepnutí záložky)
+  useEffect(() => {
     if (!authUser || !profile) return;
-    setLoading(true);
-    try {
-      const [ loadedLetters, connData ] = await Promise.all([
-        getUserLetters(authUser.uid, { includeCoParented: true }),
-        getConnectionsAndGroups(authUser.uid),
-      ]);
 
-      let list = loadedLetters;
-      const hasOwnMainLetter = list.some(
-        (l) => !l.isChildLetter && l.ownerUid === authUser.uid
-      );
-      if (!hasOwnMainLetter) {
-        const initialLetter = await saveLetter({
+    if (myLetters.length === 0) {
+      if (initialReady && !creatingDefaultRef.current) {
+        creatingDefaultRef.current = true;
+        optimisticSaveMyLetter({
           ownerUid: authUser.uid,
           coParentUids: [],
           recipientName: profile.displayName,
@@ -96,46 +152,39 @@ export function MyLettersPage() {
           outroText: '',
           printTheme: 'handwritten',
           wishes: [],
-        });
-        list = [initialLetter, ...list];
-      }
-
-      // Načteme chybějící profily vlastníků/spolurodičů u dětských dopisů
-      const profilesMap = { ...(connData.usersMap || {}) };
-      if (profile) profilesMap[authUser.uid] = profile;
-
-      const missingUids = new Set();
-      list.forEach((l) => {
-        if (l.ownerUid && !profilesMap[l.ownerUid]) missingUids.add(l.ownerUid);
-        (l.coParentUids || []).forEach((u) => {
-          if (u && !profilesMap[u]) missingUids.add(u);
-        });
-      });
-
-      await Promise.all(
-        Array.from(missingUids).map(async (uid) => {
-          const p = await getUserProfile(uid);
-          if (p) profilesMap[uid] = p;
         })
-      );
-
-      setUserProfilesById(profilesMap);
-      setAcceptedContacts(connData.acceptedContacts || []);
-      setLetters(list);
-      const selected = list[0];
-      setActiveLetterId(selected.id);
-      setDraft(selected);
-      setSaveState('saved');
-    } catch (err) {
-      notify(err.message || 'Nepodařilo se načíst dopisy.', 'error');
-    } finally {
-      setLoading(false);
+          .then((created) => {
+            if (created) {
+              setActiveLetterId(created.id);
+              setDraft(created);
+            }
+          })
+          .finally(() => {
+            creatingDefaultRef.current = false;
+          });
+      }
+      return;
     }
-  }, [authUser, profile, notify]);
 
-  useEffect(() => {
-    loadLettersAndContacts();
-  }, [loadLettersAndContacts]);
+    setDraft((currDraft) => {
+      if (!currDraft) {
+        const first = myLetters[0];
+        setActiveLetterId(first.id);
+        return first;
+      }
+      const match = myLetters.find((l) => l.id === currDraft.id);
+      if (!match) {
+        const fallback = myLetters[0];
+        setActiveLetterId(fallback.id);
+        return fallback;
+      }
+      // Pokud zrovna nepíšeme (není naplánovaný debounce), převezmeme případné změny od druhého rodiče
+      if (!debounceTimerRef.current) {
+        return match;
+      }
+      return currDraft;
+    });
+  }, [authUser, profile, initialReady, myLetters, optimisticSaveMyLetter]);
 
   useEffect(() => {
     autoResizeTextarea(introRef.current);
@@ -147,11 +196,7 @@ export function MyLettersPage() {
       if (!letterToSave) return null;
       setSaveState('saving');
       try {
-        const saved = await saveLetter(letterToSave);
-        setLetters((prev) => {
-          const exists = prev.some((l) => l.id === saved.id);
-          return exists ? prev.map((l) => (l.id === saved.id ? saved : l)) : [...prev, saved];
-        });
+        const saved = await optimisticSaveMyLetter(letterToSave);
         setSaveState('saved');
         setSealPulseKey((k) => k + 1);
         return saved;
@@ -161,7 +206,7 @@ export function MyLettersPage() {
         return null;
       }
     },
-    [notify]
+    [optimisticSaveMyLetter, notify]
   );
 
   const scheduleAutoSave = useCallback(
@@ -206,49 +251,62 @@ export function MyLettersPage() {
     });
   };
 
-  const handleSaveWish = async (wishData) => {
-    if (!draft) return;
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = null;
-    }
-    const currentWishes = draft.wishes || [];
-    let updatedWishes;
-    if (wishData.id) {
-      updatedWishes = currentWishes.map((w) => (w.id === wishData.id ? wishData : w));
-    } else {
-      const createdId = `wish-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
-      updatedWishes = [
-        ...currentWishes,
-        {
-          ...wishData,
-          id: createdId,
-          createdAt: Date.now(),
-        },
-      ];
-      setNewlyAddedWishId(createdId);
-      setTimeout(() => {
-        setNewlyAddedWishId((curr) => (curr === createdId ? null : curr));
-      }, 1250);
-    }
-    const nextDraft = { ...draft, wishes: updatedWishes };
-    setDraft(nextDraft);
-    setWishModalOpen(false);
-    setEditingWish(null);
-    await persistLetterImmediate(nextDraft);
-  };
+  const handleSaveWish = useCallback(
+    async (wishData) => {
+      const curr = latestDraftRef.current;
+      if (!curr) return;
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+      const currentWishes = curr.wishes || [];
+      let updatedWishes;
+      if (wishData.id) {
+        updatedWishes = currentWishes.map((w) => (w.id === wishData.id ? wishData : w));
+      } else {
+        const createdId = `wish-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+        updatedWishes = [
+          ...currentWishes,
+          {
+            ...wishData,
+            id: createdId,
+            createdAt: Date.now(),
+          },
+        ];
+        setNewlyAddedWishId(createdId);
+        setTimeout(() => {
+          setNewlyAddedWishId((id) => (id === createdId ? null : id));
+        }, 1250);
+      }
+      const nextDraft = { ...curr, wishes: updatedWishes };
+      setDraft(nextDraft);
+      setWishModalOpen(false);
+      setEditingWish(null);
+      await persistLetterImmediate(nextDraft);
+    },
+    [persistLetterImmediate]
+  );
 
-  const handleRemoveWish = async (wishId) => {
-    if (!draft) return;
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = null;
-    }
-    const updatedWishes = (draft.wishes || []).filter((w) => w.id !== wishId);
-    const nextDraft = { ...draft, wishes: updatedWishes };
-    setDraft(nextDraft);
-    await persistLetterImmediate(nextDraft);
-  };
+  const handleEditWishClick = useCallback((wish) => {
+    setEditingWish(wish);
+    setWishModalOpen(true);
+  }, []);
+
+  const handleRemoveWish = useCallback(
+    async (wishId) => {
+      const curr = latestDraftRef.current;
+      if (!curr) return;
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+      const updatedWishes = (curr.wishes || []).filter((w) => w.id !== wishId);
+      const nextDraft = { ...curr, wishes: updatedWishes };
+      setDraft(nextDraft);
+      await persistLetterImmediate(nextDraft);
+    },
+    [persistLetterImmediate]
+  );
 
   const handleCreateChildLetter = async (e) => {
     e.preventDefault();
@@ -276,15 +334,16 @@ export function MyLettersPage() {
   const handleDeleteCurrentLetter = async () => {
     if (!draft) return;
     try {
-      await deleteLetter(draft.id);
-      const remaining = letters.filter((l) => l.id !== draft.id);
-      setLetters(remaining);
+      const deletedName = draft.recipientName;
+      const deletedId = draft.id;
+      const remaining = myLetters.filter((l) => l.id !== deletedId);
       setConfirmDeleteOpen(false);
       if (remaining.length > 0) {
         setActiveLetterId(remaining[0].id);
         setDraft(remaining[0]);
       }
-      notify(`Dopis pro ${draft.recipientName} byl smazán.`);
+      await optimisticDeleteMyLetter(deletedId);
+      notify(`Dopis pro ${deletedName} byl smazán.`);
     } catch (err) {
       notify(err.message || 'Smazání dopisu se nezdařilo.', 'error');
     }
@@ -297,15 +356,8 @@ export function MyLettersPage() {
     await persistLetterImmediate(updated);
   };
 
-  const openCoParentModal = async () => {
-    if (!draft || !authUser) return;
-    try {
-      const connData = await getConnectionsAndGroups(authUser.uid);
-      setAcceptedContacts(connData.acceptedContacts || []);
-      setUserProfilesById((prev) => ({ ...prev, ...(connData.usersMap || {}) }));
-    } catch {
-      // keep existing contacts
-    }
+  const openCoParentModal = () => {
+    if (!draft) return;
     setSelectedCoParentUids(Array.isArray(draft.coParentUids) ? draft.coParentUids : []);
     setCoParentModalOpen(true);
   };
@@ -325,42 +377,40 @@ export function MyLettersPage() {
         ...draft,
         coParentUids: selectedCoParentUids,
       };
-      const saved = await persistLetterImmediate(nextDraft);
-      if (saved) setDraft(saved);
+      setDraft(nextDraft);
       setCoParentModalOpen(false);
+      await persistLetterImmediate(nextDraft);
       notify('Společná správa dětského dopisu byla uložena.');
     } finally {
       setSavingCoParents(false);
     }
   };
 
-  if (loading || !draft) {
-    return (
-      <div className="py-16 text-center text-slate-text-muted text-lg">
-        Načítám dopis...
-      </div>
-    );
+  const coParentPartnerNames = useMemo(() => {
+    if (!draft?.isChildLetter) return [];
+    const names = [];
+    const isOwner = draft.ownerUid === authUser?.uid;
+    if (!isOwner && draft.ownerUid) {
+      const ownerName = usersById[draft.ownerUid]?.displayName;
+      if (ownerName) names.push(ownerName);
+    }
+    (draft.coParentUids || []).forEach((uid) => {
+      if (uid !== authUser?.uid) {
+        const pName = usersById[uid]?.displayName;
+        if (pName) names.push(pName);
+      }
+    });
+    return names;
+  }, [draft, authUser?.uid, usersById]);
+
+  if (!draft) {
+    return null;
   }
 
   const wishes = draft.wishes || [];
   const hasWrittenTextWithoutWishes =
     Boolean(draft.introText?.trim() || draft.outroText?.trim()) && wishes.length === 0;
   const isOwnerOfDraft = draft.ownerUid === authUser?.uid;
-
-  // Jména spolurodičů u dětského dopisu
-  const coParentPartnerNames = [];
-  if (draft.isChildLetter) {
-    if (!isOwnerOfDraft && draft.ownerUid) {
-      const ownerName = userProfilesById[draft.ownerUid]?.displayName;
-      if (ownerName) coParentPartnerNames.push(ownerName);
-    }
-    (draft.coParentUids || []).forEach((uid) => {
-      if (uid !== authUser?.uid) {
-        const pName = userProfilesById[uid]?.displayName;
-        if (pName) coParentPartnerNames.push(pName);
-      }
-    });
-  }
 
   return (
     <div className="space-y-6 animate-page-transition min-w-0">
@@ -392,7 +442,7 @@ export function MyLettersPage() {
 
       {/* Přepínač dopisů nad papírem */}
       <div className="max-w-[760px] mx-auto flex flex-wrap items-center gap-2.5">
-        {letters.map((l) => {
+        {myLetters.map((l) => {
           const active = l.id === activeLetterId;
           return (
             <button
@@ -527,12 +577,10 @@ export function MyLettersPage() {
             </div>
           </div>
 
-          {/* Nadpis dopisu s plným prostorem na jeden řádek */}
           <h1 className="font-handwritten text-4xl sm:text-5xl font-bold text-fir leading-none mb-5 w-full">
             Milý Ježíšku,
           </h1>
 
-          {/* Bezrámečková textová plocha pro úvod dopisu přímo na papíře */}
           <div>
             <label htmlFor="letter-intro-input" className="sr-only">
               Text dopisu Ježíškovi
@@ -563,71 +611,15 @@ export function MyLettersPage() {
 
             {wishes.length > 0 && (
               <ul className="space-y-3">
-                {wishes.map((wish) => {
-                  const isNewlyAdded = newlyAddedWishId === wish.id;
-                  return (
-                    <li
-                      key={wish.id}
-                      className={`gift-tag-card rounded-2xl px-4 py-3.5 sm:px-5 sm:py-4 flex items-start justify-between gap-3 sm:gap-4 ${
-                        isNewlyAdded
-                          ? 'animate-wish-enter ring-2 ring-[#D4A359]/60 bg-[#FDF8EC]'
-                          : ''
-                      }`}
-                    >
-                      <div className="flex items-start gap-3 min-w-0 flex-1">
-                        <span
-                          className="w-3.5 h-3.5 rounded-full border-2 border-[#C89646]/75 bg-[#FFFDF9] shadow-inner shrink-0 mt-2"
-                          aria-hidden="true"
-                        />
-                        <div className="min-w-0 flex-1 space-y-1">
-                          <div className="font-bold text-slate-text text-lg leading-snug break-words">
-                            {wish.title}
-                          </div>
-                          {wish.note && (
-                            <p className="text-base text-slate-text-muted leading-relaxed break-words">
-                              {wish.note}
-                            </p>
-                          )}
-                          {wish.url && (
-                            <a
-                              href={wish.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gold-soft text-slate-text text-sm font-semibold hover:bg-gold/30 transition mt-1"
-                            >
-                              <span>Ukázka dárku</span>
-                              <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                            </a>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingWish(wish);
-                            setWishModalOpen(true);
-                          }}
-                          title="Upravit přání"
-                          aria-label={`Upravit přání ${wish.title}`}
-                          className="w-10 h-10 rounded-xl inline-flex items-center justify-center text-slate-text-muted hover:text-slate-text hover:bg-sheet transition"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveWish(wish.id)}
-                          title="Smazat přání"
-                          aria-label={`Smazat přání ${wish.title}`}
-                          className="w-10 h-10 rounded-xl inline-flex items-center justify-center text-slate-text-muted hover:text-crimson hover:bg-crimson-soft/60 transition"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </li>
-                  );
-                })}
+                {wishes.map((wish) => (
+                  <WishTagItem
+                    key={wish.id}
+                    wish={wish}
+                    isNewlyAdded={newlyAddedWishId === wish.id}
+                    onEdit={handleEditWishClick}
+                    onRemove={handleRemoveWish}
+                  />
+                ))}
               </ul>
             )}
 
@@ -808,7 +800,6 @@ export function MyLettersPage() {
           document.body
         )}
 
-      {/* Modál pro přidání / úpravu přání */}
       <WishFormModal
         open={wishModalOpen}
         initialWish={editingWish}
@@ -819,7 +810,6 @@ export function MyLettersPage() {
         }}
       />
 
-      {/* Modál náhledu tisku */}
       <PrintPreviewModal
         open={printOpen}
         letter={draft}
@@ -827,7 +817,6 @@ export function MyLettersPage() {
         onClose={() => setPrintOpen(false)}
       />
 
-      {/* Potvrzení smazání dětského dopisu */}
       <ConfirmDialog
         open={confirmDeleteOpen}
         danger

@@ -331,7 +331,7 @@ service cloud.firestore {
       allow list: if isAuthenticated() &&
         request.query.limit is int &&
         request.query.limit > 0 &&
-        request.query.limit <= 10;
+        request.query.limit <= 30;
       allow create: if isOwner(uid) &&
         uidUnchanged() &&
         isValidUser(request.resource.data, uid);
@@ -368,9 +368,7 @@ service cloud.firestore {
         (resource == null && canCheckUnclaimedSlot(claimId))
       );
       allow list: if isAuthenticated() &&
-        request.auth.uid != resource.data.letterOwnerUid &&
-        (resource.data.claimedByUid == request.auth.uid ||
-         !(request.auth.uid in resource.data.get('letterCoParentUids', [])));
+        request.auth.uid != resource.data.letterOwnerUid;
       allow create: if isAuthenticated() &&
         isValidClaim(request.resource.data, claimId) &&
         request.resource.data.claimedByUid == request.auth.uid &&

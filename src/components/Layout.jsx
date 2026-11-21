@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { memo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
@@ -8,15 +8,14 @@ import {
   RefreshCw,
   ShoppingBag,
   Star,
-  TreePine,
   Undo2,
-  UserCircle,
   UserPlus,
   Users,
   X,
 } from 'lucide-react';
 import { Avatar, ChristmasTreeLogoSvg, FairytaleOrnamentSvg } from '../assets/avatars';
 import { useAuth } from '../hooks/useAuth';
+import { useAppData } from '../hooks/useAppData';
 import {
   findUserByTag,
   getDemoState,
@@ -25,36 +24,29 @@ import {
 } from '../lib/db';
 
 const BG_SNOWFLAKES = [
-  { left: '3%', duration: '24s', delay: '0s', size: '16px', opacity: 0.34, sway: '18px' },
-  { left: '8%', duration: '29s', delay: '5s', size: '12px', opacity: 0.24, sway: '-14px' },
-  { left: '14%', duration: '26s', delay: '2s', size: '18px', opacity: 0.3, sway: '22px' },
-  { left: '19%', duration: '32s', delay: '9s', size: '13px', opacity: 0.22, sway: '-16px' },
-  { left: '25%', duration: '22s', delay: '1s', size: '19px', opacity: 0.32, sway: '15px' },
-  { left: '31%', duration: '28s', delay: '6s', size: '14px', opacity: 0.25, sway: '-20px' },
-  { left: '37%', duration: '25s', delay: '3.5s', size: '15px', opacity: 0.28, sway: '16px' },
-  { left: '43%', duration: '31s', delay: '11s', size: '12px', opacity: 0.22, sway: '-12px' },
-  { left: '49%', duration: '27s', delay: '0.5s', size: '18px', opacity: 0.32, sway: '20px' },
-  { left: '54%', duration: '23s', delay: '7.5s', size: '14px', opacity: 0.26, sway: '-18px' },
-  { left: '60%', duration: '29s', delay: '4s', size: '17px', opacity: 0.3, sway: '15px' },
-  { left: '66%', duration: '24s', delay: '10s', size: '13px', opacity: 0.24, sway: '-15px' },
-  { left: '72%', duration: '27s', delay: '2.5s', size: '20px', opacity: 0.34, sway: '22px' },
-  { left: '77%', duration: '33s', delay: '8s', size: '12px', opacity: 0.22, sway: '-14px' },
-  { left: '82%', duration: '25s', delay: '1.5s', size: '16px', opacity: 0.29, sway: '17px' },
-  { left: '87%', duration: '30s', delay: '6.5s', size: '14px', opacity: 0.25, sway: '-19px' },
-  { left: '92%', duration: '26s', delay: '3s', size: '18px', opacity: 0.31, sway: '14px' },
-  { left: '96%', duration: '28s', delay: '9.5s', size: '13px', opacity: 0.24, sway: '-12px' },
-  { left: '11%', duration: '34s', delay: '13s', size: '15px', opacity: 0.23, sway: '16px' },
-  { left: '63%', duration: '31s', delay: '14s', size: '15px', opacity: 0.25, sway: '-16px' },
+  { left: '6%', duration: '24s', delay: '0s', size: '16px', opacity: 0.32, sway: '16px', mobileOnly: false },
+  { left: '16%', duration: '27s', delay: '3s', size: '14px', opacity: 0.26, sway: '-14px', mobileOnly: false },
+  { left: '28%', duration: '23s', delay: '1.5s', size: '17px', opacity: 0.3, sway: '15px', mobileOnly: false },
+  { left: '41%', duration: '29s', delay: '6s', size: '13px', opacity: 0.24, sway: '-16px', mobileOnly: false },
+  { left: '53%', duration: '25s', delay: '0.8s', size: '17px', opacity: 0.3, sway: '18px', mobileOnly: false },
+  { left: '66%', duration: '28s', delay: '4.5s', size: '14px', opacity: 0.25, sway: '-14px', mobileOnly: false },
+  { left: '79%', duration: '24s', delay: '2.2s', size: '18px', opacity: 0.32, sway: '16px', mobileOnly: false },
+  { left: '91%', duration: '26s', delay: '5s', size: '14px', opacity: 0.26, sway: '-12px', mobileOnly: false },
+  // Doplňkové vločky pouze na větších obrazovkách (desktop)
+  { left: '11%', duration: '31s', delay: '8s', size: '13px', opacity: 0.22, sway: '14px', desktopOnly: true },
+  { left: '35%', duration: '30s', delay: '10s', size: '15px', opacity: 0.24, sway: '-15px', desktopOnly: true },
+  { left: '47%', duration: '32s', delay: '7s', size: '12px', opacity: 0.22, sway: '13px', desktopOnly: true },
+  { left: '60%', duration: '27s', delay: '9s', size: '16px', opacity: 0.27, sway: '-16px', desktopOnly: true },
+  { left: '73%', duration: '33s', delay: '11s', size: '13px', opacity: 0.22, sway: '15px', desktopOnly: true },
+  { left: '85%', duration: '29s', delay: '6.5s', size: '15px', opacity: 0.25, sway: '-14px', desktopOnly: true },
 ];
 
 const BG_BOKEH_LIGHTS = [
-  { left: '8%', top: '14%', size: '180px', duration: '19s', delay: '0s' },
-  { left: '78%', top: '10%', size: '220px', duration: '23s', delay: '3s' },
-  { left: '22%', top: '48%', size: '200px', duration: '21s', delay: '5s' },
-  { left: '84%', top: '54%', size: '190px', duration: '25s', delay: '2s' },
-  { left: '48%', top: '76%', size: '240px', duration: '22s', delay: '7s' },
-  { left: '12%', top: '82%', size: '170px', duration: '20s', delay: '4s' },
-  { left: '68%', top: '32%', size: '160px', duration: '18s', delay: '6s' },
+  { left: '10%', top: '16%', size: '160px', duration: '20s', delay: '0s', desktopOnly: false },
+  { left: '76%', top: '12%', size: '180px', duration: '24s', delay: '3s', desktopOnly: false },
+  { left: '46%', top: '74%', size: '190px', duration: '22s', delay: '5s', desktopOnly: false },
+  { left: '22%', top: '48%', size: '180px', duration: '21s', delay: '4s', desktopOnly: true },
+  { left: '82%', top: '54%', size: '170px', duration: '25s', delay: '2s', desktopOnly: true },
 ];
 
 function getChristmasCountdownText() {
@@ -82,13 +74,54 @@ function getChristmasCountdownText() {
   return `Do Štědrého dne zbývá ${diffDays} dní`;
 }
 
+const AtmosphereBackground = memo(function AtmosphereBackground() {
+  return (
+    <div
+      className="no-print pointer-events-none fixed inset-0 overflow-hidden z-0 paper-grain-overlay"
+      aria-hidden="true"
+    >
+      {BG_BOKEH_LIGHTS.map((light, i) => (
+        <span
+          key={`bokeh-${i}`}
+          className={`bg-bokeh ${light.desktopOnly ? 'hidden md:block' : ''}`}
+          style={{
+            left: light.left,
+            top: light.top,
+            width: light.size,
+            height: light.size,
+            '--duration': light.duration,
+            '--delay': light.delay,
+          }}
+        />
+      ))}
+
+      {BG_SNOWFLAKES.map((flake, i) => (
+        <span
+          key={`flake-${i}`}
+          className={`bg-snowflake ${flake.desktopOnly ? 'hidden md:block' : ''}`}
+          style={{
+            left: flake.left,
+            fontSize: flake.size,
+            '--duration': flake.duration,
+            '--delay': flake.delay,
+            '--flake-opacity': flake.opacity,
+            '--sway': flake.sway,
+          }}
+        >
+          ❄
+        </span>
+      ))}
+    </div>
+  );
+});
+
+const COUNTDOWN_TEXT = getChristmasCountdownText();
+
 export function Layout({ children }) {
   const {
     authUser,
     profile,
     demoMode,
-    pendingRequestsCount,
-    unboughtShoppingCount,
     pendingInviteCode,
     clearPendingInviteCode,
     toast,
@@ -96,16 +129,16 @@ export function Layout({ children }) {
     undoToast,
     dismissUndoToast,
     notify,
-    refreshPendingCount,
     changeDemoPersona,
     resetDemo,
   } = useAuth();
+  const { pendingRequestsCount, unboughtShoppingCount } = useAppData();
+
   const navigate = useNavigate();
   const [joiningInvite, setJoiningInvite] = useState(false);
 
   const demoUsers = demoMode ? Object.values(getDemoState().users || {}) : [];
   const isGroupInvite = /^SKUPINA-\d{3,6}$/i.test(pendingInviteCode || '');
-  const countdownText = getChristmasCountdownText();
 
   const handleConfirmPendingInvite = async () => {
     if (!authUser || !pendingInviteCode) return;
@@ -120,7 +153,6 @@ export function Layout({ children }) {
         notify(`Pozvánka byla odeslána pro ${found.displayName}.`);
       }
       clearPendingInviteCode();
-      await refreshPendingCount();
       navigate('/rodina');
     } catch (err) {
       notify(err.message || 'Pozvánku se nepodařilo použít.', 'error');
@@ -140,45 +172,9 @@ export function Layout({ children }) {
 
   return (
     <div className="min-h-screen flex flex-col pb-24 md:pb-12 relative overflow-x-hidden max-w-full">
-      {/* Jemná textura ručního papíru, bokeh světýlka a 20 pomalu padajících vloček */}
-      <div
-        className="no-print pointer-events-none fixed inset-0 overflow-hidden z-0 paper-grain-overlay"
-        aria-hidden="true"
-      >
-        {BG_BOKEH_LIGHTS.map((light, i) => (
-          <span
-            key={`bokeh-${i}`}
-            className="bg-bokeh"
-            style={{
-              left: light.left,
-              top: light.top,
-              width: light.size,
-              height: light.size,
-              '--duration': light.duration,
-              '--delay': light.delay,
-            }}
-          />
-        ))}
+      <AtmosphereBackground />
 
-        {BG_SNOWFLAKES.map((flake, i) => (
-          <span
-            key={`flake-${i}`}
-            className="bg-snowflake"
-            style={{
-              left: flake.left,
-              fontSize: flake.size,
-              '--duration': flake.duration,
-              '--delay': flake.delay,
-              '--flake-opacity': flake.opacity,
-              '--sway': flake.sway,
-            }}
-          >
-            ❄
-          </span>
-        ))}
-      </div>
-
-      {/* Ukázkový přepínač osob (v demo režimu) */}
+      {/* Ukázkový přepínač osob (pouze při ?demo=1) */}
       {demoMode && (
         <div className="demo-banner no-print relative z-20 bg-gold-soft border-b border-gold/30 px-4 py-2 text-sm text-slate-text">
           <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-2">
@@ -215,7 +211,7 @@ export function Layout({ children }) {
         </div>
       )}
 
-      {/* Horní navigace (z-20, aby ji modální okna se z-[100] vždy plně překryla) */}
+      {/* Horní navigace */}
       <header className="no-print relative z-20 bg-sheet/95 backdrop-blur-md border-b border-paper-warm sticky top-0">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 min-h-[70px] py-2 flex items-center justify-between gap-3">
           <NavLink to="/" className="flex items-center gap-2.5 group shrink-0">
@@ -226,7 +222,7 @@ export function Layout({ children }) {
               </div>
               <div className="text-xs text-slate-text-muted flex items-center gap-1 whitespace-nowrap mt-0.5">
                 <Star className="w-3 h-3 text-gold fill-gold/80 shrink-0" />
-                <span>{countdownText}</span>
+                <span>{COUNTDOWN_TEXT}</span>
               </div>
             </div>
           </NavLink>

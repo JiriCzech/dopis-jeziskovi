@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   AlertTriangle,
@@ -12,16 +12,7 @@ import {
 } from 'lucide-react';
 import { Avatar, getChildAvatar, WrappedPresentSvg } from '../assets/avatars';
 import { useAuth } from '../hooks/useAuth';
-import {
-  addPrivateIdea,
-  deletePrivateIdea,
-  getAllFamilyLettersOverview,
-  getShoppingList,
-  toggleClaimBought,
-  togglePrivateIdeaBought,
-  unclaimWish,
-  updatePrivateIdea,
-} from '../lib/db';
+import { useAppData } from '../hooks/useAppData';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 
 function formatForRecipient(rawName) {
@@ -49,12 +40,161 @@ function formatForRecipient(rawName) {
   return `Pro: ${name}`;
 }
 
+const ShoppingItemRow = memo(function ShoppingItemRow({
+  item,
+  onToggleBought,
+  onReleaseClaim,
+  onEditIdea,
+  onDeleteIdea,
+}) {
+  const titleText = item.kind === 'claim' ? item.wishTitleSnapshot : item.title;
+  const noteText = item.kind === 'claim' ? item.wishNoteSnapshot : item.note;
+  const urlLink = item.kind === 'claim' ? item.wishUrlSnapshot : item.url;
+
+  return (
+    <li
+      style={{ backgroundColor: '#F6F0E2' }}
+      className={`rounded-2xl bg-[#F6F0E2] border border-[#E5DBC3] px-4 py-3.5 sm:px-5 sm:py-4 flex items-center justify-between gap-3 sm:gap-4 transition-opacity duration-150 ${
+        item.isBought ? 'opacity-80' : 'shadow-xs'
+      }`}
+    >
+      <div className="flex items-start gap-3.5 sm:gap-4 min-w-0 flex-1">
+        <button
+          type="button"
+          onClick={() => onToggleBought(item)}
+          aria-label={
+            item.isBought
+              ? `Odznačit dárek ${titleText}`
+              : `Označit dárek ${titleText} jako zabalený`
+          }
+          className={`mt-1 w-7 h-7 rounded-lg border-2 flex items-center justify-center shrink-0 transition ${
+            item.isBought
+              ? 'bg-fir border-fir text-white shadow-xs'
+              : 'bg-[#FFFDF9] border-[#B9AA8E] hover:border-fir'
+          }`}
+        >
+          {item.isBought && <Check className="w-4 h-4 stroke-[3]" />}
+        </button>
+
+        <div className="space-y-1 min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onToggleBought(item)}
+              className={`text-left text-lg sm:text-xl font-bold leading-snug break-words transition ${
+                item.isBought
+                  ? 'line-through decoration-slate-text-muted/60 text-slate-text-muted'
+                  : 'text-slate-text'
+              }`}
+            >
+              {titleText}
+            </button>
+
+            {item.kind === 'idea' && (
+              <span className="px-2.5 py-0.5 rounded-full bg-gold-soft text-slate-text text-xs font-semibold">
+                Tajný nápad
+              </span>
+            )}
+          </div>
+
+          {noteText && (
+            <p className="text-base text-slate-text-muted leading-snug break-words">
+              {noteText}
+            </p>
+          )}
+
+          {item.kind === 'claim' && item.orphanStatus === 'wish_deleted' && (
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-gold-soft text-slate-text text-sm font-semibold">
+              <AlertTriangle className="w-4 h-4 text-gold shrink-0" />
+              <span>Obdarovaný toto přání ze svého dopisu smazal</span>
+            </div>
+          )}
+          {item.kind === 'claim' && item.orphanStatus === 'account_deleted' && (
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-crimson-soft text-crimson text-sm font-semibold">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span>Uživatel si zrušil účet, dopis už není dostupný</span>
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            {urlLink && (
+              <a
+                href={urlLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm font-semibold text-fir hover:underline"
+              >
+                <span>Ukázka dárku</span>
+                <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+              </a>
+            )}
+
+            {item.kind === 'claim' ? (
+              <button
+                type="button"
+                onClick={() => onReleaseClaim(item)}
+                className="text-xs sm:text-sm font-medium text-slate-text-muted hover:text-crimson underline decoration-slate-text-muted/40 hover:decoration-crimson transition"
+              >
+                Uvolnit zpět do dopisu
+              </button>
+            ) : (
+              <div className="inline-flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onEditIdea(item)}
+                  className="inline-flex items-center gap-1 text-xs sm:text-sm font-medium text-slate-text-muted hover:text-slate-text transition"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Upravit</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDeleteIdea(item)}
+                  className="inline-flex items-center gap-1 text-xs sm:text-sm font-medium text-slate-text-muted hover:text-crimson transition"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Smazat</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div
+        onClick={() => onToggleBought(item)}
+        className="cursor-pointer shrink-0 select-none"
+        title={
+          item.isBought
+            ? 'Zabalený dárek pod stromeček'
+            : 'Kliknutím označíš jako koupené a zabalené'
+        }
+      >
+        <WrappedPresentSvg
+          seed={`${item.id}-${titleText}`}
+          isBought={item.isBought}
+          className={`w-14 h-14 sm:w-20 sm:h-20 transition-transform duration-200 ${
+            item.isBought ? 'scale-105' : 'opacity-90 hover:scale-105'
+          }`}
+        />
+      </div>
+    </li>
+  );
+});
+
 export function ShoppingListPage() {
-  const { authUser, notify, refreshShoppingCount } = useAuth();
-  const [claims, setClaims] = useState([]);
-  const [privateIdeas, setPrivateIdeas] = useState([]);
-  const [familyRecipients, setFamilyRecipients] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { authUser, notify } = useAuth();
+  const {
+    shoppingClaims,
+    privateIdeas,
+    familyCards,
+    optimisticToggleClaimBought,
+    optimisticToggleIdeaBought,
+    optimisticUnclaimWish,
+    optimisticAddIdea,
+    optimisticUpdateIdea,
+    optimisticDeleteIdea,
+  } = useAppData();
 
   const [ideaModalOpen, setIdeaModalOpen] = useState(false);
   const [editingIdea, setEditingIdea] = useState(null);
@@ -70,43 +210,23 @@ export function ShoppingListPage() {
   const [claimToRelease, setClaimToRelease] = useState(null);
   const [releasing, setReleasing] = useState(false);
 
-  const loadList = useCallback(async () => {
-    if (!authUser) return;
-    setLoading(true);
-    try {
-      const [shopData, familyData] = await Promise.all([
-        getShoppingList(authUser.uid),
-        getAllFamilyLettersOverview(authUser.uid),
-      ]);
-      setClaims(shopData.claims);
-      setPrivateIdeas(shopData.privateIdeas);
-
-      const seenNames = new Set();
-      const pills = [];
-      (familyData.cards || []).forEach((card) => {
-        const name = (card.recipientName || '').trim();
-        if (!name || seenNames.has(name.toLowerCase())) return;
-        seenNames.add(name.toLowerCase());
-        const childVisual = card.isChildLetter ? getChildAvatar(name) : null;
-        pills.push({
-          name,
-          targetUid: card.ownerProfile?.uid || null,
-          avatarId: childVisual ? childVisual.avatarId : card.ownerProfile?.avatarId || 'star',
-          avatarBg: childVisual ? childVisual.avatarBg : card.ownerProfile?.avatarBg || '#F5E6D3',
-        });
+  const familyRecipients = useMemo(() => {
+    const seenNames = new Set();
+    const pills = [];
+    (familyCards || []).forEach((card) => {
+      const name = (card.recipientName || '').trim();
+      if (!name || seenNames.has(name.toLowerCase())) return;
+      seenNames.add(name.toLowerCase());
+      const childVisual = card.isChildLetter ? getChildAvatar(name) : null;
+      pills.push({
+        name,
+        targetUid: card.ownerProfile?.uid || null,
+        avatarId: childVisual ? childVisual.avatarId : card.ownerProfile?.avatarId || 'star',
+        avatarBg: childVisual ? childVisual.avatarBg : card.ownerProfile?.avatarBg || '#F5E6D3',
       });
-      setFamilyRecipients(pills);
-      await refreshShoppingCount();
-    } catch (err) {
-      notify(err.message || 'Nepodařilo se načíst nákupní seznam.', 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [authUser, notify, refreshShoppingCount]);
-
-  useEffect(() => {
-    loadList();
-  }, [loadList]);
+    });
+    return pills;
+  }, [familyCards]);
 
   useEffect(() => {
     if (!ideaModalOpen) return undefined;
@@ -119,46 +239,34 @@ export function ShoppingListPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [ideaModalOpen, submittingIdea]);
 
-  const handleToggleBought = async (item) => {
-    const nextVal = !item.isBought;
-    if (item.kind === 'claim') {
-      setClaims((prev) =>
-        prev.map((c) => (c.id === item.id ? { ...c, isBought: nextVal } : c))
-      );
+  const handleToggleBought = useCallback(
+    async (item) => {
+      const nextVal = !item.isBought;
       try {
-        await toggleClaimBought(item.id, nextVal);
-        await refreshShoppingCount();
+        if (item.kind === 'claim') {
+          await optimisticToggleClaimBought(item.id, nextVal);
+        } else {
+          await optimisticToggleIdeaBought(item.id, nextVal);
+        }
       } catch (err) {
         notify(err.message || 'Nepodařilo se změnit stav dárku.', 'error');
-        await loadList();
       }
-    } else {
-      setPrivateIdeas((prev) =>
-        prev.map((p) => (p.id === item.id ? { ...p, isBought: nextVal } : p))
-      );
-      try {
-        await togglePrivateIdeaBought(item.id, nextVal);
-        await refreshShoppingCount();
-      } catch (err) {
-        notify(err.message || 'Nepodařilo se změnit stav nápadu.', 'error');
-        await loadList();
-      }
-    }
-  };
+    },
+    [optimisticToggleClaimBought, optimisticToggleIdeaBought, notify]
+  );
 
   const handleConfirmReleaseClaim = async () => {
     if (!claimToRelease) return;
     setReleasing(true);
     try {
-      await unclaimWish(claimToRelease.id);
-      setClaims((prev) => prev.filter((c) => c.id !== claimToRelease.id));
-      await refreshShoppingCount();
+      const target = claimToRelease;
+      setClaimToRelease(null);
+      await optimisticUnclaimWish(target.id);
       notify(
-        claimToRelease.orphanStatus === 'active'
-          ? `„${claimToRelease.wishTitleSnapshot}“ je zpět v dopise.`
+        target.orphanStatus === 'active'
+          ? `„${target.wishTitleSnapshot}“ je zpět v dopise.`
           : 'Položka byla odebrána ze seznamu.'
       );
-      setClaimToRelease(null);
     } catch (err) {
       notify(err.message || 'Nepodařilo se uvolnit přání.', 'error');
     } finally {
@@ -166,16 +274,17 @@ export function ShoppingListPage() {
     }
   };
 
-  const handleDeleteIdea = async (idea) => {
-    try {
-      await deletePrivateIdea(idea.id);
-      setPrivateIdeas((prev) => prev.filter((p) => p.id !== idea.id));
-      await refreshShoppingCount();
-      notify('Tajný nápad byl smazán.');
-    } catch (err) {
-      notify(err.message || 'Smazání se nezdařilo.', 'error');
-    }
-  };
+  const handleDeleteIdea = useCallback(
+    async (idea) => {
+      try {
+        await optimisticDeleteIdea(idea.id);
+        notify('Tajný nápad byl smazán.');
+      } catch (err) {
+        notify(err.message || 'Smazání se nezdařilo.', 'error');
+      }
+    },
+    [optimisticDeleteIdea, notify]
+  );
 
   const openNewIdeaModal = () => {
     setEditingIdea(null);
@@ -195,26 +304,29 @@ export function ShoppingListPage() {
     setIdeaModalOpen(true);
   };
 
-  const openEditIdeaModal = (idea) => {
-    setEditingIdea(idea);
-    setIdeaError('');
-    setTitle(idea.title || '');
-    setUrl(idea.url || '');
-    setNote(idea.note || '');
-    const matchingPill = familyRecipients.find(
-      (r) => r.name.toLowerCase() === (idea.targetName || '').trim().toLowerCase()
-    );
-    if (matchingPill) {
-      setSelectedPillName(matchingPill.name);
-      setIsCustomPerson(false);
-      setCustomPersonName('');
-    } else {
-      setSelectedPillName('');
-      setIsCustomPerson(true);
-      setCustomPersonName(idea.targetName || '');
-    }
-    setIdeaModalOpen(true);
-  };
+  const openEditIdeaModal = useCallback(
+    (idea) => {
+      setEditingIdea(idea);
+      setIdeaError('');
+      setTitle(idea.title || '');
+      setUrl(idea.url || '');
+      setNote(idea.note || '');
+      const matchingPill = familyRecipients.find(
+        (r) => r.name.toLowerCase() === (idea.targetName || '').trim().toLowerCase()
+      );
+      if (matchingPill) {
+        setSelectedPillName(matchingPill.name);
+        setIsCustomPerson(false);
+        setCustomPersonName('');
+      } else {
+        setSelectedPillName('');
+        setIsCustomPerson(true);
+        setCustomPersonName(idea.targetName || '');
+      }
+      setIdeaModalOpen(true);
+    },
+    [familyRecipients]
+  );
 
   const handleSaveIdea = async (e) => {
     e.preventDefault();
@@ -243,19 +355,16 @@ export function ShoppingListPage() {
     setIdeaError('');
     try {
       if (editingIdea) {
-        const updated = await updatePrivateIdea(editingIdea.id, {
+        await optimisticUpdateIdea(editingIdea.id, {
           targetUid,
           targetName: canonicalName,
           title,
           url,
           note,
         });
-        setPrivateIdeas((prev) =>
-          prev.map((p) => (p.id === editingIdea.id ? { ...p, ...updated } : p))
-        );
         notify('Tajný nápad byl upraven.');
       } else {
-        const created = await addPrivateIdea({
+        await optimisticAddIdea({
           ownerUid: authUser.uid,
           targetUid,
           targetName: canonicalName,
@@ -263,10 +372,8 @@ export function ShoppingListPage() {
           url,
           note,
         });
-        setPrivateIdeas((prev) => [created, ...prev]);
         notify('Tajný nápad byl přidán na nákupní seznam.');
       }
-      await refreshShoppingCount();
       setIdeaModalOpen(false);
       setEditingIdea(null);
     } catch (err) {
@@ -276,36 +383,45 @@ export function ShoppingListPage() {
     }
   };
 
-  const grouped = {};
-  const canonicalKeyMap = {};
+  const { grouped, recipientKeys, totalCount, boughtCount } = useMemo(() => {
+    const map = {};
+    const canonicalKeyMap = {};
 
-  const getGroupKey = (rawName) => {
-    const clean = (rawName || 'Blízký').trim();
-    const lower = clean.toLowerCase();
-    if (!canonicalKeyMap[lower]) {
-      canonicalKeyMap[lower] = clean;
-      grouped[clean] = [];
-    }
-    return canonicalKeyMap[lower];
-  };
+    const getGroupKey = (rawName) => {
+      const clean = (rawName || 'Blízký').trim();
+      const lower = clean.toLowerCase();
+      if (!canonicalKeyMap[lower]) {
+        canonicalKeyMap[lower] = clean;
+        map[clean] = [];
+      }
+      return canonicalKeyMap[lower];
+    };
 
-  claims.forEach((c) => {
-    const key = getGroupKey(c.recipientName || c.recipientNameSnapshot);
-    grouped[key].push({ ...c, kind: 'claim' });
-  });
-  privateIdeas.forEach((p) => {
-    const key = getGroupKey(p.targetName);
-    grouped[key].push({ ...p, kind: 'idea' });
-  });
+    shoppingClaims.forEach((c) => {
+      const key = getGroupKey(c.recipientName || c.recipientNameSnapshot);
+      map[key].push({ ...c, kind: 'claim' });
+    });
+    privateIdeas.forEach((p) => {
+      const key = getGroupKey(p.targetName);
+      map[key].push({ ...p, kind: 'idea' });
+    });
 
-  const recipientKeys = Object.keys(grouped).sort((a, b) => a.localeCompare(b, 'cs'));
-  const totalCount = claims.length + privateIdeas.length;
-  const boughtCount =
-    claims.filter((c) => c.isBought).length + privateIdeas.filter((p) => p.isBought).length;
+    const keys = Object.keys(map).sort((a, b) => a.localeCompare(b, 'cs'));
+    const total = shoppingClaims.length + privateIdeas.length;
+    const bought =
+      shoppingClaims.filter((c) => c.isBought).length +
+      privateIdeas.filter((p) => p.isBought).length;
+
+    return {
+      grouped: map,
+      recipientKeys: keys,
+      totalCount: total,
+      boughtCount: bought,
+    };
+  }, [shoppingClaims, privateIdeas]);
 
   return (
-    <div className="space-y-6 animate-page-transition">
-      {/* Hlavička stránky */}
+    <div className="space-y-6 animate-page-transition min-w-0">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-fairytale font-bold text-[32px] sm:text-[36px] leading-tight text-slate-text">
@@ -328,12 +444,7 @@ export function ShoppingListPage() {
         </button>
       </div>
 
-      {/* Seznam seskupený podle obdarovaných */}
-      {loading ? (
-        <div className="py-16 text-center text-lg text-slate-text-muted">
-          Otevírám tvůj nákupní seznam...
-        </div>
-      ) : recipientKeys.length === 0 ? (
+      {recipientKeys.length === 0 ? (
         <div className="stationery-sheet paper-grain-overlay rounded-3xl border border-[#E5DBC3] p-10 sm:p-12 text-center space-y-3 relative overflow-hidden">
           <div className="stationery-inner-frame" aria-hidden="true" />
           <div className="relative z-10 max-w-md mx-auto space-y-3">
@@ -363,155 +474,22 @@ export function ShoppingListPage() {
               </div>
 
               <ul className="space-y-3">
-                {grouped[recipient].map((item) => {
-                  const titleText =
-                    item.kind === 'claim' ? item.wishTitleSnapshot : item.title;
-                  const noteText =
-                    item.kind === 'claim' ? item.wishNoteSnapshot : item.note;
-                  const urlLink =
-                    item.kind === 'claim' ? item.wishUrlSnapshot : item.url;
-
-                  return (
-                    <li
-                      key={item.id}
-                      style={{ backgroundColor: '#F6F0E2' }}
-                      className={`rounded-2xl bg-[#F6F0E2] border border-[#E5DBC3] px-4 py-3.5 sm:px-5 sm:py-4 flex items-center justify-between gap-4 transition-all duration-200 ${
-                        item.isBought ? 'opacity-80' : 'shadow-xs'
-                      }`}
-                    >
-                      {/* Levá strana: pouze čisté zaškrtávací políčko + název a poznámka */}
-                      <div className="flex items-start gap-4 min-w-0 flex-1">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleBought(item)}
-                          aria-label={
-                            item.isBought
-                              ? `Odznačit dárek ${titleText}`
-                              : `Označit dárek ${titleText} jako zabalený`
-                          }
-                          className={`mt-1 w-7 h-7 rounded-lg border-2 flex items-center justify-center shrink-0 transition ${
-                            item.isBought
-                              ? 'bg-fir border-fir text-white shadow-xs'
-                              : 'bg-[#FFFDF9] border-[#B9AA8E] hover:border-fir'
-                          }`}
-                        >
-                          {item.isBought && <Check className="w-4 h-4 stroke-[3]" />}
-                        </button>
-
-                        <div className="space-y-1 min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleToggleBought(item)}
-                              className={`text-left text-lg sm:text-xl font-bold leading-snug transition ${
-                                item.isBought
-                                  ? 'line-through decoration-slate-text-muted/60 text-slate-text-muted'
-                                  : 'text-slate-text'
-                              }`}
-                            >
-                              {titleText}
-                            </button>
-
-                            {item.kind === 'idea' && (
-                              <span className="px-2.5 py-0.5 rounded-full bg-gold-soft text-slate-text text-xs font-semibold">
-                                Tajný nápad
-                              </span>
-                            )}
-                          </div>
-
-                          {noteText && (
-                            <p className="text-base text-slate-text-muted leading-snug">
-                              {noteText}
-                            </p>
-                          )}
-
-                          {item.kind === 'claim' && item.orphanStatus === 'wish_deleted' && (
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-gold-soft text-slate-text text-sm font-semibold">
-                              <AlertTriangle className="w-4 h-4 text-gold shrink-0" />
-                              <span>Obdarovaný toto přání ze svého dopisu smazal</span>
-                            </div>
-                          )}
-                          {item.kind === 'claim' && item.orphanStatus === 'account_deleted' && (
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-crimson-soft text-crimson text-sm font-semibold">
-                              <AlertTriangle className="w-4 h-4 shrink-0" />
-                              <span>Uživatel si zrušil účet, dopis už není dostupný</span>
-                            </div>
-                          )}
-
-                          {/* Diskrétní akce pod názvem (ukázka, uvolnění nebo úprava) */}
-                          <div className="flex flex-wrap items-center gap-3 pt-1">
-                            {urlLink && (
-                              <a
-                                href={urlLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-sm font-semibold text-fir hover:underline"
-                              >
-                                <span>Ukázka dárku</span>
-                                <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                              </a>
-                            )}
-
-                            {item.kind === 'claim' ? (
-                              <button
-                                type="button"
-                                onClick={() => setClaimToRelease(item)}
-                                className="text-xs sm:text-sm font-medium text-slate-text-muted hover:text-crimson underline decoration-slate-text-muted/40 hover:decoration-crimson transition"
-                              >
-                                Uvolnit zpět do dopisu
-                              </button>
-                            ) : (
-                              <div className="inline-flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => openEditIdeaModal(item)}
-                                  className="inline-flex items-center gap-1 text-xs sm:text-sm font-medium text-slate-text-muted hover:text-slate-text transition"
-                                >
-                                  <Edit3 className="w-3.5 h-3.5" />
-                                  <span>Upravit</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteIdea(item)}
-                                  className="inline-flex items-center gap-1 text-xs sm:text-sm font-medium text-slate-text-muted hover:text-crimson transition"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                  <span>Smazat</span>
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Pravá strana: jedinečná ilustrace zabaleného dárku */}
-                      <div
-                        onClick={() => handleToggleBought(item)}
-                        className="cursor-pointer shrink-0 select-none"
-                        title={
-                          item.isBought
-                            ? 'Zabalený dárek pod stromeček'
-                            : 'Kliknutím označíš jako koupené a zabalené'
-                        }
-                      >
-                        <WrappedPresentSvg
-                          seed={`${item.id}-${titleText}`}
-                          isBought={item.isBought}
-                          className={`w-14 h-14 sm:w-20 sm:h-20 transition-transform duration-300 ${
-                            item.isBought ? 'scale-105' : 'opacity-90 hover:scale-105'
-                          }`}
-                        />
-                      </div>
-                    </li>
-                  );
-                })}
+                {grouped[recipient].map((item) => (
+                  <ShoppingItemRow
+                    key={item.id}
+                    item={item}
+                    onToggleBought={handleToggleBought}
+                    onReleaseClaim={setClaimToRelease}
+                    onEditIdea={openEditIdeaModal}
+                    onDeleteIdea={handleDeleteIdea}
+                  />
+                ))}
               </ul>
             </section>
           ))}
         </div>
       )}
 
-      {/* Modální okno pro přidání / úpravu tajného nápadu */}
       {ideaModalOpen &&
         createPortal(
           <div

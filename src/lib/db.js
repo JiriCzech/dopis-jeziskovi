@@ -74,6 +74,9 @@ function loadDemoState() {
 
 function saveDemoState(state) {
   localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(state));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('dopis-demo-state-changed'));
+  }
 }
 
 export function resetDemoState() {
@@ -170,7 +173,7 @@ export async function generateUniqueTag() {
 }
 
 /**
- * Uživatelské profily
+ * Uživatelské profily (jednotlivě i dávkově po max. 30 UID bez N+1 dotazů)
  */
 export async function getUserProfile(uid) {
   if (!uid) return null;
@@ -180,6 +183,37 @@ export async function getUserProfile(uid) {
   }
   const snap = await getDoc(doc(db, 'users', uid));
   return snap.exists() ? { uid: snap.id, ...snap.data() } : null;
+}
+
+export async function getUsersByUidsBatch(uids = []) {
+  const uniqueUids = Array.from(new Set((uids || []).filter(Boolean)));
+  if (uniqueUids.length === 0) return {};
+
+  if (isDemoModeActive()) {
+    const state = loadDemoState();
+    const result = {};
+    uniqueUids.forEach((id) => {
+      if (state.users[id]) result[id] = state.users[id];
+    });
+    return result;
+  }
+
+  const chunks = [];
+  for (let i = 0; i < uniqueUids.length; i += 30) {
+    chunks.push(uniqueUids.slice(i, i + 30));
+  }
+
+  const result = {};
+  await Promise.all(
+    chunks.map(async (chunk) => {
+      const q = query(collection(db, 'users'), where('uid', 'in', chunk), limit(30));
+      const snap = await getDocs(q);
+      snap.docs.forEach((d) => {
+        result[d.id] = { uid: d.id, ...d.data() };
+      });
+    })
+  );
+  return result;
 }
 
 export async function createUserProfile({ uid, displayName, avatarId, avatarBg }) {
@@ -381,19 +415,7 @@ export async function getConnectionsAndGroups(uid) {
     });
   });
 
-  const usersMap = {};
-  await Promise.all(
-    Array.from(relatedUids).map(async (otherUid) => {
-      try {
-        const profile = await getUserProfile(otherUid);
-        if (profile) {
-          usersMap[otherUid] = profile;
-        }
-      } catch {
-        // ignore single profile fetch error
-      }
-    })
-  );
+  const usersMap = await getUsersByUidsBatch(Array.from(relatedUids));
 
   // Všichni potvrzení propojení lidé z kolekce connections (status === 'accepted')
   const acceptedContacts = connections

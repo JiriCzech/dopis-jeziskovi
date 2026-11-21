@@ -25,7 +25,6 @@
     color: #242826;
     background-color: #EFE8D8;
     background-image: radial-gradient(circle at 50% 25%, #FAF6EE 0%, #EFE8D8 100%);
-    background-attachment: fixed;
     overflow-x: hidden;
     max-width: 100%;
   }
@@ -36,9 +35,13 @@
   }
 }
 
-/* Jemná textura ručního papíru (SVG fractalNoise, opacity ~0.025) */
+/* Lehká papírová textura bez CPU-náročného SVG feTurbulence filtru */
 .paper-grain-overlay {
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.026'/%3E%3C/svg%3E");
+  background-image:
+    radial-gradient(rgba(140, 115, 85, 0.04) 1px, transparent 0),
+    radial-gradient(rgba(200, 150, 70, 0.03) 1px, transparent 0);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
 }
 
 /* Dopisní arch jako skutečné papírnictví (Tactile Stationery) */
@@ -65,50 +68,52 @@
   background-color: #FAF5EB;
   border: 1px solid #E5DEC9;
   box-shadow: 0 2px 6px -1px rgba(44, 48, 46, 0.04);
-  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease, background-color 300ms ease;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
 }
 
 .gift-tag-card:hover {
-  transform: translateY(-2px);
+  transform: translate3d(0, -2px, 0);
   box-shadow: 0 8px 18px -4px rgba(44, 48, 46, 0.08);
   border-color: rgba(200, 150, 70, 0.55);
 }
 
-/* Historická přírodní papírová dárková jmenovka (Kraft Gift Tag) pro „Komu koupit dárek“ */
+/* Historická přírodní papírová dárková jmenovka (Kraft Gift Tag) bez SVG feTurbulence */
 .kraft-gift-tag {
   background-color: #D8C2AC;
   background-image:
     radial-gradient(circle at 50% 42%, rgba(247, 236, 220, 0.55) 0%, rgba(204, 178, 150, 0.45) 100%),
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+    radial-gradient(rgba(110, 84, 58, 0.06) 1px, transparent 0);
+  background-size: 100% 100%, 18px 18px;
   clip-path: polygon(28px 0%, calc(100% - 28px) 0%, 100% 28px, 100% 100%, 0% 100%, 0% 28px);
   border-radius: 0 0 18px 18px;
   box-shadow:
     0 12px 26px -8px rgba(52, 38, 24, 0.22),
     0 3px 8px -2px rgba(52, 38, 24, 0.12);
-  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease;
+  will-change: transform;
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 200ms ease;
 }
 
 .kraft-gift-tag-wrapper:hover .kraft-gift-tag {
-  transform: translateY(-5px) rotate(0.4deg);
+  transform: translate3d(0, -5px, 0) rotate(0.4deg);
   box-shadow:
     0 18px 34px -8px rgba(52, 38, 24, 0.28),
     0 4px 10px -2px rgba(52, 38, 24, 0.14);
 }
 
-/* Pomalé padání sněhových vloček s jemným pohupováním */
+/* GPU-akcelerované padání sněhových vloček (výhradně transform: translate3d a opacity) */
 @keyframes bgSnowfall {
   0% {
     transform: translate3d(0, -6vh, 0) rotate(0deg);
     opacity: 0;
   }
   15% {
-    opacity: var(--flake-opacity, 0.35);
+    opacity: var(--flake-opacity, 0.32);
   }
   50% {
-    transform: translate3d(var(--sway, 18px), 48vh, 0) rotate(90deg);
+    transform: translate3d(var(--sway, 16px), 48vh, 0) rotate(90deg);
   }
   85% {
-    opacity: var(--flake-opacity, 0.35);
+    opacity: var(--flake-opacity, 0.32);
   }
   100% {
     transform: translate3d(0, 103vh, 0) rotate(180deg);
@@ -118,24 +123,25 @@
 
 .bg-snowflake {
   position: fixed;
-  top: -24px;
+  top: 0;
+  left: 0;
   pointer-events: none;
   user-select: none;
   z-index: 0;
   color: #FFFDF9;
-  text-shadow: 0 1px 4px rgba(200, 150, 70, 0.32);
+  will-change: transform, opacity;
   animation: bgSnowfall var(--duration, 24s) ease-in-out infinite;
   animation-delay: var(--delay, 0s);
 }
 
-/* Teplá rozostřená světýlka (bokeh) v pozadí */
+/* GPU-akcelerovaná teplá světýlka (bokeh) v pozadí */
 @keyframes bokehFloat {
   0%,
   100% {
     transform: translate3d(0, 0, 0) scale(1);
   }
   50% {
-    transform: translate3d(14px, -18px, 0) scale(1.08);
+    transform: translate3d(12px, -14px, 0) scale(1.06);
   }
 }
 
@@ -143,12 +149,19 @@
   position: fixed;
   border-radius: 9999px;
   background-color: #E6B86A;
-  opacity: 0.12;
-  filter: blur(42px);
+  opacity: 0.11;
+  filter: blur(28px);
   pointer-events: none;
   z-index: 0;
-  animation: bokehFloat var(--duration, 18s) ease-in-out infinite;
+  will-change: transform;
+  animation: bokehFloat var(--duration, 20s) ease-in-out infinite;
   animation-delay: var(--delay, 0s);
+}
+
+@media (min-width: 768px) {
+  .bg-bokeh {
+    filter: blur(40px);
+  }
 }
 
 /* Kyvadlový pohyb zlaté hvězdičky na smrkové větvičce */
@@ -167,61 +180,57 @@
   animation: gentle-swing 4.5s ease-in-out infinite;
 }
 
-/* Efekt zatlačení a zlatého odlesku voskové pečeti při uložení */
+/* Efekt zatlačení voskové pečeti při uložení */
 @keyframes waxSealPress {
   0% {
     transform: scale(1);
-    filter: brightness(1);
   }
   35% {
     transform: scale(0.94);
-    filter: brightness(1.18) drop-shadow(0 0 8px rgba(212, 163, 89, 0.55));
   }
   70% {
     transform: scale(1.03);
-    filter: brightness(1.08);
   }
   100% {
     transform: scale(1);
-    filter: brightness(1);
   }
 }
 
 .wax-seal-press {
-  animation: waxSealPress 650ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: waxSealPress 550ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-/* Plynulé přechody obrazovek a dopisů (220ms ease-out) */
+/* Rychlý, lehký přechod obrazovek (150ms GPU transform + opacity) */
 @keyframes pageFadeSlide {
   0% {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translate3d(0, 4px, 0);
   }
   100% {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 .animate-fade-in,
 .animate-page-transition {
-  animation: pageFadeSlide 220ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: pageFadeSlide 150ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 /* Animace nově přidaného přání */
 @keyframes wishEnter {
   0% {
     opacity: 0;
-    transform: translateY(-6px) scale(0.98);
+    transform: translate3d(0, -5px, 0) scale(0.98);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
 .animate-wish-enter {
-  animation: wishEnter 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: wishEnter 220ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 /* Výstupní animace při kliknutí na „Tohle koupím já“ */
@@ -229,21 +238,15 @@
   0% {
     opacity: 1;
     transform: scale(1);
-    background-color: #FAF5EB;
-  }
-  40% {
-    background-color: #F9F0DD;
-    border-color: #C89646;
   }
   100% {
     opacity: 0;
-    transform: scale(0.95) translateY(-4px);
-    background-color: #F9F0DD;
+    transform: translate3d(0, -4px, 0) scale(0.96);
   }
 }
 
 .animate-wish-claim-exit {
-  animation: wishClaimExit 270ms ease-out forwards;
+  animation: wishClaimExit 200ms ease-out forwards;
   pointer-events: none;
 }
 

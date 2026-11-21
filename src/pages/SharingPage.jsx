@@ -21,12 +21,12 @@ import {
 } from 'lucide-react';
 import { Avatar } from '../assets/avatars';
 import { useAuth } from '../hooks/useAuth';
+import { useAppData } from '../hooks/useAppData';
 import {
   acceptConnectionRequest,
   createGroup,
   deleteGroup,
   findUserByTag,
-  getConnectionsAndGroups,
   joinGroupByInviteCode,
   leaveGroup,
   removeConnection,
@@ -50,13 +50,13 @@ export function renderGroupIcon(iconId, className = 'w-4 h-4') {
 }
 
 export function SharingPage() {
-  const { authUser, profile, notify, refreshPendingCount } = useAuth();
-
-  const [connections, setConnections] = useState([]);
-  const [groups, setGroups] = useState([]);
-  const [usersMap, setUsersMap] = useState({});
-  const [acceptedContacts, setAcceptedContacts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { authUser, profile, notify } = useAuth();
+  const {
+    connections,
+    groups,
+    usersById: usersMap,
+    acceptedContacts,
+  } = useAppData();
 
   const [copiedPersonal, setCopiedPersonal] = useState(false);
   const [copiedPersonalLink, setCopiedPersonalLink] = useState(false);
@@ -77,26 +77,7 @@ export function SharingPage() {
   const [selectedGroupMembers, setSelectedGroupMembers] = useState([]);
   const [groupToDelete, setGroupToDelete] = useState(null);
 
-  const loadSharingData = useCallback(async () => {
-    if (!authUser) return;
-    setLoading(true);
-    try {
-      const data = await getConnectionsAndGroups(authUser.uid);
-      setConnections(data.connections || []);
-      setGroups(data.groups || []);
-      setUsersMap(data.usersMap || {});
-      setAcceptedContacts(data.acceptedContacts || []);
-      await refreshPendingCount();
-    } catch (err) {
-      notify(err.message || 'Nepodařilo se načíst propojení a skupiny.', 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [authUser, notify, refreshPendingCount]);
-
-  useEffect(() => {
-    loadSharingData();
-  }, [loadSharingData]);
+  const loadSharingData = useCallback(async () => {}, []);
 
   if (!profile) return null;
 
@@ -539,9 +520,7 @@ export function SharingPage() {
             Tvoji propojení blízcí ({acceptedContacts.length})
           </h3>
 
-          {loading ? (
-            <p className="text-sm text-slate-text-muted">Načítám propojené kontakty...</p>
-          ) : acceptedContacts.length === 0 ? (
+          {acceptedContacts.length === 0 ? (
             <p className="text-sm text-slate-text-muted">
               Zatím nemáš žádné přímé propojení. Pošli někomu svůj odkaz nebo zadej jeho kód výše.
             </p>
