@@ -256,19 +256,41 @@ export async function findUserByTag(searchText, currentUid) {
 }
 
 /**
- * Dopisy (vlastní + dětské)
+ * Dopisy (vlastní + dětské + volitelně sdílené dětské dopisy druhého rodiče)
  */
-export async function getUserLetters(uid) {
+export async function getUserLetters(uid, options = {}) {
   if (!uid) return [];
+  const includeCoParented = Boolean(options.includeCoParented);
   let list = [];
+
   if (isDemoModeActive()) {
     const state = loadDemoState();
-    list = Object.values(state.letters).filter((l) => l.ownerUid === uid);
+    list = Object.values(state.letters).filter(
+      (l) =>
+        l.ownerUid === uid ||
+        (includeCoParented && Array.isArray(l.coParentUids) && l.coParentUids.includes(uid))
+    );
   } else {
-    const q = query(collection(db, 'letters'), where('ownerUid', '==', uid));
-    const snap = await getDocs(q);
-    list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const ownedQuery = query(collection(db, 'letters'), where('ownerUid', '==', uid));
+    if (!includeCoParented) {
+      const snap = await getDocs(ownedQuery);
+      list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    } else {
+      const coParentQuery = query(
+        collection(db, 'letters'),
+        where('coParentUids', 'array-contains', uid)
+      );
+      const [ownedSnap, coParentSnap] = await Promise.all([
+        getDocs(ownedQuery),
+        getDocs(coParentQuery),
+      ]);
+      const byId = new Map();
+      ownedSnap.docs.forEach((d) => byId.set(d.id, { id: d.id, ...d.data() }));
+      coParentSnap.docs.forEach((d) => byId.set(d.id, { id: d.id, ...d.data() }));
+      list = Array.from(byId.values());
+    }
   }
+
   return list.sort((a, b) => {
     if (a.isChildLetter !== b.isChildLetter) return a.isChildLetter ? 1 : -1;
     return (a.createdAt || 0) - (b.createdAt || 0);
@@ -277,8 +299,17 @@ export async function getUserLetters(uid) {
 
 export async function saveLetter(letterData) {
   const id = letterData.id || generateRandomId('letter');
+  const coParentUids = Array.isArray(letterData.coParentUids)
+    ? Array.from(
+        new Set(
+          letterData.coParentUids.filter((u) => typeof u === 'string' && u && u !== letterData.ownerUid)
+        )
+      )
+    : [];
+
   const payload = {
     ownerUid: letterData.ownerUid,
+    coParentUids,
     recipientName: (letterData.recipientName || '').trim(),
     isChildLetter: Boolean(letterData.isChildLetter),
     introText: letterData.introText || '',
@@ -339,18 +370,54 @@ export async function getConnectionsAndGroups(uid) {
   }
 
   const relatedUids = new Set();
-  connections.forEach((c) => c.users.forEach((u) => u !== uid && relatedUids.add(u)));
-  groups.forEach((g) => g.memberUids.forEach((u) => u !== uid && relatedUids.add(u)));
+  connections.forEach((c) => {
+    (c.users || []).forEach((u) => {
+      if (u && u !== uid) relatedUids.add(u);
+    });
+  });
+  groups.forEach((g) => {
+    (g.memberUids || []).forEach((u) => {
+      if (u && u !== uid) relatedUids.add(u);
+    });
+  });
 
   const usersMap = {};
   await Promise.all(
     Array.from(relatedUids).map(async (otherUid) => {
-      const profile = await getUserProfile(otherUid);
-      if (profile) usersMap[otherUid] = profile;
+      try {
+        const profile = await getUserProfile(otherUid);
+        if (profile) {
+          usersMap[otherUid] = profile;
+        }
+      } catch {
+        // ignore single profile fetch error
+      }
     })
   );
 
-  return { connections, groups, usersMap };
+  // Všichni potvrzení propojení lidé z kolekce connections (status === 'accepted')
+  const acceptedContacts = connections
+    .filter((c) => c.status === 'accepted' && Array.isArray(c.users) && c.users.includes(uid))
+    .map((c) => {
+      const otherUid = c.users.find((u) => u !== uid);
+      if (!otherUid) return null;
+      const profile = usersMap[otherUid] || {
+        uid: otherUid,
+        displayName: 'Propojený kontakt',
+        tag: '0000',
+        avatarId: 'star',
+        avatarBg: '#F5E6D3',
+      };
+      usersMap[otherUid] = profile;
+      return {
+        connectionId: c.id,
+        uid: otherUid,
+        user: profile,
+      };
+    })
+    .filter(Boolean);
+
+  return { connections, groups, usersMap, acceptedContacts };
 }
 
 export async function sendConnectionRequest(fromUid, toUid) {
@@ -567,26 +634,50 @@ export async function deleteGroup(groupId) {
 
 /**
  * Prohlížení cizích dopisů a tajné zamlouvání (claims)
- * POZOR: nikdy nevolá čtení claims pro vlastní dopisy (viewerUid !== targetUid).
+ * POZOR: nikdy nečte claims pro vlastní dopisy ani pro dětské dopisy, kde je uživatel v coParentUids.
  */
 export async function getMemberLettersWithAvailability(viewerUid, targetUid) {
   if (!viewerUid || !targetUid || viewerUid === targetUid) {
     throw new Error('Nelze zobrazit rezervace vlastního dopisu.');
   }
 
-  const letters = await getUserLetters(targetUid);
-  let claims = [];
+  const allTargetLetters = await getUserLetters(targetUid, { includeCoParented: false });
+  // Vynecháme dětské dopisy, které viewerUid spoluvlastní jako druhý rodič (ty spravuje v „Napsat dopis“)
+  const letters = allTargetLetters.filter(
+    (l) => !(Array.isArray(l.coParentUids) && l.coParentUids.includes(viewerUid))
+  );
+
+  if (letters.length === 0) return [];
 
   if (isDemoModeActive()) {
     const state = loadDemoState();
-    claims = Object.values(state.claims).filter((c) => c.letterOwnerUid === targetUid);
-  } else {
-    const q = query(collection(db, 'claims'), where('letterOwnerUid', '==', targetUid));
-    const snap = await getDocs(q);
-    claims = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const claims = Object.values(state.claims).filter((c) => c.letterOwnerUid === targetUid);
+    const claimedSet = new Set(claims.map((c) => `${c.letterId}::${c.wishId}`));
+    return letters.map((letter) => ({
+      ...letter,
+      availableWishes: (letter.wishes || []).filter(
+        (wish) => !claimedSet.has(`${letter.id}::${wish.id}`)
+      ),
+    }));
   }
 
-  const claimedSet = new Set(claims.map((c) => `${c.letterId}::${c.wishId}`));
+  // Ve Firestore ověříme deterministická ID claims/{letterId}_{wishId} přes getDoc,
+  // což 100% respektuje pravidlo pro coParentUids i když jiný dopis téhož rodiče je sdílený.
+  const claimedSet = new Set();
+  const slotChecks = [];
+  letters.forEach((letter) => {
+    (letter.wishes || []).forEach((wish) => {
+      const claimId = `${letter.id}_${wish.id}`;
+      slotChecks.push(
+        getDoc(doc(db, 'claims', claimId)).then((snap) => {
+          if (snap.exists()) {
+            claimedSet.add(`${letter.id}::${wish.id}`);
+          }
+        })
+      );
+    });
+  });
+  await Promise.all(slotChecks);
 
   return letters.map((letter) => ({
     ...letter,
@@ -680,14 +771,16 @@ export async function getAllFamilyLettersOverview(viewerUid) {
 }
 
 export async function claimWish(claimerUid, letter, wish) {
-  if (claimerUid === letter.ownerUid) {
-    throw new Error('Nemůžeš si zamluvit dárek ze svého vlastního dopisu.');
+  const coParents = Array.isArray(letter.coParentUids) ? letter.coParentUids : [];
+  if (claimerUid === letter.ownerUid || coParents.includes(claimerUid)) {
+    throw new Error('Nemůžeš si zamluvit dárek z dopisu, který sám spravuješ.');
   }
 
   const claimId = `${letter.id}_${wish.id}`;
   const payload = {
     letterId: letter.id,
     letterOwnerUid: letter.ownerUid,
+    letterCoParentUids: coParents,
     wishId: wish.id,
     wishTitleSnapshot: wish.title,
     wishUrlSnapshot: wish.url || '',

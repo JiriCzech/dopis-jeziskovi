@@ -32,15 +32,17 @@ service cloud.firestore {
     //      - wishes: list of maps (required, max 20 items; each item has exact keys:
     //          id (string 1..128), title (string 1..150), url (string 0..1000, empty or http/https),
     //          note (string 0..500), createdAt (timestamp or non-negative number))
+    //      - coParentUids: list of strings (optional, max 10 items; immutable for co-parents, editable only by ownerUid)
     //      - updatedAt: timestamp or non-negative number (required)
     //      - createdAt: timestamp or non-negative number (optional; immutable once set)
     //
     // 3. Collection: claims
     //    Document ID: {letterId}_{wishId} (deterministic to guarantee one claim per wish)
-    //    Security invariant: Letter owners MUST NEVER read or write claims on their own letters.
+    //    Security invariant: Letter owners and co-parents MUST NEVER read or write claims on their own/managed letters.
     //    Fields:
     //      - letterId: string (required, immutable, 1..128 chars)
     //      - letterOwnerUid: string (required, immutable, 1..128 chars, verified against letters/{letterId} on create)
+    //      - letterCoParentUids: list of strings (optional, immutable, max 10 items)
     //      - wishId: string (required, immutable, 1..128 chars)
     //      - wishTitleSnapshot: string (required, 1..150 chars)
     //      - wishUrlSnapshot: string (required, 0..1000 chars, empty or http/https)
@@ -211,7 +213,7 @@ service cloud.firestore {
 
     function isValidLetter(data) {
       return hasRequiredFields(['ownerUid', 'recipientName', 'isChildLetter', 'introText', 'outroText', 'printTheme', 'wishes', 'updatedAt']) &&
-        hasOnlyAllowedFields(['ownerUid', 'recipientName', 'isChildLetter', 'introText', 'outroText', 'printTheme', 'wishes', 'createdAt', 'updatedAt']) &&
+        hasOnlyAllowedFields(['ownerUid', 'recipientName', 'isChildLetter', 'introText', 'outroText', 'printTheme', 'wishes', 'coParentUids', 'createdAt', 'updatedAt']) &&
         isValidUid(data.ownerUid) &&
         isValidNonEmptyString(data.recipientName, 60) &&
         data.isChildLetter is bool &&
@@ -219,15 +221,17 @@ service cloud.firestore {
         isValidBoundedString(data.outroText, 2000) &&
         data.printTheme in ['handwritten', 'fairytale', 'minimal'] &&
         isValidWishes(data.wishes) &&
+        (!('coParentUids' in data) || (data.coParentUids is list && data.coParentUids.size() <= 10 && data.coParentUids.join(',') is string && data.coParentUids.join(',').size() <= 1300)) &&
         isValidTime(data.updatedAt) &&
         (!('createdAt' in data) || isValidTime(data.createdAt));
     }
 
     function isValidClaim(data, claimId) {
       return hasRequiredFields(['letterId', 'letterOwnerUid', 'wishId', 'wishTitleSnapshot', 'wishUrlSnapshot', 'wishNoteSnapshot', 'recipientNameSnapshot', 'claimedByUid', 'isBought', 'orphanStatus', 'createdAt']) &&
-        hasOnlyAllowedFields(['letterId', 'letterOwnerUid', 'wishId', 'wishTitleSnapshot', 'wishUrlSnapshot', 'wishNoteSnapshot', 'recipientNameSnapshot', 'claimedByUid', 'isBought', 'orphanStatus', 'createdAt']) &&
+        hasOnlyAllowedFields(['letterId', 'letterOwnerUid', 'letterCoParentUids', 'wishId', 'wishTitleSnapshot', 'wishUrlSnapshot', 'wishNoteSnapshot', 'recipientNameSnapshot', 'claimedByUid', 'isBought', 'orphanStatus', 'createdAt']) &&
         isValidUid(data.letterId) &&
         isValidUid(data.letterOwnerUid) &&
+        (!('letterCoParentUids' in data) || (data.letterCoParentUids is list && data.letterCoParentUids.size() <= 10 && data.letterCoParentUids.join(',') is string && data.letterCoParentUids.join(',').size() <= 1300)) &&
         isValidUid(data.wishId) &&
         claimId == data.letterId + '_' + data.wishId &&
         isValidNonEmptyString(data.wishTitleSnapshot, 150) &&
@@ -242,7 +246,8 @@ service cloud.firestore {
 
     function isNotOwnerOfLetter(letterId) {
       return exists(/databases/$(database)/documents/letters/$(letterId)) &&
-        get(/databases/$(database)/documents/letters/$(letterId)).data.ownerUid != request.auth.uid;
+        get(/databases/$(database)/documents/letters/$(letterId)).data.ownerUid != request.auth.uid &&
+        !(request.auth.uid in get(/databases/$(database)/documents/letters/$(letterId)).data.get('coParentUids', []));
     }
 
     // Prevents letter owners from using get() on non-existent claim IDs as an oracle
@@ -337,44 +342,53 @@ service cloud.firestore {
       allow delete: if isOwner(uid);
     }
 
-    // 2. Christmas letters (owner-managed; readable by authenticated family/friends)
+    // 2. Christmas letters (owner and co-parent managed; readable by authenticated family/friends)
     match /letters/{letterId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() &&
         request.resource.data.ownerUid == request.auth.uid &&
         isValidLetter(request.resource.data);
       allow update: if isAuthenticated() &&
-        resource.data.ownerUid == request.auth.uid &&
+        (resource.data.ownerUid == request.auth.uid || request.auth.uid in resource.data.get('coParentUids', [])) &&
         isValidLetter(request.resource.data) &&
         areImmutableFieldsUnchanged(['ownerUid']) &&
         (!('createdAt' in resource.data) ||
-          ('createdAt' in request.resource.data && request.resource.data.createdAt == resource.data.createdAt));
+          ('createdAt' in request.resource.data && request.resource.data.createdAt == resource.data.createdAt)) &&
+        (resource.data.ownerUid == request.auth.uid || areImmutableFieldsUnchanged(['coParentUids']));
       allow delete: if isAuthenticated() &&
         resource.data.ownerUid == request.auth.uid;
     }
 
-    // 3. Secret gift claims (letter owner can NEVER read or write claims on their own letters)
+    // 3. Secret gift claims (letter owner and co-parents can NEVER read or write claims on their own letters)
     match /claims/{claimId} {
       allow get: if isAuthenticated() && (
-        (resource != null && request.auth.uid != resource.data.letterOwnerUid) ||
+        (resource != null &&
+          request.auth.uid != resource.data.letterOwnerUid &&
+          !(request.auth.uid in resource.data.get('letterCoParentUids', []))) ||
         (resource == null && canCheckUnclaimedSlot(claimId))
       );
       allow list: if isAuthenticated() &&
-        request.auth.uid != resource.data.letterOwnerUid;
+        request.auth.uid != resource.data.letterOwnerUid &&
+        (resource.data.claimedByUid == request.auth.uid ||
+         !(request.auth.uid in resource.data.get('letterCoParentUids', [])));
       allow create: if isAuthenticated() &&
         isValidClaim(request.resource.data, claimId) &&
         request.resource.data.claimedByUid == request.auth.uid &&
         request.resource.data.letterOwnerUid != request.auth.uid &&
+        !(request.auth.uid in request.resource.data.get('letterCoParentUids', [])) &&
         existsAfter(/databases/$(database)/documents/letters/$(request.resource.data.letterId)) &&
-        getAfter(/databases/$(database)/documents/letters/$(request.resource.data.letterId)).data.ownerUid == request.resource.data.letterOwnerUid;
+        getAfter(/databases/$(database)/documents/letters/$(request.resource.data.letterId)).data.ownerUid == request.resource.data.letterOwnerUid &&
+        !(request.auth.uid in getAfter(/databases/$(database)/documents/letters/$(request.resource.data.letterId)).data.get('coParentUids', []));
       allow update: if isAuthenticated() &&
         resource.data.claimedByUid == request.auth.uid &&
         request.auth.uid != resource.data.letterOwnerUid &&
+        !(request.auth.uid in resource.data.get('letterCoParentUids', [])) &&
         isValidClaim(request.resource.data, claimId) &&
-        areImmutableFieldsUnchanged(['letterId', 'letterOwnerUid', 'wishId', 'claimedByUid', 'createdAt']);
+        areImmutableFieldsUnchanged(['letterId', 'letterOwnerUid', 'letterCoParentUids', 'wishId', 'claimedByUid', 'createdAt']);
       allow delete: if isAuthenticated() &&
         resource.data.claimedByUid == request.auth.uid &&
-        request.auth.uid != resource.data.letterOwnerUid;
+        request.auth.uid != resource.data.letterOwnerUid &&
+        !(request.auth.uid in resource.data.get('letterCoParentUids', []));
     }
 
     // 4. Pairwise user connections (pending requests & accepted connections)

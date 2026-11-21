@@ -222,15 +222,27 @@ export function FamilyInviteModal({
   // Všechny známé kontakty (z přímých propojení i ze skupin) pro výběr členů skupiny
   const selectableContactsMap = {};
   acceptedConnections.forEach((c) => {
-    const otherUid = c.users.find((u) => u !== authUser?.uid);
-    if (otherUid && usersMap[otherUid]) {
-      selectableContactsMap[otherUid] = usersMap[otherUid];
+    const otherUid = (c.users || []).find((u) => u !== authUser?.uid);
+    if (otherUid) {
+      selectableContactsMap[otherUid] = usersMap[otherUid] || {
+        uid: otherUid,
+        displayName: 'Propojený kontakt',
+        tag: '0000',
+        avatarId: 'star',
+        avatarBg: '#F5E6D3',
+      };
     }
   });
   if (editingGroup) {
     (editingGroup.memberUids || []).forEach((uid) => {
-      if (uid !== authUser?.uid && usersMap[uid]) {
-        selectableContactsMap[uid] = usersMap[uid];
+      if (uid !== authUser?.uid) {
+        selectableContactsMap[uid] = usersMap[uid] || {
+          uid,
+          displayName: 'Člen skupiny',
+          tag: '0000',
+          avatarId: 'star',
+          avatarBg: '#F5E6D3',
+        };
       }
     });
   }

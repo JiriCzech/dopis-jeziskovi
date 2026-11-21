@@ -132,14 +132,14 @@ export function Layout({ children }) {
   };
 
   const navLinkClass = ({ isActive }) =>
-    `min-h-[48px] whitespace-nowrap inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl text-[15px] lg:text-base font-semibold transition relative ${
+    `min-h-[46px] whitespace-nowrap inline-flex items-center gap-2 px-3 py-2 rounded-2xl text-[15px] font-semibold transition relative ${
       isActive
         ? 'bg-fir text-white shadow-sm'
         : 'text-slate-text hover:bg-paper-warm/70'
     }`;
 
   return (
-    <div className="min-h-screen flex flex-col pb-24 md:pb-12 relative">
+    <div className="min-h-screen flex flex-col pb-24 md:pb-12 relative overflow-x-hidden max-w-full">
       {/* Jemná textura ručního papíru, bokeh světýlka a 20 pomalu padajících vloček */}
       <div
         className="no-print pointer-events-none fixed inset-0 overflow-hidden z-0 paper-grain-overlay"
@@ -231,8 +231,8 @@ export function Layout({ children }) {
             </div>
           </NavLink>
 
-          {/* 3 hlavní záložky na jeden řádek */}
-          <nav className="hidden md:flex items-center gap-1.5" aria-label="Hlavní navigace">
+          {/* 4 hlavní záložky na desktopu */}
+          <nav className="hidden md:flex items-center gap-1" aria-label="Hlavní navigace">
             <NavLink to="/" end className={navLinkClass}>
               <FileHeart className="w-4 h-4 shrink-0" />
               <span>Napsat dopis</span>
@@ -241,11 +241,6 @@ export function Layout({ children }) {
             <NavLink to="/rodina" className={navLinkClass}>
               <Gift className="w-4 h-4 shrink-0" />
               <span>Komu koupit dárek</span>
-              {pendingRequestsCount > 0 && (
-                <span className="ml-0.5 px-2 py-0.5 text-xs font-bold rounded-full bg-crimson text-white leading-none">
-                  {pendingRequestsCount}
-                </span>
-              )}
             </NavLink>
 
             <NavLink to="/nakupni-seznam" className={navLinkClass}>
@@ -257,17 +252,27 @@ export function Layout({ children }) {
                 </span>
               )}
             </NavLink>
+
+            <NavLink to="/sdileni" className={navLinkClass}>
+              <Users className="w-4 h-4 shrink-0" />
+              <span>Sdílení a skupiny</span>
+              {pendingRequestsCount > 0 && (
+                <span className="ml-0.5 px-2 py-0.5 text-xs font-bold rounded-full bg-crimson text-white leading-none">
+                  {pendingRequestsCount}
+                </span>
+              )}
+            </NavLink>
           </nav>
 
-          {/* Odkaz do profilu */}
+          {/* Odkaz do profilu vpravo */}
           {profile && (
             <NavLink
               to="/profil"
               title="Můj profil"
-              className="min-h-[48px] inline-flex items-center gap-2 px-2.5 py-1.5 rounded-2xl hover:bg-paper-warm/50 transition shrink-0"
+              className="min-h-[44px] inline-flex items-center gap-2 px-2.5 py-1.5 rounded-2xl hover:bg-paper-warm/50 transition shrink-0"
             >
               <Avatar avatarId={profile.avatarId} avatarBg={profile.avatarBg} size="sm" />
-              <span className="hidden lg:inline text-base font-semibold text-slate-text whitespace-nowrap">
+              <span className="text-sm sm:text-base font-semibold text-slate-text whitespace-nowrap max-w-[110px] sm:max-w-[140px] truncate">
                 {profile.displayName}
               </span>
             </NavLink>
@@ -276,7 +281,7 @@ export function Layout({ children }) {
       </header>
 
       {/* Hlavní obsah */}
-      <main className="relative z-10 flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10">
+      <main className="relative z-10 flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10 min-w-0">
         {children}
       </main>
 
@@ -290,65 +295,68 @@ export function Layout({ children }) {
         </div>
       </footer>
 
-      {/* Mobilní spodní navigace */}
+      {/* Pevná spodní mobilní navigace (< 768px) */}
       <nav
-        className="no-print md:hidden fixed bottom-0 inset-x-0 z-20 bg-sheet/95 backdrop-blur-md border-t border-paper-warm px-2 py-2 flex items-center justify-around shadow-soft"
+        className="no-print md:hidden fixed bottom-0 inset-x-0 z-40 bg-sheet/95 backdrop-blur-md border-t border-paper-warm px-1.5 py-1.5 grid grid-cols-4 gap-1 shadow-soft"
         aria-label="Mobilní navigace"
       >
         <NavLink
           to="/"
           end
           className={({ isActive }) =>
-            `min-h-[48px] flex flex-col items-center justify-center gap-1 px-3 py-1 rounded-xl text-xs font-semibold whitespace-nowrap ${
+            `min-h-[48px] flex flex-col items-center justify-center gap-0.5 px-1 py-1 rounded-xl text-xs font-semibold whitespace-nowrap ${
               isActive ? 'text-fir bg-fir-soft/70' : 'text-slate-text-muted'
             }`
           }
         >
-          <FileHeart className="w-5 h-5" />
-          <span>Napsat dopis</span>
+          <FileHeart className="w-5 h-5 shrink-0" />
+          <span>Dopis</span>
         </NavLink>
 
         <NavLink
           to="/rodina"
           className={({ isActive }) =>
-            `min-h-[48px] flex flex-col items-center justify-center gap-1 px-3 py-1 rounded-xl text-xs font-semibold relative whitespace-nowrap ${
+            `min-h-[48px] flex flex-col items-center justify-center gap-0.5 px-1 py-1 rounded-xl text-xs font-semibold relative whitespace-nowrap ${
               isActive ? 'text-fir bg-fir-soft/70' : 'text-slate-text-muted'
             }`
           }
         >
-          <Gift className="w-5 h-5" />
-          <span>Komu koupit</span>
-          {pendingRequestsCount > 0 && (
-            <span className="absolute top-0.5 right-2 px-1.5 min-w-[18px] h-[18px] text-[11px] font-bold rounded-full bg-crimson text-white flex items-center justify-center">
-              {pendingRequestsCount}
-            </span>
-          )}
+          <Gift className="w-5 h-5 shrink-0" />
+          <span>Rodina</span>
         </NavLink>
 
         <NavLink
           to="/nakupni-seznam"
           className={({ isActive }) =>
-            `min-h-[48px] flex flex-col items-center justify-center gap-1 px-3 py-1 rounded-xl text-xs font-semibold relative whitespace-nowrap ${
+            `min-h-[48px] flex flex-col items-center justify-center gap-0.5 px-1 py-1 rounded-xl text-xs font-semibold relative whitespace-nowrap ${
               isActive ? 'text-fir bg-fir-soft/70' : 'text-slate-text-muted'
             }`
           }
         >
-          <ShoppingBag className="w-5 h-5" />
-          <span>
-            Nákupní seznam{unboughtShoppingCount > 0 ? ` (${unboughtShoppingCount})` : ''}
-          </span>
+          <ShoppingBag className="w-5 h-5 shrink-0" />
+          <span>Nákup</span>
+          {unboughtShoppingCount > 0 && (
+            <span className="absolute top-1 right-3 px-1.5 min-w-[18px] h-[18px] text-[10px] font-bold rounded-full bg-crimson text-white flex items-center justify-center">
+              {unboughtShoppingCount}
+            </span>
+          )}
         </NavLink>
 
         <NavLink
-          to="/profil"
+          to="/sdileni"
           className={({ isActive }) =>
-            `min-h-[48px] flex flex-col items-center justify-center gap-1 px-3 py-1 rounded-xl text-xs font-semibold whitespace-nowrap ${
+            `min-h-[48px] flex flex-col items-center justify-center gap-0.5 px-1 py-1 rounded-xl text-xs font-semibold relative whitespace-nowrap ${
               isActive ? 'text-fir bg-fir-soft/70' : 'text-slate-text-muted'
             }`
           }
         >
-          <UserCircle className="w-5 h-5" />
-          <span>Profil</span>
+          <Users className="w-5 h-5 shrink-0" />
+          <span>Sdílení</span>
+          {pendingRequestsCount > 0 && (
+            <span className="absolute top-1 right-3 px-1.5 min-w-[18px] h-[18px] text-[10px] font-bold rounded-full bg-crimson text-white flex items-center justify-center">
+              {pendingRequestsCount}
+            </span>
+          )}
         </NavLink>
       </nav>
 

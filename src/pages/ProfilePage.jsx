@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Check, Copy, Link as LinkIcon, LogOut, Save, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Check, Copy, Link as LinkIcon, LogOut, Save, Trash2, Users } from 'lucide-react';
 import {
   AVATAR_BG_COLORS,
   AVATAR_OPTIONS,
@@ -170,6 +171,15 @@ export function ProfilePage() {
                   )}
                   <span>{copied ? 'Zkopírováno' : 'Kopírovat kód'}</span>
                 </button>
+
+                <Link
+                  to="/sdileni"
+                  style={{ backgroundColor: '#FFFDF9' }}
+                  className="whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FFFDF9] border border-[#E5DEC9] text-xs font-semibold text-fir hover:bg-paper-warm/50 transition"
+                >
+                  <Users className="w-3.5 h-3.5 shrink-0" />
+                  <span>Sdílení a skupiny</span>
+                </Link>
               </div>
             </div>
           </div>

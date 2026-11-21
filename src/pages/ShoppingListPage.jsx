@@ -497,7 +497,7 @@ export function ShoppingListPage() {
                         <WrappedPresentSvg
                           seed={`${item.id}-${titleText}`}
                           isBought={item.isBought}
-                          className={`w-16 h-16 sm:w-20 sm:h-20 transition-transform duration-300 ${
+                          className={`w-14 h-14 sm:w-20 sm:h-20 transition-transform duration-300 ${
                             item.isBought ? 'scale-105' : 'opacity-90 hover:scale-105'
                           }`}
                         />

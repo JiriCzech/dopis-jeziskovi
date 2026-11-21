@@ -10,6 +10,8 @@
     line-height: 1.6;
     background-color: #EFE8D8;
     color: #242826;
+    overflow-x: hidden;
+    max-width: 100%;
   }
 
   @media (min-width: 640px) {
@@ -24,6 +26,13 @@
     background-color: #EFE8D8;
     background-image: radial-gradient(circle at 50% 25%, #FAF6EE 0%, #EFE8D8 100%);
     background-attachment: fixed;
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
+  #root {
+    overflow-x: hidden;
+    max-width: 100%;
   }
 }
 

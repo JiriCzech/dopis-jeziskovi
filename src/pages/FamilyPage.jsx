@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   ArrowLeft,
   ExternalLink,
@@ -295,19 +296,18 @@ export function FamilyPage() {
           Komu koupit dárek
         </h1>
 
-        <button
-          type="button"
-          onClick={() => setInviteModalOpen(true)}
+        <Link
+          to="/sdileni"
           className="min-h-[48px] inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-sheet border border-paper-warm hover:bg-paper-warm/60 text-base font-bold text-slate-text shadow-card transition shrink-0"
         >
           <UserPlus className="w-5 h-5 text-fir shrink-0" />
-          <span>Pozvat blízké a skupiny</span>
+          <span>Sdílení a skupiny</span>
           {pendingRequestsCount > 0 && (
             <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-crimson text-white">
               {pendingRequestsCount}
             </span>
           )}
-        </button>
+        </Link>
       </div>
 
       {/* Chytré filtrování podle skupin (zobrazí se pouze tehdy, když má uživatel 2 a více skupin) */}
@@ -370,14 +370,13 @@ export function FamilyPage() {
                 : 'Přidej do skupiny své blízké nebo jim pošli zvací odkaz.'}
             </p>
             <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => setInviteModalOpen(true)}
+              <Link
+                to="/sdileni"
                 className="min-h-[48px] inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-fir hover:bg-fir-dark text-white text-base font-bold shadow-sm transition"
               >
                 <UserPlus className="w-5 h-5 shrink-0" />
-                <span>Pozvat blízké a skupiny</span>
-              </button>
+                <span>Přejít do Sdílení a skupiny</span>
+              </Link>
             </div>
           </div>
         </div>

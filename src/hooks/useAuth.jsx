@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth';
+import { AVATAR_BG_COLORS, AVATAR_OPTIONS } from '../assets/avatars';
 import { auth, googleProvider, isFirebaseConfigured } from '../lib/firebase.js';
 import {
   createDemoSessionUser,
@@ -18,6 +19,7 @@ import {
 
 const AuthContext = createContext(null);
 const PENDING_INVITE_STORAGE_KEY = 'dopis_jeziskovi_pending_invite';
+const WELCOME_STRIP_PREFIX = 'dopis_jeziskovi_welcome_seen_';
 
 function readInitialInviteCode() {
   try {
@@ -41,6 +43,17 @@ function readInitialInviteCode() {
   return '';
 }
 
+function pickDefaultAvatarForUid(uid = '') {
+  let hash = 0;
+  for (let i = 0; i < uid.length; i++) {
+    hash = (hash * 31 + uid.charCodeAt(i)) >>> 0;
+  }
+  return {
+    avatarId: AVATAR_OPTIONS[hash % AVATAR_OPTIONS.length].id,
+    avatarBg: AVATAR_BG_COLORS[hash % AVATAR_BG_COLORS.length].hex,
+  };
+}
+
 export function AuthProvider({ children }) {
   const [authUser, setAuthUser] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -62,6 +75,17 @@ export function AuthProvider({ children }) {
       // ignore
     }
   }, []);
+
+  const dismissOnboardingBanner = useCallback(() => {
+    setShowOnboardingBanner(false);
+    try {
+      if (authUser?.uid) {
+        localStorage.setItem(`${WELCOME_STRIP_PREFIX}${authUser.uid}`, '1');
+      }
+    } catch {
+      // ignore
+    }
+  }, [authUser?.uid]);
 
   const notify = useCallback((message, type = 'success') => {
     setToast({ id: Date.now(), message, type });
@@ -108,21 +132,24 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const refreshShoppingCount = useCallback(async (uid) => {
-    const targetUid = uid || authUser?.uid;
-    if (!targetUid) {
-      setUnboughtShoppingCount(0);
-      return;
-    }
-    try {
-      const { claims, privateIdeas } = await getShoppingList(targetUid);
-      const unboughtClaims = claims.filter((c) => !c.isBought).length;
-      const unboughtIdeas = privateIdeas.filter((p) => !p.isBought).length;
-      setUnboughtShoppingCount(unboughtClaims + unboughtIdeas);
-    } catch {
-      // ignore background count errors
-    }
-  }, [authUser?.uid]);
+  const refreshShoppingCount = useCallback(
+    async (uid) => {
+      const targetUid = uid || authUser?.uid;
+      if (!targetUid) {
+        setUnboughtShoppingCount(0);
+        return;
+      }
+      try {
+        const { claims, privateIdeas } = await getShoppingList(targetUid);
+        const unboughtClaims = claims.filter((c) => !c.isBought).length;
+        const unboughtIdeas = privateIdeas.filter((p) => !p.isBought).length;
+        setUnboughtShoppingCount(unboughtClaims + unboughtIdeas);
+      } catch {
+        // ignore background count errors
+      }
+    },
+    [authUser?.uid]
+  );
 
   const hydrateDemoSession = useCallback(async () => {
     const state = getDemoState();
@@ -134,9 +161,19 @@ export function AuthProvider({ children }) {
       setLoading(false);
       return;
     }
-    const demoUser = state.users[state.activeUid];
+    let demoUser = state.users[state.activeUid];
+    if (!demoUser) {
+      const defaults = pickDefaultAvatarForUid(state.activeUid);
+      demoUser = await createUserProfile({
+        uid: state.activeUid,
+        displayName: 'Nový pisatel',
+        avatarId: defaults.avatarId,
+        avatarBg: defaults.avatarBg,
+      });
+      setShowOnboardingBanner(true);
+    }
     setAuthUser({ uid: state.activeUid, isDemo: true });
-    setProfile(demoUser || null);
+    setProfile(demoUser);
     await Promise.all([
       refreshPendingCount(state.activeUid),
       refreshShoppingCount(state.activeUid),
@@ -165,16 +202,38 @@ export function AuthProvider({ children }) {
       }
       setAuthUser(user);
       try {
-        const userProf = await getUserProfile(user.uid);
-        setProfile(userProf);
-        if (userProf) {
-          await Promise.all([
-            refreshPendingCount(user.uid),
-            refreshShoppingCount(user.uid),
-          ]);
+        let userProf = await getUserProfile(user.uid);
+        if (!userProf) {
+          // Automatické vytvoření profilu při prvním přihlášení bez zastávky v nastavení
+          const rawName = (
+            user.displayName ||
+            user.email?.split('@')[0] ||
+            'Pisatel'
+          )
+            .trim()
+            .slice(0, 50);
+          const defaults = pickDefaultAvatarForUid(user.uid);
+          userProf = await createUserProfile({
+            uid: user.uid,
+            displayName: rawName || 'Pisatel',
+            avatarId: defaults.avatarId,
+            avatarBg: defaults.avatarBg,
+          });
+          try {
+            if (!localStorage.getItem(`${WELCOME_STRIP_PREFIX}${user.uid}`)) {
+              setShowOnboardingBanner(true);
+            }
+          } catch {
+            setShowOnboardingBanner(true);
+          }
         }
+        setProfile(userProf);
+        await Promise.all([
+          refreshPendingCount(user.uid),
+          refreshShoppingCount(user.uid),
+        ]);
       } catch (err) {
-        console.error('Chyba načtení profilu:', err);
+        console.error('Chyba načtení nebo založení profilu:', err);
       } finally {
         setLoading(false);
       }
@@ -197,8 +256,16 @@ export function AuthProvider({ children }) {
     setDemoMode(true);
     if (asFreshUser) {
       const fresh = createDemoSessionUser();
+      const defaults = pickDefaultAvatarForUid(fresh.uid);
+      const created = await createUserProfile({
+        uid: fresh.uid,
+        displayName: fresh.displayName,
+        avatarId: defaults.avatarId,
+        avatarBg: defaults.avatarBg,
+      });
       setAuthUser({ uid: fresh.uid, isDemo: true });
-      setProfile(null);
+      setProfile(created);
+      setShowOnboardingBanner(true);
       setPendingRequestsCount(0);
       setUnboughtShoppingCount(0);
       setLoading(false);
@@ -290,7 +357,7 @@ export function AuthProvider({ children }) {
     pendingRequestsCount,
     unboughtShoppingCount,
     showOnboardingBanner,
-    dismissOnboardingBanner: () => setShowOnboardingBanner(false),
+    dismissOnboardingBanner,
     pendingInviteCode,
     clearPendingInviteCode,
     toast,

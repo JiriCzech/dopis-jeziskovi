@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import {
   AlertCircle,
   Check,
   Edit3,
   ExternalLink,
-  Gift,
   Loader2,
   Plus,
   Printer,
@@ -13,9 +13,15 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { CompactMistletoeSvg, WaxSealSvg } from '../assets/avatars';
+import { Avatar, CompactMistletoeSvg, WaxSealSvg } from '../assets/avatars';
 import { useAuth } from '../hooks/useAuth';
-import { deleteLetter, getUserLetters, saveLetter } from '../lib/db';
+import {
+  deleteLetter,
+  getConnectionsAndGroups,
+  getUserLetters,
+  getUserProfile,
+  saveLetter,
+} from '../lib/db';
 import { WishFormModal } from '../components/WishFormModal';
 import { PrintPreviewModal } from '../components/PrintPreviewModal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -43,7 +49,14 @@ export function MyLettersPage() {
   const [newlyAddedWishId, setNewlyAddedWishId] = useState(null);
   const [draft, setDraft] = useState(null);
 
-  // Modály
+  // Profily spolurodičů a připojených kontaktů pro dětské dopisy
+  const [acceptedContacts, setAcceptedContacts] = useState([]);
+  const [userProfilesById, setUserProfilesById] = useState({});
+  const [coParentModalOpen, setCoParentModalOpen] = useState(false);
+  const [selectedCoParentUids, setSelectedCoParentUids] = useState([]);
+  const [savingCoParents, setSavingCoParents] = useState(false);
+
+  // Ostatní modály
   const [wishModalOpen, setWishModalOpen] = useState(false);
   const [editingWish, setEditingWish] = useState(null);
   const [printOpen, setPrintOpen] = useState(false);
@@ -60,14 +73,23 @@ export function MyLettersPage() {
     latestDraftRef.current = draft;
   }, [draft]);
 
-  const loadLetters = useCallback(async () => {
+  const loadLettersAndContacts = useCallback(async () => {
     if (!authUser || !profile) return;
     setLoading(true);
     try {
-      let list = await getUserLetters(authUser.uid);
-      if (list.length === 0) {
+      const [ loadedLetters, connData ] = await Promise.all([
+        getUserLetters(authUser.uid, { includeCoParented: true }),
+        getConnectionsAndGroups(authUser.uid),
+      ]);
+
+      let list = loadedLetters;
+      const hasOwnMainLetter = list.some(
+        (l) => !l.isChildLetter && l.ownerUid === authUser.uid
+      );
+      if (!hasOwnMainLetter) {
         const initialLetter = await saveLetter({
           ownerUid: authUser.uid,
+          coParentUids: [],
           recipientName: profile.displayName,
           isChildLetter: false,
           introText: '',
@@ -75,8 +97,30 @@ export function MyLettersPage() {
           printTheme: 'handwritten',
           wishes: [],
         });
-        list = [initialLetter];
+        list = [initialLetter, ...list];
       }
+
+      // Načteme chybějící profily vlastníků/spolurodičů u dětských dopisů
+      const profilesMap = { ...(connData.usersMap || {}) };
+      if (profile) profilesMap[authUser.uid] = profile;
+
+      const missingUids = new Set();
+      list.forEach((l) => {
+        if (l.ownerUid && !profilesMap[l.ownerUid]) missingUids.add(l.ownerUid);
+        (l.coParentUids || []).forEach((u) => {
+          if (u && !profilesMap[u]) missingUids.add(u);
+        });
+      });
+
+      await Promise.all(
+        Array.from(missingUids).map(async (uid) => {
+          const p = await getUserProfile(uid);
+          if (p) profilesMap[uid] = p;
+        })
+      );
+
+      setUserProfilesById(profilesMap);
+      setAcceptedContacts(connData.acceptedContacts || []);
       setLetters(list);
       const selected = list[0];
       setActiveLetterId(selected.id);
@@ -90,8 +134,8 @@ export function MyLettersPage() {
   }, [authUser, profile, notify]);
 
   useEffect(() => {
-    loadLetters();
-  }, [loadLetters]);
+    loadLettersAndContacts();
+  }, [loadLettersAndContacts]);
 
   useEffect(() => {
     autoResizeTextarea(introRef.current);
@@ -212,6 +256,7 @@ export function MyLettersPage() {
     if (!cleaned || !authUser) return;
     const created = await persistLetterImmediate({
       ownerUid: authUser.uid,
+      coParentUids: [],
       recipientName: cleaned,
       isChildLetter: true,
       introText: '',
@@ -252,6 +297,43 @@ export function MyLettersPage() {
     await persistLetterImmediate(updated);
   };
 
+  const openCoParentModal = async () => {
+    if (!draft || !authUser) return;
+    try {
+      const connData = await getConnectionsAndGroups(authUser.uid);
+      setAcceptedContacts(connData.acceptedContacts || []);
+      setUserProfilesById((prev) => ({ ...prev, ...(connData.usersMap || {}) }));
+    } catch {
+      // keep existing contacts
+    }
+    setSelectedCoParentUids(Array.isArray(draft.coParentUids) ? draft.coParentUids : []);
+    setCoParentModalOpen(true);
+  };
+
+  const toggleCoParentUid = (uid) => {
+    setSelectedCoParentUids((prev) =>
+      prev.includes(uid) ? prev.filter((id) => id !== uid) : [...prev, uid]
+    );
+  };
+
+  const handleSaveCoParents = async (e) => {
+    e.preventDefault();
+    if (!draft) return;
+    setSavingCoParents(true);
+    try {
+      const nextDraft = {
+        ...draft,
+        coParentUids: selectedCoParentUids,
+      };
+      const saved = await persistLetterImmediate(nextDraft);
+      if (saved) setDraft(saved);
+      setCoParentModalOpen(false);
+      notify('Společná správa dětského dopisu byla uložena.');
+    } finally {
+      setSavingCoParents(false);
+    }
+  };
+
   if (loading || !draft) {
     return (
       <div className="py-16 text-center text-slate-text-muted text-lg">
@@ -263,59 +345,48 @@ export function MyLettersPage() {
   const wishes = draft.wishes || [];
   const hasWrittenTextWithoutWishes =
     Boolean(draft.introText?.trim() || draft.outroText?.trim()) && wishes.length === 0;
+  const isOwnerOfDraft = draft.ownerUid === authUser?.uid;
+
+  // Jména spolurodičů u dětského dopisu
+  const coParentPartnerNames = [];
+  if (draft.isChildLetter) {
+    if (!isOwnerOfDraft && draft.ownerUid) {
+      const ownerName = userProfilesById[draft.ownerUid]?.displayName;
+      if (ownerName) coParentPartnerNames.push(ownerName);
+    }
+    (draft.coParentUids || []).forEach((uid) => {
+      if (uid !== authUser?.uid) {
+        const pName = userProfilesById[uid]?.displayName;
+        if (pName) coParentPartnerNames.push(pName);
+      }
+    });
+  }
 
   return (
-    <div className="space-y-6 animate-page-transition">
-      {/* Uvítací rozcestník po založení profilu */}
+    <div className="space-y-6 animate-page-transition min-w-0">
+      {/* Jemný, zavírací uvítací proužek po prvním přihlášení */}
       {showOnboardingBanner && (
-        <div className="max-w-[760px] mx-auto rounded-3xl bg-sheet border border-gold/40 shadow-soft p-6 relative">
+        <div className="max-w-[760px] mx-auto rounded-2xl bg-sheet border border-gold/45 shadow-card px-5 py-4 flex items-start justify-between gap-4 relative">
+          <p className="text-base text-slate-text leading-relaxed">
+            Vítej! Svůj dopis můžeš začít psát rovnou tady. Vánoční obrázek a kód pro pozvání
+            rodiny najdeš kdykoliv ve svém{' '}
+            <Link to="/profil" className="font-bold text-fir underline hover:text-fir-dark">
+              profilu
+            </Link>{' '}
+            nebo v sekci{' '}
+            <Link to="/sdileni" className="font-bold text-fir underline hover:text-fir-dark">
+              Sdílení a skupiny
+            </Link>
+            .
+          </p>
           <button
             type="button"
             onClick={dismissOnboardingBanner}
-            className="absolute top-4 right-4 p-2 rounded-xl text-slate-text-muted hover:text-slate-text hover:bg-paper-warm/50"
+            className="p-1.5 rounded-xl text-slate-text-muted hover:text-slate-text hover:bg-paper-warm/50 shrink-0"
             aria-label="Zavřít uvítání"
           >
             <X className="w-5 h-5" />
           </button>
-          <h2 className="text-xl font-bold text-slate-text">
-            Vítej, {profile?.displayName}. Kde chceš začít?
-          </h2>
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                dismissOnboardingBanner();
-                introRef.current?.focus();
-              }}
-              className="min-h-[48px] flex items-center gap-3.5 p-4 rounded-2xl bg-paper border border-paper-warm hover:border-fir text-left transition"
-            >
-              <div className="w-11 h-11 rounded-2xl bg-crimson-soft text-crimson flex items-center justify-center shrink-0">
-                <Gift className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="font-bold text-slate-text">Napsat dopis</div>
-                <div className="text-sm text-slate-text-muted">
-                  Rovnou piš na připravený papír níže.
-                </div>
-              </div>
-            </button>
-
-            <Link
-              to="/rodina"
-              onClick={dismissOnboardingBanner}
-              className="min-h-[48px] flex items-center gap-3.5 p-4 rounded-2xl bg-paper border border-paper-warm hover:border-fir text-left transition"
-            >
-              <div className="w-11 h-11 rounded-2xl bg-fir-soft text-fir flex items-center justify-center shrink-0">
-                <Users className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="font-bold text-slate-text">Komu koupit dárek</div>
-                <div className="text-sm text-slate-text-muted">
-                  Prohlédni si dopisy rodiny nebo pozvi blízké.
-                </div>
-              </div>
-            </Link>
-          </div>
         </div>
       )}
 
@@ -328,7 +399,7 @@ export function MyLettersPage() {
               key={l.id}
               type="button"
               onClick={() => selectLetter(l)}
-              className={`min-h-[48px] px-5 py-2.5 rounded-2xl text-base font-bold transition ${
+              className={`min-h-[48px] px-4 sm:px-5 py-2.5 rounded-2xl text-base font-bold transition ${
                 active
                   ? 'bg-fir text-white shadow-sm'
                   : 'bg-sheet text-slate-text border border-paper-warm hover:bg-paper-warm/50'
@@ -342,7 +413,7 @@ export function MyLettersPage() {
         <button
           type="button"
           onClick={() => setNewChildOpen(true)}
-          className="min-h-[48px] inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl border-2 border-dashed border-fir/45 text-fir bg-sheet/70 hover:bg-fir-soft text-base font-semibold transition"
+          className="min-h-[48px] inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-2xl border-2 border-dashed border-fir/45 text-fir bg-sheet/70 hover:bg-fir-soft text-base font-semibold transition"
         >
           <Plus className="w-5 h-5 shrink-0" />
           <span>Napsat dopis za dítě</span>
@@ -355,7 +426,7 @@ export function MyLettersPage() {
           onSubmit={handleCreateChildLetter}
           className="max-w-[760px] mx-auto rounded-3xl bg-sheet border border-fir/30 p-5 shadow-soft flex flex-col sm:flex-row items-stretch sm:items-end gap-3 animate-slide-up"
         >
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <label
               htmlFor="new-child-letter-name"
               className="block text-base font-bold text-slate-text mb-1.5"
@@ -398,17 +469,25 @@ export function MyLettersPage() {
       {/* Skutečný arch dopisního papíru (Tactile Stationery) */}
       <article
         key={draft.id}
-        className="stationery-sheet paper-grain-overlay max-w-[760px] mx-auto rounded-[28px] border border-[#E5DBC3] p-7 sm:p-12 relative overflow-hidden animate-page-transition"
+        className="stationery-sheet paper-grain-overlay max-w-[760px] mx-auto rounded-[28px] border border-[#E5DBC3] p-6 sm:p-12 relative overflow-hidden animate-page-transition"
       >
-        {/* Vnitřní jemná dvojitá zlatá linka odsazená 14px od okrajů */}
         <div className="stationery-inner-frame" aria-hidden="true" />
 
         <div className="relative z-10">
-          {/* Horní lišta uvnitř papíru: drobný motiv jmelí + stav uložení a tisk vpravo */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-5 border-b border-paper-warm/60">
-            <CompactMistletoeSvg className="w-28 h-8 -ml-2 shrink-0" />
+          {/* Horní lišta uvnitř papíru */}
+          <div className="flex flex-wrap items-center justify-between gap-2.5 pb-4 mb-5 border-b border-paper-warm/60">
+            <div className="flex flex-wrap items-center gap-2">
+              <CompactMistletoeSvg className="w-24 h-7 -ml-1 shrink-0" />
 
-            <div className="flex items-center gap-2.5 ml-auto">
+              {draft.isChildLetter && coParentPartnerNames.length > 0 && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-fir-soft text-fir text-xs font-bold">
+                  <Users className="w-3.5 h-3.5 shrink-0" />
+                  <span>Spravujete společně s: {coParentPartnerNames.join(', ')}</span>
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 ml-auto">
               <div
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-slate-text-muted"
                 aria-live="polite"
@@ -425,6 +504,17 @@ export function MyLettersPage() {
                   </>
                 )}
               </div>
+
+              {draft.isChildLetter && isOwnerOfDraft && (
+                <button
+                  type="button"
+                  onClick={openCoParentModal}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-paper/80 hover:bg-paper-warm/70 border border-paper-warm text-xs sm:text-sm font-semibold text-slate-text transition"
+                >
+                  <Users className="w-4 h-4 text-fir shrink-0" />
+                  <span>Spravovat společně</span>
+                </button>
+              )}
 
               <button
                 type="button"
@@ -478,24 +568,23 @@ export function MyLettersPage() {
                   return (
                     <li
                       key={wish.id}
-                      className={`gift-tag-card rounded-2xl px-4 py-3.5 sm:px-5 sm:py-4 flex items-start justify-between gap-4 ${
+                      className={`gift-tag-card rounded-2xl px-4 py-3.5 sm:px-5 sm:py-4 flex items-start justify-between gap-3 sm:gap-4 ${
                         isNewlyAdded
                           ? 'animate-wish-enter ring-2 ring-[#D4A359]/60 bg-[#FDF8EC]'
                           : ''
                       }`}
                     >
-                      <div className="flex items-start gap-3.5 min-w-0">
-                        {/* Zlatá dírka/kroužek papírové visačky */}
+                      <div className="flex items-start gap-3 min-w-0 flex-1">
                         <span
                           className="w-3.5 h-3.5 rounded-full border-2 border-[#C89646]/75 bg-[#FFFDF9] shadow-inner shrink-0 mt-2"
                           aria-hidden="true"
                         />
-                        <div className="min-w-0 space-y-1">
-                          <div className="font-bold text-slate-text text-lg leading-snug">
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="font-bold text-slate-text text-lg leading-snug break-words">
                             {wish.title}
                           </div>
                           {wish.note && (
-                            <p className="text-base text-slate-text-muted leading-relaxed">
+                            <p className="text-base text-slate-text-muted leading-relaxed break-words">
                               {wish.note}
                             </p>
                           )}
@@ -513,7 +602,6 @@ export function MyLettersPage() {
                         </div>
                       </div>
 
-                      {/* Ikonky tužky (upravit) a koše (smazat) */}
                       <div className="flex items-center gap-1 shrink-0">
                         <button
                           type="button"
@@ -543,7 +631,6 @@ export function MyLettersPage() {
               </ul>
             )}
 
-            {/* Připomínka, pokud je napsaný text dopisu, ale žádné přání */}
             {hasWrittenTextWithoutWishes && (
               <div className="rounded-2xl bg-gold-soft/85 border border-gold/50 p-4 flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-gold shrink-0 mt-0.5" />
@@ -554,7 +641,6 @@ export function MyLettersPage() {
               </div>
             )}
 
-            {/* Tlačítko pro přidání přání */}
             <button
               type="button"
               onClick={() => {
@@ -570,7 +656,7 @@ export function MyLettersPage() {
 
           {/* Spodní část: Závěrečný pozdrav a červená vosková pečeť */}
           <div className="pt-6 border-t border-paper-warm/70 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <label htmlFor="letter-outro-input" className="sr-only">
                 Závěrečný pozdrav a podpis
               </label>
@@ -585,7 +671,6 @@ export function MyLettersPage() {
               />
             </div>
 
-            {/* Červená vosková pečeť s efektem při uložení */}
             <div
               key={sealPulseKey}
               title="Zapečetěno pro Ježíška"
@@ -598,8 +683,7 @@ export function MyLettersPage() {
             </div>
           </div>
 
-          {/* Diskrétní smazání dětského dopisu dole */}
-          {draft.isChildLetter && (
+          {draft.isChildLetter && isOwnerOfDraft && (
             <div className="mt-6 pt-4 border-t border-paper-warm/50 flex justify-end">
               <button
                 type="button"
@@ -613,6 +697,116 @@ export function MyLettersPage() {
           )}
         </div>
       </article>
+
+      {/* Modální okno pro společnou správu dětského dopisu druhým rodičem */}
+      {coParentModalOpen &&
+        createPortal(
+          <div
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget && !savingCoParents) {
+                setCoParentModalOpen(false);
+              }
+            }}
+            style={{ backgroundColor: 'rgba(24, 26, 25, 0.68)', zIndex: 9999 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in no-print"
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              style={{ backgroundColor: '#FFFDF9' }}
+              className="w-full max-w-md rounded-2xl bg-[#FFFDF9] border border-[#E5DEC9] shadow-2xl p-6 animate-slide-up space-y-5"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="font-fairytale font-bold text-2xl sm:text-3xl text-slate-text leading-tight">
+                  Spravovat dopis společně
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setCoParentModalOpen(false)}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-text-muted hover:text-slate-text hover:bg-[#F6F1E7] transition"
+                  aria-label="Zavřít"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <p className="text-sm sm:text-base text-slate-text-muted leading-relaxed">
+                Vyber druhého rodiče, který bude moci dopis pro{' '}
+                <strong className="text-slate-text">{draft.recipientName}</strong> také upravovat,
+                přidávat do něj přání a tisknout ho. Ani jeden z vás neuvidí, kdo z rodiny dárky
+                zamluvil.
+              </p>
+
+              <form onSubmit={handleSaveCoParents} className="space-y-4">
+                {acceptedContacts.length === 0 ? (
+                  <div className="p-4 rounded-xl bg-[#F6F1E7] border border-[#E5DEC9] text-sm text-slate-text-muted space-y-2">
+                    <p>Zatím nemáš žádného propojeného blízkého.</p>
+                    <Link
+                      to="/sdileni"
+                      onClick={() => setCoParentModalOpen(false)}
+                      className="inline-block font-bold text-fir underline"
+                    >
+                      Přejít do Sdílení a skupiny
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {acceptedContacts.map(({ uid, user }) => {
+                      const checked = selectedCoParentUids.includes(uid);
+                      return (
+                        <label
+                          key={uid}
+                          style={{ backgroundColor: checked ? '#E3EFEA' : '#F6F1E7' }}
+                          className={`min-h-[52px] flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition ${
+                            checked
+                              ? 'border-fir bg-[#E3EFEA]'
+                              : 'border-[#E5DEC9] bg-[#F6F1E7] hover:bg-[#EAE1D0]/50'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleCoParentUid(uid)}
+                            className="w-5 h-5 accent-[#234B3E] rounded cursor-pointer shrink-0"
+                          />
+                          <Avatar avatarId={user.avatarId} avatarBg={user.avatarBg} size="xs" />
+                          <div className="min-w-0 flex-1">
+                            <div className="font-bold text-sm text-slate-text truncate">
+                              {user.displayName}
+                            </div>
+                            <div className="text-xs text-slate-text-muted truncate">
+                              {user.displayName}#{user.tag}
+                            </div>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div className="flex flex-col-reverse sm:flex-row justify-end gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setCoParentModalOpen(false)}
+                    disabled={savingCoParents}
+                    className="min-h-[48px] px-5 py-2.5 rounded-xl border border-[#E5DEC9] bg-[#F6F1E7] text-base font-semibold text-slate-text hover:bg-[#EAE1D0] transition"
+                  >
+                    Zrušit
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingCoParents}
+                    className="min-h-[48px] inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-fir hover:bg-fir-dark text-white text-base font-bold shadow-sm transition disabled:opacity-60"
+                  >
+                    <Check className="w-5 h-5 shrink-0" />
+                    <span>{savingCoParents ? 'Ukládám...' : 'Uložit'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
 
       {/* Modál pro přidání / úpravu přání */}
       <WishFormModal

@@ -101,6 +101,7 @@ export function createInitialDemoState() {
       'letter-dana-julinka': {
         id: 'letter-dana-julinka',
         ownerUid: 'demo-dana',
+        coParentUids: ['demo-jirka'],
         recipientName: 'Julinka',
         isChildLetter: true,
         introText:
@@ -209,12 +210,13 @@ export function createInitialDemoState() {
         id: 'letter-dana-julinka_wish-jul2',
         letterId: 'letter-dana-julinka',
         letterOwnerUid: 'demo-dana',
+        letterCoParentUids: ['demo-jirka'],
         wishId: 'wish-jul2',
         wishTitleSnapshot: 'Kreslící sada pastelkových fixů',
         wishUrlSnapshot: '',
         wishNoteSnapshot: 'Alespoň 24 barev v kufříku',
         recipientNameSnapshot: 'Julinka',
-        claimedByUid: 'demo-jirka',
+        claimedByUid: 'demo-marie',
         isBought: false,
         orphanStatus: 'active',
         createdAt: now - 3600000,
