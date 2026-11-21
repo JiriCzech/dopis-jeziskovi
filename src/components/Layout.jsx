@@ -1,0 +1,504 @@
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
+import {
+  Check,
+  FileHeart,
+  Gift,
+  RefreshCw,
+  ShoppingBag,
+  Star,
+  TreePine,
+  Undo2,
+  UserCircle,
+  UserPlus,
+  Users,
+  X,
+} from 'lucide-react';
+import { Avatar, ChristmasTreeLogoSvg, FairytaleOrnamentSvg } from '../assets/avatars';
+import { useAuth } from '../hooks/useAuth';
+import {
+  findUserByTag,
+  getDemoState,
+  joinGroupByInviteCode,
+  sendConnectionRequest,
+} from '../lib/db';
+
+const BG_SNOWFLAKES = [
+  { left: '3%', duration: '24s', delay: '0s', size: '16px', opacity: 0.34, sway: '18px' },
+  { left: '8%', duration: '29s', delay: '5s', size: '12px', opacity: 0.24, sway: '-14px' },
+  { left: '14%', duration: '26s', delay: '2s', size: '18px', opacity: 0.3, sway: '22px' },
+  { left: '19%', duration: '32s', delay: '9s', size: '13px', opacity: 0.22, sway: '-16px' },
+  { left: '25%', duration: '22s', delay: '1s', size: '19px', opacity: 0.32, sway: '15px' },
+  { left: '31%', duration: '28s', delay: '6s', size: '14px', opacity: 0.25, sway: '-20px' },
+  { left: '37%', duration: '25s', delay: '3.5s', size: '15px', opacity: 0.28, sway: '16px' },
+  { left: '43%', duration: '31s', delay: '11s', size: '12px', opacity: 0.22, sway: '-12px' },
+  { left: '49%', duration: '27s', delay: '0.5s', size: '18px', opacity: 0.32, sway: '20px' },
+  { left: '54%', duration: '23s', delay: '7.5s', size: '14px', opacity: 0.26, sway: '-18px' },
+  { left: '60%', duration: '29s', delay: '4s', size: '17px', opacity: 0.3, sway: '15px' },
+  { left: '66%', duration: '24s', delay: '10s', size: '13px', opacity: 0.24, sway: '-15px' },
+  { left: '72%', duration: '27s', delay: '2.5s', size: '20px', opacity: 0.34, sway: '22px' },
+  { left: '77%', duration: '33s', delay: '8s', size: '12px', opacity: 0.22, sway: '-14px' },
+  { left: '82%', duration: '25s', delay: '1.5s', size: '16px', opacity: 0.29, sway: '17px' },
+  { left: '87%', duration: '30s', delay: '6.5s', size: '14px', opacity: 0.25, sway: '-19px' },
+  { left: '92%', duration: '26s', delay: '3s', size: '18px', opacity: 0.31, sway: '14px' },
+  { left: '96%', duration: '28s', delay: '9.5s', size: '13px', opacity: 0.24, sway: '-12px' },
+  { left: '11%', duration: '34s', delay: '13s', size: '15px', opacity: 0.23, sway: '16px' },
+  { left: '63%', duration: '31s', delay: '14s', size: '15px', opacity: 0.25, sway: '-16px' },
+];
+
+const BG_BOKEH_LIGHTS = [
+  { left: '8%', top: '14%', size: '180px', duration: '19s', delay: '0s' },
+  { left: '78%', top: '10%', size: '220px', duration: '23s', delay: '3s' },
+  { left: '22%', top: '48%', size: '200px', duration: '21s', delay: '5s' },
+  { left: '84%', top: '54%', size: '190px', duration: '25s', delay: '2s' },
+  { left: '48%', top: '76%', size: '240px', duration: '22s', delay: '7s' },
+  { left: '12%', top: '82%', size: '170px', duration: '20s', delay: '4s' },
+  { left: '68%', top: '32%', size: '160px', duration: '18s', delay: '6s' },
+];
+
+function getChristmasCountdownText() {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const month = today.getMonth();
+  const date = today.getDate();
+
+  if (month === 11 && date === 24) {
+    return 'Krásný Štědrý den';
+  }
+  if (month === 11 && (date === 25 || date === 26)) {
+    return 'Krásné vánoční svátky';
+  }
+
+  let targetYear = today.getFullYear();
+  if (month === 11 && date > 26) {
+    targetYear += 1;
+  }
+  const christmasEve = new Date(targetYear, 11, 24);
+  const diffDays = Math.round((christmasEve - today) / 86400000);
+
+  if (diffDays === 1) return 'Do Štědrého dne zbývá 1 den';
+  if (diffDays >= 2 && diffDays <= 4) return `Do Štědrého dne zbývají ${diffDays} dny`;
+  return `Do Štědrého dne zbývá ${diffDays} dní`;
+}
+
+export function Layout({ children }) {
+  const {
+    authUser,
+    profile,
+    demoMode,
+    pendingRequestsCount,
+    unboughtShoppingCount,
+    pendingInviteCode,
+    clearPendingInviteCode,
+    toast,
+    dismissToast,
+    undoToast,
+    dismissUndoToast,
+    notify,
+    refreshPendingCount,
+    changeDemoPersona,
+    resetDemo,
+  } = useAuth();
+  const navigate = useNavigate();
+  const [joiningInvite, setJoiningInvite] = useState(false);
+
+  const demoUsers = demoMode ? Object.values(getDemoState().users || {}) : [];
+  const isGroupInvite = /^SKUPINA-\d{3,6}$/i.test(pendingInviteCode || '');
+  const countdownText = getChristmasCountdownText();
+
+  const handleConfirmPendingInvite = async () => {
+    if (!authUser || !pendingInviteCode) return;
+    setJoiningInvite(true);
+    try {
+      if (isGroupInvite) {
+        const joined = await joinGroupByInviteCode(authUser.uid, pendingInviteCode);
+        notify(`Připojil/a ses do skupiny „${joined.name}“.`);
+      } else {
+        const found = await findUserByTag(pendingInviteCode, authUser.uid);
+        await sendConnectionRequest(authUser.uid, found.uid);
+        notify(`Pozvánka byla odeslána pro ${found.displayName}.`);
+      }
+      clearPendingInviteCode();
+      await refreshPendingCount();
+      navigate('/rodina');
+    } catch (err) {
+      notify(err.message || 'Pozvánku se nepodařilo použít.', 'error');
+      clearPendingInviteCode();
+      navigate('/rodina');
+    } finally {
+      setJoiningInvite(false);
+    }
+  };
+
+  const navLinkClass = ({ isActive }) =>
+    `min-h-[48px] whitespace-nowrap inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl text-[15px] lg:text-base font-semibold transition relative ${
+      isActive
+        ? 'bg-fir text-white shadow-sm'
+        : 'text-slate-text hover:bg-paper-warm/70'
+    }`;
+
+  return (
+    <div className="min-h-screen flex flex-col pb-24 md:pb-12 relative">
+      {/* Jemná textura ručního papíru, bokeh světýlka a 20 pomalu padajících vloček */}
+      <div
+        className="no-print pointer-events-none fixed inset-0 overflow-hidden z-0 paper-grain-overlay"
+        aria-hidden="true"
+      >
+        {BG_BOKEH_LIGHTS.map((light, i) => (
+          <span
+            key={`bokeh-${i}`}
+            className="bg-bokeh"
+            style={{
+              left: light.left,
+              top: light.top,
+              width: light.size,
+              height: light.size,
+              '--duration': light.duration,
+              '--delay': light.delay,
+            }}
+          />
+        ))}
+
+        {BG_SNOWFLAKES.map((flake, i) => (
+          <span
+            key={`flake-${i}`}
+            className="bg-snowflake"
+            style={{
+              left: flake.left,
+              fontSize: flake.size,
+              '--duration': flake.duration,
+              '--delay': flake.delay,
+              '--flake-opacity': flake.opacity,
+              '--sway': flake.sway,
+            }}
+          >
+            ❄
+          </span>
+        ))}
+      </div>
+
+      {/* Ukázkový přepínač osob (v demo režimu) */}
+      {demoMode && (
+        <div className="demo-banner no-print relative z-20 bg-gold-soft border-b border-gold/30 px-4 py-2 text-sm text-slate-text">
+          <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-semibold text-slate-text">
+                Ukázka (přepnout osobu):
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {demoUsers.map((u) => (
+                  <button
+                    key={u.uid}
+                    type="button"
+                    onClick={() => changeDemoPersona(u.uid)}
+                    className={`px-3 py-1 rounded-full border text-sm font-semibold transition ${
+                      u.uid === profile?.uid
+                        ? 'bg-fir text-white border-fir'
+                        : 'bg-sheet text-slate-text border-paper-warm hover:bg-paper'
+                    }`}
+                  >
+                    {u.displayName}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={resetDemo}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-fir hover:underline"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Obnovit ukázku</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Horní navigace (z-20, aby ji modální okna se z-[100] vždy plně překryla) */}
+      <header className="no-print relative z-20 bg-sheet/95 backdrop-blur-md border-b border-paper-warm sticky top-0">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 min-h-[70px] py-2 flex items-center justify-between gap-3">
+          <NavLink to="/" className="flex items-center gap-2.5 group shrink-0">
+            <ChristmasTreeLogoSvg className="w-11 h-11 shrink-0 group-hover:scale-105 transition" />
+            <div>
+              <div className="font-fairytale font-bold text-slate-text text-xl sm:text-2xl leading-none whitespace-nowrap">
+                Dopis Ježíškovi
+              </div>
+              <div className="text-xs text-slate-text-muted flex items-center gap-1 whitespace-nowrap mt-0.5">
+                <Star className="w-3 h-3 text-gold fill-gold/80 shrink-0" />
+                <span>{countdownText}</span>
+              </div>
+            </div>
+          </NavLink>
+
+          {/* 3 hlavní záložky na jeden řádek */}
+          <nav className="hidden md:flex items-center gap-1.5" aria-label="Hlavní navigace">
+            <NavLink to="/" end className={navLinkClass}>
+              <FileHeart className="w-4 h-4 shrink-0" />
+              <span>Napsat dopis</span>
+            </NavLink>
+
+            <NavLink to="/rodina" className={navLinkClass}>
+              <Gift className="w-4 h-4 shrink-0" />
+              <span>Komu koupit dárek</span>
+              {pendingRequestsCount > 0 && (
+                <span className="ml-0.5 px-2 py-0.5 text-xs font-bold rounded-full bg-crimson text-white leading-none">
+                  {pendingRequestsCount}
+                </span>
+              )}
+            </NavLink>
+
+            <NavLink to="/nakupni-seznam" className={navLinkClass}>
+              <ShoppingBag className="w-4 h-4 shrink-0" />
+              <span>Můj nákupní seznam</span>
+              {unboughtShoppingCount > 0 && (
+                <span className="ml-0.5 px-2 py-0.5 text-xs font-bold rounded-full bg-crimson text-white leading-none">
+                  ({unboughtShoppingCount})
+                </span>
+              )}
+            </NavLink>
+          </nav>
+
+          {/* Odkaz do profilu */}
+          {profile && (
+            <NavLink
+              to="/profil"
+              title="Můj profil"
+              className="min-h-[48px] inline-flex items-center gap-2 px-2.5 py-1.5 rounded-2xl hover:bg-paper-warm/50 transition shrink-0"
+            >
+              <Avatar avatarId={profile.avatarId} avatarBg={profile.avatarBg} size="sm" />
+              <span className="hidden lg:inline text-base font-semibold text-slate-text whitespace-nowrap">
+                {profile.displayName}
+              </span>
+            </NavLink>
+          )}
+        </div>
+      </header>
+
+      {/* Hlavní obsah */}
+      <main className="relative z-10 flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10">
+        {children}
+      </main>
+
+      {/* Útulná vánoční patička aplikace */}
+      <footer className="no-print relative z-10 max-w-5xl w-full mx-auto px-4 sm:px-6 pt-4 pb-8 text-center">
+        <div className="border-t border-paper-warm/80 pt-6 flex flex-col items-center gap-2">
+          <FairytaleOrnamentSvg className="w-40 h-7 opacity-75" />
+          <p className="font-fairytale italic text-lg sm:text-xl text-slate-text-muted">
+            Krásné a klidné české Vánoce plné překvapení
+          </p>
+        </div>
+      </footer>
+
+      {/* Mobilní spodní navigace */}
+      <nav
+        className="no-print md:hidden fixed bottom-0 inset-x-0 z-20 bg-sheet/95 backdrop-blur-md border-t border-paper-warm px-2 py-2 flex items-center justify-around shadow-soft"
+        aria-label="Mobilní navigace"
+      >
+        <NavLink
+          to="/"
+          end
+          className={({ isActive }) =>
+            `min-h-[48px] flex flex-col items-center justify-center gap-1 px-3 py-1 rounded-xl text-xs font-semibold whitespace-nowrap ${
+              isActive ? 'text-fir bg-fir-soft/70' : 'text-slate-text-muted'
+            }`
+          }
+        >
+          <FileHeart className="w-5 h-5" />
+          <span>Napsat dopis</span>
+        </NavLink>
+
+        <NavLink
+          to="/rodina"
+          className={({ isActive }) =>
+            `min-h-[48px] flex flex-col items-center justify-center gap-1 px-3 py-1 rounded-xl text-xs font-semibold relative whitespace-nowrap ${
+              isActive ? 'text-fir bg-fir-soft/70' : 'text-slate-text-muted'
+            }`
+          }
+        >
+          <Gift className="w-5 h-5" />
+          <span>Komu koupit</span>
+          {pendingRequestsCount > 0 && (
+            <span className="absolute top-0.5 right-2 px-1.5 min-w-[18px] h-[18px] text-[11px] font-bold rounded-full bg-crimson text-white flex items-center justify-center">
+              {pendingRequestsCount}
+            </span>
+          )}
+        </NavLink>
+
+        <NavLink
+          to="/nakupni-seznam"
+          className={({ isActive }) =>
+            `min-h-[48px] flex flex-col items-center justify-center gap-1 px-3 py-1 rounded-xl text-xs font-semibold relative whitespace-nowrap ${
+              isActive ? 'text-fir bg-fir-soft/70' : 'text-slate-text-muted'
+            }`
+          }
+        >
+          <ShoppingBag className="w-5 h-5" />
+          <span>
+            Nákupní seznam{unboughtShoppingCount > 0 ? ` (${unboughtShoppingCount})` : ''}
+          </span>
+        </NavLink>
+
+        <NavLink
+          to="/profil"
+          className={({ isActive }) =>
+            `min-h-[48px] flex flex-col items-center justify-center gap-1 px-3 py-1 rounded-xl text-xs font-semibold whitespace-nowrap ${
+              isActive ? 'text-fir bg-fir-soft/70' : 'text-slate-text-muted'
+            }`
+          }
+        >
+          <UserCircle className="w-5 h-5" />
+          <span>Profil</span>
+        </NavLink>
+      </nav>
+
+      {/* Pojistka proti ukliknutí: 8sekundová lišta dole */}
+      {undoToast && (
+        <div className="no-print fixed bottom-24 md:bottom-8 inset-x-4 z-50 flex justify-center animate-slide-up">
+          <div className="w-full max-w-xl rounded-2xl bg-slate-text text-sheet px-5 py-4 shadow-paper border border-gold/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3 text-base sm:text-lg font-semibold">
+              <Gift className="w-5 h-5 text-gold shrink-0" />
+              <span>{undoToast.message || 'Přidáno do tvého nákupního seznamu'}</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={async () => {
+                  const fn = undoToast.onUndo;
+                  dismissUndoToast();
+                  if (fn) await fn();
+                }}
+                className="min-h-[48px] inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gold hover:bg-gold/90 text-slate-text font-bold text-base shadow-sm transition"
+              >
+                <Undo2 className="w-5 h-5" />
+                <span>Vrátit zpět</span>
+              </button>
+              <button
+                type="button"
+                onClick={dismissUndoToast}
+                className="p-2 text-sheet/70 hover:text-sheet rounded-lg"
+                aria-label="Zavřít"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Běžná notifikace */}
+      {toast && !undoToast && (
+        <div className="no-print fixed bottom-24 md:bottom-6 right-4 left-4 sm:left-auto sm:max-w-md z-50 animate-slide-up">
+          <div
+            className={`rounded-2xl px-5 py-3.5 shadow-soft border flex items-center justify-between gap-3 text-base font-semibold ${
+              toast.type === 'error'
+                ? 'bg-crimson-soft border-crimson/30 text-crimson'
+                : 'bg-fir text-white border-fir-dark'
+            }`}
+          >
+            <span>{toast.message}</span>
+            <button
+              type="button"
+              onClick={dismissToast}
+              className="opacity-80 hover:opacity-100 p-1"
+              aria-label="Zavřít oznámení"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Okamžité připojení jedním klikem z odkazu (?invite=...) */}
+      {authUser &&
+        profile &&
+        pendingInviteCode &&
+        createPortal(
+          <div
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget && !joiningInvite) {
+                clearPendingInviteCode();
+              }
+            }}
+            style={{ backgroundColor: 'rgba(24, 26, 25, 0.68)', zIndex: 9999 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in no-print"
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              style={{ backgroundColor: '#FFFDF9' }}
+              className="w-full max-w-md rounded-2xl bg-[#FFFDF9] border border-[#E5DEC9] shadow-2xl p-6 animate-slide-up space-y-5"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-11 h-11 rounded-2xl bg-fir-soft text-fir flex items-center justify-center shrink-0">
+                    {isGroupInvite ? (
+                      <Users className="w-6 h-6" />
+                    ) : (
+                      <UserPlus className="w-6 h-6" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-fairytale font-bold text-2xl sm:text-3xl text-slate-text leading-tight">
+                      {isGroupInvite ? 'Pozvánka do skupiny' : 'Pozvánka k propojení'}
+                    </h3>
+                    <p className="mt-1.5 text-base text-slate-text-muted leading-relaxed">
+                      {isGroupInvite ? (
+                        <>
+                          Otevřel/a jsi zvací odkaz do skupiny{' '}
+                          <strong className="text-fir">{pendingInviteCode.toUpperCase()}</strong>.
+                          Chceš se rovnou připojit?
+                        </>
+                      ) : (
+                        <>
+                          Otevřel/a jsi zvací odkaz pro{' '}
+                          <strong className="text-fir">{pendingInviteCode}</strong>. Chceš odeslat
+                          žádost o propojení?
+                        </>
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={clearPendingInviteCode}
+                  disabled={joiningInvite}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-text-muted hover:text-slate-text hover:bg-[#F6F1E7] transition"
+                  aria-label="Zavřít"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={clearPendingInviteCode}
+                  disabled={joiningInvite}
+                  className="min-h-[48px] px-5 py-2.5 rounded-xl border border-[#E5DEC9] bg-[#F6F1E7] text-base font-semibold text-slate-text hover:bg-[#EAE1D0] transition"
+                >
+                  Teď ne
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmPendingInvite}
+                  disabled={joiningInvite}
+                  className="min-h-[48px] inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-fir hover:bg-fir-dark text-white text-base font-bold shadow-sm transition disabled:opacity-60"
+                >
+                  <Check className="w-5 h-5 shrink-0" />
+                  <span>
+                    {joiningInvite
+                      ? 'Připojuji...'
+                      : isGroupInvite
+                        ? 'Připojit se do skupiny'
+                        : 'Odeslat pozvánku'}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+    </div>
+  );
+}

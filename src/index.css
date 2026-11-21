@@ -1,0 +1,248 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-size: 17px;
+    line-height: 1.6;
+    background-color: #EFE8D8;
+    color: #242826;
+  }
+
+  @media (min-width: 640px) {
+    html {
+      font-size: 18px;
+    }
+  }
+
+  body {
+    min-height: 100vh;
+    color: #242826;
+    background-color: #EFE8D8;
+    background-image: radial-gradient(circle at 50% 25%, #FAF6EE 0%, #EFE8D8 100%);
+    background-attachment: fixed;
+  }
+}
+
+/* Jemná textura ručního papíru (SVG fractalNoise, opacity ~0.025) */
+.paper-grain-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.026'/%3E%3C/svg%3E");
+}
+
+/* Dopisní arch jako skutečné papírnictví (Tactile Stationery) */
+.stationery-sheet {
+  background-color: #FFFDF9;
+  box-shadow:
+    0 12px 32px -8px rgba(44, 48, 46, 0.08),
+    0 2px 6px rgba(44, 48, 46, 0.04);
+}
+
+.stationery-inner-frame {
+  position: absolute;
+  inset: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(200, 150, 70, 0.28);
+  outline: 1px solid rgba(200, 150, 70, 0.14);
+  outline-offset: -4px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Papírová visačka na dárky uvnitř dopisu */
+.gift-tag-card {
+  background-color: #FAF5EB;
+  border: 1px solid #E5DEC9;
+  box-shadow: 0 2px 6px -1px rgba(44, 48, 46, 0.04);
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease, background-color 300ms ease;
+}
+
+.gift-tag-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px -4px rgba(44, 48, 46, 0.08);
+  border-color: rgba(200, 150, 70, 0.55);
+}
+
+/* Historická přírodní papírová dárková jmenovka (Kraft Gift Tag) pro „Komu koupit dárek“ */
+.kraft-gift-tag {
+  background-color: #D8C2AC;
+  background-image:
+    radial-gradient(circle at 50% 42%, rgba(247, 236, 220, 0.55) 0%, rgba(204, 178, 150, 0.45) 100%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+  clip-path: polygon(28px 0%, calc(100% - 28px) 0%, 100% 28px, 100% 100%, 0% 100%, 0% 28px);
+  border-radius: 0 0 18px 18px;
+  box-shadow:
+    0 12px 26px -8px rgba(52, 38, 24, 0.22),
+    0 3px 8px -2px rgba(52, 38, 24, 0.12);
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease;
+}
+
+.kraft-gift-tag-wrapper:hover .kraft-gift-tag {
+  transform: translateY(-5px) rotate(0.4deg);
+  box-shadow:
+    0 18px 34px -8px rgba(52, 38, 24, 0.28),
+    0 4px 10px -2px rgba(52, 38, 24, 0.14);
+}
+
+/* Pomalé padání sněhových vloček s jemným pohupováním */
+@keyframes bgSnowfall {
+  0% {
+    transform: translate3d(0, -6vh, 0) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: var(--flake-opacity, 0.35);
+  }
+  50% {
+    transform: translate3d(var(--sway, 18px), 48vh, 0) rotate(90deg);
+  }
+  85% {
+    opacity: var(--flake-opacity, 0.35);
+  }
+  100% {
+    transform: translate3d(0, 103vh, 0) rotate(180deg);
+    opacity: 0;
+  }
+}
+
+.bg-snowflake {
+  position: fixed;
+  top: -24px;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+  color: #FFFDF9;
+  text-shadow: 0 1px 4px rgba(200, 150, 70, 0.32);
+  animation: bgSnowfall var(--duration, 24s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+/* Teplá rozostřená světýlka (bokeh) v pozadí */
+@keyframes bokehFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(14px, -18px, 0) scale(1.08);
+  }
+}
+
+.bg-bokeh {
+  position: fixed;
+  border-radius: 9999px;
+  background-color: #E6B86A;
+  opacity: 0.12;
+  filter: blur(42px);
+  pointer-events: none;
+  z-index: 0;
+  animation: bokehFloat var(--duration, 18s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+/* Kyvadlový pohyb zlaté hvězdičky na smrkové větvičce */
+@keyframes gentle-swing {
+  0%,
+  100% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(4deg);
+  }
+}
+
+.hanging-star-swing {
+  transform-origin: 88px 42px;
+  animation: gentle-swing 4.5s ease-in-out infinite;
+}
+
+/* Efekt zatlačení a zlatého odlesku voskové pečeti při uložení */
+@keyframes waxSealPress {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  35% {
+    transform: scale(0.94);
+    filter: brightness(1.18) drop-shadow(0 0 8px rgba(212, 163, 89, 0.55));
+  }
+  70% {
+    transform: scale(1.03);
+    filter: brightness(1.08);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+.wax-seal-press {
+  animation: waxSealPress 650ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Plynulé přechody obrazovek a dopisů (220ms ease-out) */
+@keyframes pageFadeSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in,
+.animate-page-transition {
+  animation: pageFadeSlide 220ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Animace nově přidaného přání */
+@keyframes wishEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-wish-enter {
+  animation: wishEnter 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Výstupní animace při kliknutí na „Tohle koupím já“ */
+@keyframes wishClaimExit {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    background-color: #FAF5EB;
+  }
+  40% {
+    background-color: #F9F0DD;
+    border-color: #C89646;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.95) translateY(-4px);
+    background-color: #F9F0DD;
+  }
+}
+
+.animate-wish-claim-exit {
+  animation: wishClaimExit 270ms ease-out forwards;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-snowflake,
+  .bg-bokeh,
+  .hanging-star-swing,
+  .wax-seal-press {
+    animation: none;
+  }
+}

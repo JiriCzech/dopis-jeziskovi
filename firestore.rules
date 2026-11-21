@@ -1,0 +1,454 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // This security rules file assumes the following data structures for
+    // the "Dopis Ježíškovi" Christmas wishlist application:
+    //
+    // 1. Collection: users
+    //    Document ID: {uid} (Firebase Auth UID)
+    //    Privacy note: Contains only non-sensitive profile card fields (no email/phone/PII).
+    //    Fields:
+    //      - uid: string (required, immutable, must equal {uid} and request.auth.uid)
+    //      - displayName: string (required, 1..60 chars, non-whitespace)
+    //      - tag: string (required, exactly 4 ASCII digits e.g. "4821")
+    //      - avatarId: string (required, 1..50 chars)
+    //      - avatarBg: string (required, 1..50 chars)
+    //      - createdAt: timestamp or non-negative number (required, immutable)
+    //
+    // 2. Collection: letters
+    //    Document ID: {letterId}
+    //    Fields:
+    //      - ownerUid: string (required, immutable, must equal request.auth.uid on create)
+    //      - recipientName: string (required, 1..60 chars, non-whitespace)
+    //      - isChildLetter: bool (required)
+    //      - introText: string (required, 0..5000 chars)
+    //      - outroText: string (required, 0..2000 chars)
+    //      - printTheme: string (required, enum: ['handwritten', 'fairytale', 'minimal'])
+    //      - wishes: list of maps (required, max 20 items; each item has exact keys:
+    //          id (string 1..128), title (string 1..150), url (string 0..1000, empty or http/https),
+    //          note (string 0..500), createdAt (timestamp or non-negative number))
+    //      - updatedAt: timestamp or non-negative number (required)
+    //      - createdAt: timestamp or non-negative number (optional; immutable once set)
+    //
+    // 3. Collection: claims
+    //    Document ID: {letterId}_{wishId} (deterministic to guarantee one claim per wish)
+    //    Security invariant: Letter owners MUST NEVER read or write claims on their own letters.
+    //    Fields:
+    //      - letterId: string (required, immutable, 1..128 chars)
+    //      - letterOwnerUid: string (required, immutable, 1..128 chars, verified against letters/{letterId} on create)
+    //      - wishId: string (required, immutable, 1..128 chars)
+    //      - wishTitleSnapshot: string (required, 1..150 chars)
+    //      - wishUrlSnapshot: string (required, 0..1000 chars, empty or http/https)
+    //      - wishNoteSnapshot: string (required, 0..500 chars)
+    //      - recipientNameSnapshot: string (required, 1..60 chars)
+    //      - claimedByUid: string (required, immutable, must equal request.auth.uid on create)
+    //      - isBought: bool (required)
+    //      - orphanStatus: string (required, enum: ['active', 'wish_deleted', 'account_deleted'])
+    //      - createdAt: timestamp or non-negative number (required, immutable)
+    //
+    // 4. Collection: connections
+    //    Document ID: {minUid}_{maxUid} (deterministic lexicographical pair)
+    //    Fields:
+    //      - users: list of 2 distinct UID strings (required, immutable)
+    //      - status: string (required, enum: ['pending', 'accepted']; create='pending', update='pending'->'accepted' by non-requester)
+    //      - requestedBy: string (required, immutable, must be in users and equal request.auth.uid on create)
+    //      - createdAt: timestamp or non-negative number (required, immutable)
+    //
+    // 5. Collection: groups
+    //    Document ID: {groupId}
+    //    Fields:
+    //      - name: string (required, 1..60 chars, non-whitespace)
+    //      - createdBy: string (required, immutable, must equal request.auth.uid on create)
+    //      - memberUids: list of unique UID strings (required, 1..50 items, must include createdBy on create)
+    //      - createdAt: timestamp or non-negative number (required, immutable)
+    //      - icon: string (optional, enum: ['home', 'friends', 'tree', 'work', 'heart'])
+    //      - inviteCode: string (optional, matches '^[A-Z0-9-]{4,24}$' e.g. 'SKUPINA-8412')
+    //      - showChildLetters: bool (optional)
+    //
+    // 6. Collection: privateIdeas
+    //    Document ID: {ideaId}
+    //    Fields:
+    //      - ownerUid: string (required, immutable, must equal request.auth.uid on create)
+    //      - targetUid: string or null (optional/nullable, max 128 chars)
+    //      - targetName: string (required, 1..60 chars, non-whitespace)
+    //      - title: string (required, 1..120 chars, non-whitespace)
+    //      - url: string (required, 0..1000 chars, empty or http/https)
+    //      - note: string (required, 0..500 chars)
+    //      - isBought: bool (required)
+    //      - createdAt: timestamp or non-negative number (required, immutable)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function uidUnchanged() {
+      return !('uid' in request.resource.data) ||
+        request.resource.data.uid == request.auth.uid;
+    }
+
+    function uidNotModified() {
+      return !('uid' in request.resource.data) ||
+        request.resource.data.uid == resource.data.uid;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    function isValidUid(val) {
+      return val is string && val.size() >= 1 && val.size() <= 128;
+    }
+
+    function isValidNonEmptyString(val, maxLen) {
+      return val is string &&
+        val.size() >= 1 &&
+        val.size() <= maxLen &&
+        val.trim().size() >= 1;
+    }
+
+    function isValidBoundedString(val, maxLen) {
+      return val is string && val.size() <= maxLen;
+    }
+
+    // Accepts Firestore Timestamp or non-negative epoch number (e.g. Date.now())
+    function isValidTime(val) {
+      return val is timestamp ||
+        (val is int && val >= 0) ||
+        (val is float && val >= 0.0 && val <= 10000000000000000.0);
+    }
+
+    // Allows empty string or http(s) URL (blocks javascript:/data:/vbscript: XSS schemes)
+    function isValidOptionalUrl(url) {
+      return url is string &&
+        url.size() <= 1000 &&
+        (url == '' || url.matches('^[Hh][Tt][Tt][Pp][Ss]?://.*'));
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data, uid) {
+      return hasRequiredFields(['uid', 'displayName', 'tag', 'avatarId', 'avatarBg', 'createdAt']) &&
+        hasOnlyAllowedFields(['uid', 'displayName', 'tag', 'avatarId', 'avatarBg', 'createdAt']) &&
+        isValidUid(data.uid) &&
+        data.uid == uid &&
+        isValidNonEmptyString(data.displayName, 60) &&
+        data.tag is string && data.tag.matches('^[0-9]{4}$') &&
+        isValidNonEmptyString(data.avatarId, 50) &&
+        isValidNonEmptyString(data.avatarBg, 50) &&
+        isValidTime(data.createdAt);
+    }
+
+    function isValidWish(w, wishKeys) {
+      return w is map &&
+        w.keys().size() == 5 &&
+        w.keys().hasAll(wishKeys) &&
+        w.id is string && w.id.size() >= 1 && w.id.size() <= 128 &&
+        w.title is string && w.title.size() >= 1 && w.title.size() <= 150 && w.title.trim().size() >= 1 &&
+        w.url is string && w.url.size() <= 1000 &&
+        (w.url == '' || w.url.matches('^[Hh][Tt][Tt][Pp][Ss]?://.*')) &&
+        w.note is string && w.note.size() <= 500 &&
+        (w.createdAt is timestamp || (w.createdAt is int && w.createdAt >= 0) || (w.createdAt is float && w.createdAt >= 0.0 && w.createdAt <= 10000000000000000.0));
+    }
+
+    function isValidWishes0to9(wishes, wishKeys) {
+      return (wishes.size() <= 0 || isValidWish(wishes[0], wishKeys)) &&
+        (wishes.size() <= 1 || isValidWish(wishes[1], wishKeys)) &&
+        (wishes.size() <= 2 || isValidWish(wishes[2], wishKeys)) &&
+        (wishes.size() <= 3 || isValidWish(wishes[3], wishKeys)) &&
+        (wishes.size() <= 4 || isValidWish(wishes[4], wishKeys)) &&
+        (wishes.size() <= 5 || isValidWish(wishes[5], wishKeys)) &&
+        (wishes.size() <= 6 || isValidWish(wishes[6], wishKeys)) &&
+        (wishes.size() <= 7 || isValidWish(wishes[7], wishKeys)) &&
+        (wishes.size() <= 8 || isValidWish(wishes[8], wishKeys)) &&
+        (wishes.size() <= 9 || isValidWish(wishes[9], wishKeys));
+    }
+
+    function isValidWishes10to19(wishes, wishKeys) {
+      return (wishes.size() <= 10 || isValidWish(wishes[10], wishKeys)) &&
+        (wishes.size() <= 11 || isValidWish(wishes[11], wishKeys)) &&
+        (wishes.size() <= 12 || isValidWish(wishes[12], wishKeys)) &&
+        (wishes.size() <= 13 || isValidWish(wishes[13], wishKeys)) &&
+        (wishes.size() <= 14 || isValidWish(wishes[14], wishKeys)) &&
+        (wishes.size() <= 15 || isValidWish(wishes[15], wishKeys)) &&
+        (wishes.size() <= 16 || isValidWish(wishes[16], wishKeys)) &&
+        (wishes.size() <= 17 || isValidWish(wishes[17], wishKeys)) &&
+        (wishes.size() <= 18 || isValidWish(wishes[18], wishKeys)) &&
+        (wishes.size() <= 19 || isValidWish(wishes[19], wishKeys));
+    }
+
+    function isValidWishes(wishes) {
+      let wishKeys = ['id', 'title', 'url', 'note', 'createdAt'];
+      return wishes is list &&
+        wishes.size() <= 20 &&
+        isValidWishes0to9(wishes, wishKeys) &&
+        isValidWishes10to19(wishes, wishKeys);
+    }
+
+    function isValidLetter(data) {
+      return hasRequiredFields(['ownerUid', 'recipientName', 'isChildLetter', 'introText', 'outroText', 'printTheme', 'wishes', 'updatedAt']) &&
+        hasOnlyAllowedFields(['ownerUid', 'recipientName', 'isChildLetter', 'introText', 'outroText', 'printTheme', 'wishes', 'createdAt', 'updatedAt']) &&
+        isValidUid(data.ownerUid) &&
+        isValidNonEmptyString(data.recipientName, 60) &&
+        data.isChildLetter is bool &&
+        isValidBoundedString(data.introText, 5000) &&
+        isValidBoundedString(data.outroText, 2000) &&
+        data.printTheme in ['handwritten', 'fairytale', 'minimal'] &&
+        isValidWishes(data.wishes) &&
+        isValidTime(data.updatedAt) &&
+        (!('createdAt' in data) || isValidTime(data.createdAt));
+    }
+
+    function isValidClaim(data, claimId) {
+      return hasRequiredFields(['letterId', 'letterOwnerUid', 'wishId', 'wishTitleSnapshot', 'wishUrlSnapshot', 'wishNoteSnapshot', 'recipientNameSnapshot', 'claimedByUid', 'isBought', 'orphanStatus', 'createdAt']) &&
+        hasOnlyAllowedFields(['letterId', 'letterOwnerUid', 'wishId', 'wishTitleSnapshot', 'wishUrlSnapshot', 'wishNoteSnapshot', 'recipientNameSnapshot', 'claimedByUid', 'isBought', 'orphanStatus', 'createdAt']) &&
+        isValidUid(data.letterId) &&
+        isValidUid(data.letterOwnerUid) &&
+        isValidUid(data.wishId) &&
+        claimId == data.letterId + '_' + data.wishId &&
+        isValidNonEmptyString(data.wishTitleSnapshot, 150) &&
+        isValidOptionalUrl(data.wishUrlSnapshot) &&
+        isValidBoundedString(data.wishNoteSnapshot, 500) &&
+        isValidNonEmptyString(data.recipientNameSnapshot, 60) &&
+        isValidUid(data.claimedByUid) &&
+        data.isBought is bool &&
+        data.orphanStatus in ['active', 'wish_deleted', 'account_deleted'] &&
+        isValidTime(data.createdAt);
+    }
+
+    function isNotOwnerOfLetter(letterId) {
+      return exists(/databases/$(database)/documents/letters/$(letterId)) &&
+        get(/databases/$(database)/documents/letters/$(letterId)).data.ownerUid != request.auth.uid;
+    }
+
+    // Prevents letter owners from using get() on non-existent claim IDs as an oracle
+    // to check whether one of their own wishes has been claimed.
+    function canCheckUnclaimedSlot(claimId) {
+      let parts = claimId.split('_');
+      return parts.size() >= 2 && (
+        isNotOwnerOfLetter(parts[0]) ||
+        (parts.size() >= 3 && isNotOwnerOfLetter(parts[0] + '_' + parts[1]))
+      );
+    }
+
+    function isValidConnection(data, connectionId) {
+      return hasRequiredFields(['users', 'status', 'requestedBy', 'createdAt']) &&
+        hasOnlyAllowedFields(['users', 'status', 'requestedBy', 'createdAt']) &&
+        data.users is list &&
+        data.users.size() == 2 &&
+        isValidUid(data.users[0]) &&
+        isValidUid(data.users[1]) &&
+        data.users[0] != data.users[1] &&
+        (data.users[0] < data.users[1]
+          ? connectionId == data.users[0] + '_' + data.users[1]
+          : connectionId == data.users[1] + '_' + data.users[0]) &&
+        data.status in ['pending', 'accepted'] &&
+        isValidUid(data.requestedBy) &&
+        data.requestedBy in data.users &&
+        isValidTime(data.createdAt);
+    }
+
+    function isUidInConnectionId(connectionId, uid) {
+      let prefixLen = uid.size() + 1;
+      let totalLen = connectionId.size();
+      return totalLen > prefixLen && (
+        connectionId[0:prefixLen] == uid + '_' ||
+        connectionId[totalLen - prefixLen : totalLen] == '_' + uid
+      );
+    }
+
+    function isValidMemberUids(uids) {
+      return uids is list &&
+        uids.size() >= 1 &&
+        uids.size() <= 50 &&
+        !('' in uids) &&
+        uids.join(',') is string &&
+        uids.join(',').size() <= 6450 &&
+        uids.toSet().size() == uids.size();
+    }
+
+    function isValidGroup(data) {
+      return hasRequiredFields(['name', 'createdBy', 'memberUids', 'createdAt']) &&
+        hasOnlyAllowedFields(['name', 'createdBy', 'memberUids', 'createdAt', 'icon', 'inviteCode', 'showChildLetters']) &&
+        isValidNonEmptyString(data.name, 60) &&
+        isValidUid(data.createdBy) &&
+        isValidMemberUids(data.memberUids) &&
+        isValidTime(data.createdAt) &&
+        (!('icon' in data) || (data.icon is string && data.icon in ['home', 'friends', 'tree', 'work', 'heart'])) &&
+        (!('inviteCode' in data) || (data.inviteCode is string && data.inviteCode.matches('^[A-Z0-9-]{4,24}$'))) &&
+        (!('showChildLetters' in data) || data.showChildLetters is bool);
+    }
+
+    function isValidPrivateIdea(data) {
+      return hasRequiredFields(['ownerUid', 'targetName', 'title', 'url', 'note', 'isBought', 'createdAt']) &&
+        hasOnlyAllowedFields(['ownerUid', 'targetUid', 'targetName', 'title', 'url', 'note', 'isBought', 'createdAt']) &&
+        isValidUid(data.ownerUid) &&
+        (!('targetUid' in data) || data.targetUid == null || isValidBoundedString(data.targetUid, 128)) &&
+        isValidNonEmptyString(data.targetName, 60) &&
+        isValidNonEmptyString(data.title, 120) &&
+        isValidOptionalUrl(data.url) &&
+        isValidBoundedString(data.note, 500) &&
+        data.isBought is bool &&
+        isValidTime(data.createdAt);
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    // 1. User profile cards (public card info only; list limited to prevent bulk dumping)
+    match /users/{uid} {
+      allow get: if isAuthenticated();
+      allow list: if isAuthenticated() &&
+        request.query.limit is int &&
+        request.query.limit > 0 &&
+        request.query.limit <= 10;
+      allow create: if isOwner(uid) &&
+        uidUnchanged() &&
+        isValidUser(request.resource.data, uid);
+      allow update: if isOwner(uid) &&
+        uidNotModified() &&
+        isValidUser(request.resource.data, uid) &&
+        areImmutableFieldsUnchanged(['uid', 'createdAt']);
+      allow delete: if isOwner(uid);
+    }
+
+    // 2. Christmas letters (owner-managed; readable by authenticated family/friends)
+    match /letters/{letterId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() &&
+        request.resource.data.ownerUid == request.auth.uid &&
+        isValidLetter(request.resource.data);
+      allow update: if isAuthenticated() &&
+        resource.data.ownerUid == request.auth.uid &&
+        isValidLetter(request.resource.data) &&
+        areImmutableFieldsUnchanged(['ownerUid']) &&
+        (!('createdAt' in resource.data) ||
+          ('createdAt' in request.resource.data && request.resource.data.createdAt == resource.data.createdAt));
+      allow delete: if isAuthenticated() &&
+        resource.data.ownerUid == request.auth.uid;
+    }
+
+    // 3. Secret gift claims (letter owner can NEVER read or write claims on their own letters)
+    match /claims/{claimId} {
+      allow get: if isAuthenticated() && (
+        (resource != null && request.auth.uid != resource.data.letterOwnerUid) ||
+        (resource == null && canCheckUnclaimedSlot(claimId))
+      );
+      allow list: if isAuthenticated() &&
+        request.auth.uid != resource.data.letterOwnerUid;
+      allow create: if isAuthenticated() &&
+        isValidClaim(request.resource.data, claimId) &&
+        request.resource.data.claimedByUid == request.auth.uid &&
+        request.resource.data.letterOwnerUid != request.auth.uid &&
+        existsAfter(/databases/$(database)/documents/letters/$(request.resource.data.letterId)) &&
+        getAfter(/databases/$(database)/documents/letters/$(request.resource.data.letterId)).data.ownerUid == request.resource.data.letterOwnerUid;
+      allow update: if isAuthenticated() &&
+        resource.data.claimedByUid == request.auth.uid &&
+        request.auth.uid != resource.data.letterOwnerUid &&
+        isValidClaim(request.resource.data, claimId) &&
+        areImmutableFieldsUnchanged(['letterId', 'letterOwnerUid', 'wishId', 'claimedByUid', 'createdAt']);
+      allow delete: if isAuthenticated() &&
+        resource.data.claimedByUid == request.auth.uid &&
+        request.auth.uid != resource.data.letterOwnerUid;
+    }
+
+    // 4. Pairwise user connections (pending requests & accepted connections)
+    match /connections/{connectionId} {
+      allow get: if isAuthenticated() && (
+        (resource != null && request.auth.uid in resource.data.users) ||
+        (resource == null && isUidInConnectionId(connectionId, request.auth.uid))
+      );
+      allow list: if isAuthenticated() &&
+        request.auth.uid in resource.data.users;
+      allow create: if isAuthenticated() &&
+        isValidConnection(request.resource.data, connectionId) &&
+        request.auth.uid in request.resource.data.users &&
+        request.resource.data.requestedBy == request.auth.uid &&
+        request.resource.data.status == 'pending';
+      allow update: if isAuthenticated() &&
+        isValidConnection(request.resource.data, connectionId) &&
+        request.auth.uid in resource.data.users &&
+        areImmutableFieldsUnchanged(['users', 'requestedBy', 'createdAt']) &&
+        resource.data.status == 'pending' &&
+        request.resource.data.status == 'accepted' &&
+        request.auth.uid != resource.data.requestedBy;
+      allow delete: if isAuthenticated() &&
+        request.auth.uid in resource.data.users;
+    }
+
+    // 5. Shared family groups
+    match /groups/{groupId} {
+      allow get: if isAuthenticated() &&
+        request.auth.uid in resource.data.memberUids;
+      allow list: if isAuthenticated() && (
+        request.auth.uid in resource.data.memberUids ||
+        (request.query.limit is int && request.query.limit > 0 && request.query.limit <= 5)
+      );
+      allow create: if isAuthenticated() &&
+        isValidGroup(request.resource.data) &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.auth.uid in request.resource.data.memberUids;
+      allow update: if isAuthenticated() &&
+        isValidGroup(request.resource.data) &&
+        areImmutableFieldsUnchanged(['createdBy', 'createdAt']) && (
+          request.auth.uid in resource.data.memberUids ||
+          (
+            !(request.auth.uid in resource.data.memberUids) &&
+            request.auth.uid in request.resource.data.memberUids &&
+            request.resource.data.memberUids.size() == resource.data.memberUids.size() + 1 &&
+            request.resource.data.memberUids.hasAll(resource.data.memberUids) &&
+            areImmutableFieldsUnchanged(['name', 'createdBy', 'createdAt', 'icon', 'inviteCode', 'showChildLetters'])
+          )
+        );
+      allow delete: if isAuthenticated() && (
+        resource.data.createdBy == request.auth.uid ||
+        (request.auth.uid in resource.data.memberUids && resource.data.memberUids.size() <= 1)
+      );
+    }
+
+    // 6. Strictly private gift ideas (visible and writable only by ownerUid)
+    match /privateIdeas/{ideaId} {
+      allow read: if isAuthenticated() &&
+        resource.data.ownerUid == request.auth.uid;
+      allow create: if isAuthenticated() &&
+        isValidPrivateIdea(request.resource.data) &&
+        request.resource.data.ownerUid == request.auth.uid;
+      allow update: if isAuthenticated() &&
+        isValidPrivateIdea(request.resource.data) &&
+        resource.data.ownerUid == request.auth.uid &&
+        areImmutableFieldsUnchanged(['ownerUid', 'createdAt']);
+      allow delete: if isAuthenticated() &&
+        resource.data.ownerUid == request.auth.uid;
+    }
+
+    // 7. Default deny all other paths and subcollections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

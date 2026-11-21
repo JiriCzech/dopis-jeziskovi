@@ -1,0 +1,19 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "claims",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "claimedByUid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "letterOwnerUid",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

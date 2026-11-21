@@ -1,0 +1,93 @@
+/* Tiskové styly pro čistý tisk / uložení do PDF (A4) bez systémového záhlaví a zápatí prohlížeče */
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  html,
+  body {
+    background: #FFFFFF !important;
+    background-image: none !important;
+    color: #242826 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Skryjeme celé běžné rozhraní aplikace mimo tiskový portál */
+  body.printing-letter #root,
+  body.printing-letter .no-print,
+  body.printing-letter header,
+  body.printing-letter nav,
+  body.printing-letter footer,
+  body.printing-letter .demo-banner {
+    display: none !important;
+  }
+
+  /* Rozbalíme modální obal pro čistý tisk na celou stránku */
+  body.printing-letter .print-modal-backdrop {
+    position: static !important;
+    inset: auto !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  body.printing-letter .print-modal-container {
+    position: static !important;
+    max-width: none !important;
+    max-height: none !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  body.printing-letter .print-sheet-wrapper {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    overflow: visible !important;
+  }
+
+  /* Samotný tištěný arch dopisu má vlastní vnitřní okraje stránky místo @page marginu */
+  body.printing-letter .print-sheet,
+  body.printing-letter .print-letter-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 auto !important;
+    padding: 20mm 22mm !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: auto !important;
+    break-inside: auto;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body.printing-letter .print-wish-item {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* V tisku nikdy nevypisujeme surovou URL adresu vedle odkazů */
+  body.printing-letter a[href]::after {
+    content: none !important;
+  }
+}
