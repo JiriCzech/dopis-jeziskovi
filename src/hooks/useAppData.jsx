@@ -200,6 +200,10 @@ export function AppDataProvider({ children }) {
         });
         setOwnedLettersMap(map);
         setInitialReady(true);
+      },
+      (err) => {
+        console.error('[Firestore] Chyba odběru letters (ownerUid):', err?.code, err?.message);
+        setInitialReady(true);
       }
     );
 
@@ -211,6 +215,9 @@ export function AppDataProvider({ children }) {
           map[d.id] = { id: d.id, ...d.data() };
         });
         setCoParentLettersMap(map);
+      },
+      (err) => {
+        console.error('[Firestore] Chyba odběru letters (coParentUids):', err?.code, err?.message);
       }
     );
 
@@ -218,6 +225,9 @@ export function AppDataProvider({ children }) {
       query(collection(firestoreDb, 'connections'), where('users', 'array-contains', uid)),
       (snap) => {
         setConnections(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      },
+      (err) => {
+        console.error('[Firestore] Chyba odběru connections:', err?.code, err?.message);
       }
     );
 
@@ -225,6 +235,9 @@ export function AppDataProvider({ children }) {
       query(collection(firestoreDb, 'groups'), where('memberUids', 'array-contains', uid)),
       (snap) => {
         setGroups(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      },
+      (err) => {
+        console.error('[Firestore] Chyba odběru groups:', err?.code, err?.message);
       }
     );
 
@@ -236,6 +249,9 @@ export function AppDataProvider({ children }) {
           map[d.id] = { id: d.id, ...d.data() };
         });
         setPrivateIdeasMap(map);
+      },
+      (err) => {
+        console.error('[Firestore] Chyba odběru privateIdeas:', err?.code, err?.message);
       }
     );
 
@@ -268,8 +284,13 @@ export function AppDataProvider({ children }) {
                 }
               });
               setMyClaimsMap(map);
+            },
+            (fallbackErr) => {
+              console.error('[Firestore] Chyba záložního odběru claims:', fallbackErr?.code, fallbackErr?.message);
             }
           );
+        } else {
+          console.error('[Firestore] Chyba odběru claims:', err?.code, err?.message);
         }
       }
     );
@@ -374,6 +395,9 @@ export function AppDataProvider({ children }) {
             });
             lettersPerChunk[idx] = m;
             mergeChunks(lettersPerChunk, setFamilyLettersMap);
+          },
+          (err) => {
+            console.error('[Firestore] Chyba odběru rodinných letters:', err?.code, err?.message);
           }
         )
       );
@@ -388,6 +412,9 @@ export function AppDataProvider({ children }) {
             });
             claimsPerChunk[idx] = m;
             mergeChunks(claimsPerChunk, setFamilyClaimsMap);
+          },
+          (err) => {
+            console.error('[Firestore] Chyba odběru rodinných claims:', err?.code, err?.message);
           }
         )
       );

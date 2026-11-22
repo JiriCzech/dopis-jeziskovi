@@ -64,6 +64,7 @@ function pickDefaultAvatarForUid(uid = '') {
 export function AuthProvider({ children }) {
   const [authUser, setAuthUser] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [profileError, setProfileError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [demoMode, setDemoMode] = useState(() => isDemoModeActive());
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
@@ -74,6 +75,7 @@ export function AuthProvider({ children }) {
   const [toast, setToast] = useState(null);
   const [undoToast, setUndoToast] = useState(null);
   const undoTimerRef = useRef(null);
+  const authRunIdRef = useRef(0);
 
   const consumeJustSignedIn = useCallback(() => {
     setJustSignedIn(false);
@@ -193,6 +195,95 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }, [refreshPendingCount, refreshShoppingCount]);
 
+  const loadOrCreateUserProfile = useCallback(
+    async (user, runId) => {
+      if (!user) return;
+      setProfileError(null);
+      setLoading(true);
+      try {
+        let userProf = null;
+        try {
+          userProf = await getUserProfile(user.uid);
+        } catch (readErr) {
+          console.error(
+            `[Firestore] Chyba čtení profilu v kolekci users/${user.uid}:`,
+            readErr?.code || 'unknown',
+            readErr?.message || readErr
+          );
+          throw readErr;
+        }
+
+        if (runId !== undefined && authRunIdRef.current !== runId) return;
+
+        if (!userProf) {
+          // První založení účtu po přihlášení přes Google (onboardingCompleted: false)
+          const rawName = (
+            user.displayName ||
+            user.email?.split('@')[0] ||
+            'Pisatel'
+          )
+            .trim()
+            .slice(0, 50);
+          const defaults = pickDefaultAvatarForUid(user.uid);
+          try {
+            userProf = await createUserProfile({
+              uid: user.uid,
+              displayName: rawName || 'Pisatel',
+              avatarId: defaults.avatarId,
+              avatarBg: defaults.avatarBg,
+              onboardingCompleted: false,
+            });
+          } catch (createErr) {
+            console.error(
+              `[Firestore] Chyba zakládání profilu v kolekci users/${user.uid}:`,
+              createErr?.code || 'unknown',
+              createErr?.message || createErr
+            );
+            throw createErr;
+          }
+        }
+
+        if (runId !== undefined && authRunIdRef.current !== runId) return;
+
+        setProfile(userProf);
+        await Promise.all([
+          refreshPendingCount(user.uid),
+          refreshShoppingCount(user.uid),
+        ]);
+      } catch (err) {
+        if (runId !== undefined && authRunIdRef.current !== runId) return;
+        const code = err?.code || 'unknown';
+        console.error(
+          `[Auth] Načtení nebo vytvoření profilu selhalo (users/${user.uid}, code=${code}):`,
+          err
+        );
+        setProfileError({
+          code,
+          path: `users/${user.uid}`,
+          message:
+            code === 'permission-denied'
+              ? 'Chybí oprávnění pro zápis do databáze (firestore.rules).'
+              : err?.message || 'Nepodařilo se načíst nebo založit tvůj profil.',
+        });
+      } finally {
+        if (runId === undefined || authRunIdRef.current === runId) {
+          setLoading(false);
+        }
+      }
+    },
+    [refreshPendingCount, refreshShoppingCount]
+  );
+
+  const retryProfileLoad = useCallback(async () => {
+    if (!authUser) return;
+    if (demoMode) {
+      await hydrateDemoSession();
+      return;
+    }
+    const runId = ++authRunIdRef.current;
+    await loadOrCreateUserProfile(authUser, runId);
+  }, [authUser, demoMode, hydrateDemoSession, loadOrCreateUserProfile]);
+
   useEffect(() => {
     if (!isFirebaseConfigured || demoMode) {
       if (demoMode) {
@@ -204,49 +295,26 @@ export function AuthProvider({ children }) {
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      const runId = ++authRunIdRef.current;
       if (!user) {
         setAuthUser(null);
         setProfile(null);
+        setProfileError(null);
         setPendingRequestsCount(0);
         setUnboughtShoppingCount(0);
         setLoading(false);
         return;
       }
       setAuthUser(user);
-      try {
-        let userProf = await getUserProfile(user.uid);
-        if (!userProf) {
-          // První založení účtu po přihlášení přes Google (onboardingCompleted: false)
-          const rawName = (
-            user.displayName ||
-            user.email?.split('@')[0] ||
-            'Pisatel'
-          )
-            .trim()
-            .slice(0, 50);
-          const defaults = pickDefaultAvatarForUid(user.uid);
-          userProf = await createUserProfile({
-            uid: user.uid,
-            displayName: rawName || 'Pisatel',
-            avatarId: defaults.avatarId,
-            avatarBg: defaults.avatarBg,
-            onboardingCompleted: false,
-          });
-        }
-        setProfile(userProf);
-        await Promise.all([
-          refreshPendingCount(user.uid),
-          refreshShoppingCount(user.uid),
-        ]);
-      } catch (err) {
-        console.error('Chyba načtení nebo založení profilu:', err);
-      } finally {
-        setLoading(false);
-      }
+      setProfile(null);
+      await loadOrCreateUserProfile(user, runId);
     });
 
-    return () => unsubscribe();
-  }, [demoMode, hydrateDemoSession, refreshPendingCount, refreshShoppingCount]);
+    return () => {
+      authRunIdRef.current += 1;
+      unsubscribe();
+    };
+  }, [demoMode, hydrateDemoSession, loadOrCreateUserProfile]);
 
   const signInWithGoogle = async () => {
     if (!isFirebaseConfigured) {
@@ -336,6 +404,7 @@ export function AuthProvider({ children }) {
   const signOut = async () => {
     dismissUndoToast();
     setJustSignedIn(false);
+    setProfileError(null);
     if (demoMode) {
       setDemoModeActive(false);
       setDemoMode(false);
@@ -358,6 +427,7 @@ export function AuthProvider({ children }) {
     if (!authUser) return;
     dismissUndoToast();
     setJustSignedIn(false);
+    setProfileError(null);
     await deleteUserAccountCompletely(authUser.uid, demoMode ? null : auth.currentUser);
     if (demoMode) {
       await hydrateDemoSession();
@@ -373,6 +443,8 @@ export function AuthProvider({ children }) {
   const value = {
     authUser,
     profile,
+    profileError,
+    retryProfileLoad,
     loading,
     demoMode,
     isFirebaseConfigured,
