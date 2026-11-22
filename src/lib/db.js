@@ -371,7 +371,7 @@ export async function saveLetter(letterData) {
   const payload = {
     ownerUid: letterData.ownerUid,
     coParentUids,
-    recipientName: (letterData.recipientName || '').trim(),
+    recipientName: ((letterData.recipientName || '').trim() || 'Dopis').slice(0, 60),
     isChildLetter: Boolean(letterData.isChildLetter),
     introText: letterData.introText || '',
     outroText: letterData.outroText || '',
@@ -402,7 +402,7 @@ export async function saveLetter(letterData) {
   }
 
   try {
-    await setDoc(doc(db, 'letters', id), payload, { merge: true });
+    await setDoc(doc(db, 'letters', id), payload);
     return { id, ...payload };
   } catch (err) {
     console.error('[Firestore] Chyba při ukládání dopisu:', {

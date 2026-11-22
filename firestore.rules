@@ -192,31 +192,12 @@ service cloud.firestore {
         isValidTime(w.createdAt);
     }
 
-    function isValidWishes0to14(wishes, wishKeys) {
-      return (wishes.size() <= 0 || isValidWish(wishes[0], wishKeys)) &&
-        (wishes.size() <= 1 || isValidWish(wishes[1], wishKeys)) &&
-        (wishes.size() <= 2 || isValidWish(wishes[2], wishKeys)) &&
-        (wishes.size() <= 3 || isValidWish(wishes[3], wishKeys)) &&
-        (wishes.size() <= 4 || isValidWish(wishes[4], wishKeys)) &&
-        (wishes.size() <= 5 || isValidWish(wishes[5], wishKeys)) &&
-        (wishes.size() <= 6 || isValidWish(wishes[6], wishKeys)) &&
-        (wishes.size() <= 7 || isValidWish(wishes[7], wishKeys)) &&
-        (wishes.size() <= 8 || isValidWish(wishes[8], wishKeys)) &&
-        (wishes.size() <= 9 || isValidWish(wishes[9], wishKeys)) &&
-        (wishes.size() <= 10 || isValidWish(wishes[10], wishKeys)) &&
-        (wishes.size() <= 11 || isValidWish(wishes[11], wishKeys)) &&
-        (wishes.size() <= 12 || isValidWish(wishes[12], wishKeys)) &&
-        (wishes.size() <= 13 || isValidWish(wishes[13], wishKeys)) &&
-        (wishes.size() <= 14 || isValidWish(wishes[14], wishKeys));
-    }
-
     function isValidWishes(wishes) {
       let wishKeys = ['id', 'title', 'url', 'note', 'createdAt'];
       return wishes is list &&
         wishes.size() <= 50 &&
-        (wishes.size() <= 15
-          ? isValidWishes0to14(wishes, wishKeys)
-          : (isValidWish(wishes[0], wishKeys) && isValidWish(wishes[wishes.size() - 1], wishKeys)));
+        (wishes.size() == 0 ||
+          (isValidWish(wishes[0], wishKeys) && isValidWish(wishes[wishes.size() - 1], wishKeys)));
     }
 
     function isValidLetter(data) {
