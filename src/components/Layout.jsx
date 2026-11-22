@@ -194,6 +194,16 @@ export function Layout({ children }) {
 
   return (
     <div className="min-h-screen flex flex-col pb-24 md:pb-12 relative overflow-x-hidden max-w-full">
+      {/* Sdílený SVG filtr pro přirozený organický okraj ručního papíru */}
+      <svg className="sr-only" aria-hidden="true">
+        <defs>
+          <filter id="handmade-paper-edge">
+            <feTurbulence type="fractalNoise" baseFrequency="0.025" numOctaves="3" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        </defs>
+      </svg>
+
       <AtmosphereBackground />
 
       {/* Ukázkový přepínač osob (pouze při ?demo=1) */}
@@ -319,7 +329,7 @@ export function Layout({ children }) {
       </header>
 
       {/* Hlavní obsah */}
-      <main className="relative z-10 flex-1 max-w-2xl xl:max-w-3xl w-full mx-auto px-4 sm:px-6 lg:pl-20 xl:pl-6 py-6 sm:py-10 min-w-0">
+      <main className="relative z-10 flex-1 max-w-2xl xl:max-w-3xl w-full mx-auto px-3.5 sm:px-6 lg:pl-20 xl:pl-6 py-4 sm:py-8 min-w-0">
         {children}
       </main>
 

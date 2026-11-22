@@ -23,10 +23,12 @@ import { WishFormModal } from '../components/WishFormModal';
 import { PrintPreviewModal } from '../components/PrintPreviewModal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 
-function autoResizeTextarea(el) {
+function autoResizeTextarea(el, minHeight = 108) {
   if (!el) return;
   el.style.height = 'auto';
-  el.style.height = `${Math.max(el.scrollHeight, 88)}px`;
+  const rawHeight = Math.max(el.scrollHeight, minHeight);
+  const snapped = Math.ceil(rawHeight / 36) * 36;
+  el.style.height = `${snapped}px`;
 }
 
 /**
@@ -175,6 +177,7 @@ export function MyLettersPage() {
 
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoPreviewOpen, setPhotoPreviewOpen] = useState(false);
+  const [photoTextOpenMap, setPhotoTextOpenMap] = useState({});
 
   // Rituál zapečetění a odeslání obálky Ježíškovi ('idle' | 'folding' | 'sealing' | 'flying' | 'done')
   const [ritualStage, setRitualStage] = useState('idle');
@@ -192,15 +195,18 @@ export function MyLettersPage() {
 
   useEffect(() => {
     if (!draft) return;
+    const isModifiedAfterSeal = Boolean(draft.sealedAt && (draft.updatedAt || 0) > draft.sealedAt);
+    const isCleanlySealed = Boolean(draft.sealedAt && !isModifiedAfterSeal);
     window.dispatchEvent(
       new CustomEvent('kaprik:letter-state', {
         detail: {
-          isSealed: Boolean(draft.sealedAt),
+          isSealed: isCleanlySealed,
           justSealed: ritualStage === 'sealing' || ritualStage === 'done',
+          modalOpen: ritualStage !== 'idle',
         },
       })
     );
-  }, [draft?.id, draft?.sealedAt, ritualStage]);
+  }, [draft?.id, draft?.sealedAt, draft?.updatedAt, ritualStage]);
 
   // Synchronizace aktivního dopisu z centrální paměti AppDataContext (0 ms při přepnutí záložky)
   useEffect(() => {
@@ -254,9 +260,9 @@ export function MyLettersPage() {
   }, [authUser, profile, initialReady, myLetters, optimisticSaveMyLetter]);
 
   useEffect(() => {
-    autoResizeTextarea(introRef.current);
-    autoResizeTextarea(outroRef.current);
-  }, [draft?.id, draft?.introText, draft?.outroText]);
+    autoResizeTextarea(introRef.current, 108);
+    autoResizeTextarea(outroRef.current, 72);
+  }, [draft?.id, draft?.introText, draft?.outroText, draft?.handwrittenPhotoUrl, photoTextOpenMap]);
 
   const persistLetterImmediate = useCallback(
     async (letterToSave) => {
@@ -310,9 +316,14 @@ export function MyLettersPage() {
   };
 
   const handleTextChange = (field, value, textareaEl) => {
-    if (textareaEl) autoResizeTextarea(textareaEl);
+    if (textareaEl) autoResizeTextarea(textareaEl, field === 'outroText' ? 72 : 108);
     setDraft((prev) => {
-      const next = { ...prev, [field]: value };
+      const now = Date.now();
+      const next = {
+        ...prev,
+        [field]: value,
+        updatedAt: prev.sealedAt ? Math.max(now, prev.sealedAt + 1) : now,
+      };
       scheduleAutoSave(next);
       return next;
     });
@@ -326,7 +337,12 @@ export function MyLettersPage() {
     setUploadingPhoto(true);
     try {
       const compressedDataUrl = await compressHandwrittenImage(file);
-      const nextDraft = { ...draft, handwrittenPhotoUrl: compressedDataUrl };
+      const now = Date.now();
+      const nextDraft = {
+        ...draft,
+        handwrittenPhotoUrl: compressedDataUrl,
+        updatedAt: draft.sealedAt ? Math.max(now, draft.sealedAt + 1) : now,
+      };
       setDraft(nextDraft);
       await persistLetterImmediate(nextDraft);
       notify('Fotka ručně psaného dopisu byla připnuta zlatou sponkou.');
@@ -339,13 +355,18 @@ export function MyLettersPage() {
 
   const handleRemoveHandwrittenPhoto = async () => {
     if (!draft) return;
-    const nextDraft = { ...draft, handwrittenPhotoUrl: '' };
+    const now = Date.now();
+    const nextDraft = {
+      ...draft,
+      handwrittenPhotoUrl: '',
+      updatedAt: draft.sealedAt ? Math.max(now, draft.sealedAt + 1) : now,
+    };
     setDraft(nextDraft);
     await persistLetterImmediate(nextDraft);
     notify('Fotka papírového dopisu byla odebrána.');
   };
 
-  const handleStartEnvelopeRitual = async () => {
+  const handleStartEnvelopeRitual = async (replayOnly = false) => {
     const curr = latestDraftRef.current;
     if (!curr || ritualStage !== 'idle') return;
     if (debounceTimerRef.current) {
@@ -354,9 +375,12 @@ export function MyLettersPage() {
     }
 
     setRitualStage('folding');
-    const nextDraft = { ...curr, sealedAt: Date.now() };
-    setDraft(nextDraft);
-    persistLetterImmediate(nextDraft);
+    if (!replayOnly) {
+      const now = Date.now();
+      const nextDraft = { ...curr, sealedAt: now, updatedAt: now };
+      setDraft(nextDraft);
+      persistLetterImmediate({ ...curr, _justSealed: true });
+    }
 
     setTimeout(() => {
       setRitualStage('sealing');
@@ -398,7 +422,12 @@ export function MyLettersPage() {
           setNewlyAddedWishId((id) => (id === createdId ? null : id));
         }, 1250);
       }
-      const nextDraft = { ...curr, wishes: updatedWishes };
+      const now = Date.now();
+      const nextDraft = {
+        ...curr,
+        wishes: updatedWishes,
+        updatedAt: curr.sealedAt ? Math.max(now, curr.sealedAt + 1) : now,
+      };
       setDraft(nextDraft);
       setWishModalOpen(false);
       setEditingWish(null);
@@ -420,8 +449,13 @@ export function MyLettersPage() {
         clearTimeout(debounceTimerRef.current);
         debounceTimerRef.current = null;
       }
+      const now = Date.now();
       const updatedWishes = (curr.wishes || []).filter((w) => w.id !== wishId);
-      const nextDraft = { ...curr, wishes: updatedWishes };
+      const nextDraft = {
+        ...curr,
+        wishes: updatedWishes,
+        updatedAt: curr.sealedAt ? Math.max(now, curr.sealedAt + 1) : now,
+      };
       setDraft(nextDraft);
       await persistLetterImmediate(nextDraft);
     },
@@ -473,9 +507,10 @@ export function MyLettersPage() {
 
   const handlePrintThemeChange = async (nextTheme) => {
     if (!draft) return;
+    const isModifiedAfterSeal = Boolean(draft.sealedAt && (draft.updatedAt || 0) > draft.sealedAt);
     const updated = { ...draft, printTheme: nextTheme };
     setDraft(updated);
-    await persistLetterImmediate(updated);
+    await persistLetterImmediate({ ...updated, _preserveSealClean: !isModifiedAfterSeal });
   };
 
   const openCoParentModal = () => {
@@ -495,13 +530,14 @@ export function MyLettersPage() {
     if (!draft) return;
     setSavingCoParents(true);
     try {
+      const isModifiedAfterSeal = Boolean(draft.sealedAt && (draft.updatedAt || 0) > draft.sealedAt);
       const nextDraft = {
         ...draft,
         coParentUids: selectedCoParentUids,
       };
       setDraft(nextDraft);
       setCoParentModalOpen(false);
-      await persistLetterImmediate(nextDraft);
+      await persistLetterImmediate({ ...nextDraft, _preserveSealClean: !isModifiedAfterSeal });
       notify('Společná správa dětského dopisu byla uložena.');
     } finally {
       setSavingCoParents(false);
@@ -531,19 +567,18 @@ export function MyLettersPage() {
 
   const wishes = draft.wishes || [];
   const isOwnerOfDraft = draft.ownerUid === authUser?.uid;
+  const hasPhoto = Boolean(draft.handwrittenPhotoUrl);
+  const hasDigitalText = Boolean((draft.introText || '').trim() || (draft.outroText || '').trim());
+  const showDigitalText =
+    !hasPhoto ||
+    (photoTextOpenMap[draft.id] !== undefined ? photoTextOpenMap[draft.id] : hasDigitalText);
+
+  const hasBeenSealed = Boolean(draft.sealedAt);
+  const isModifiedAfterSeal = Boolean(draft.sealedAt && (draft.updatedAt || 0) > draft.sealedAt);
+  const isSealedClean = hasBeenSealed && !isModifiedAfterSeal && saveState !== 'saving';
 
   return (
-    <div className="space-y-6 animate-page-transition min-w-0">
-      {/* Skrytý SVG filtr pro přirozený organický okraj ručního papíru (aplikuje se jen na vrstvu pozadí, nikdy na text) */}
-      <svg className="sr-only" aria-hidden="true">
-        <defs>
-          <filter id="handmade-paper-edge">
-            <feTurbulence type="fractalNoise" baseFrequency="0.025" numOctaves="3" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
-          </filter>
-        </defs>
-      </svg>
-
+    <div className="space-y-3 sm:space-y-5 animate-page-transition min-w-0">
       {/* Skrytý input pro nahrání fotky ručně psaného dopisu */}
       <input
         ref={fileInputRef}
@@ -553,74 +588,95 @@ export function MyLettersPage() {
         className="hidden"
       />
 
-      {/* Horní lišta nad blokem dopisních papírů: přepínač dopisů + nahrání fotky + tisk */}
-      <div className="no-print max-w-[780px] mx-auto flex flex-wrap items-center justify-between gap-2.5">
-        <div className="flex flex-wrap items-center gap-2">
-          {myLetters.map((l) => {
-            const active = l.id === activeLetterId;
-            return (
-              <button
-                key={l.id}
-                type="button"
-                onClick={() => selectLetter(l)}
-                className={`min-h-[46px] px-4 sm:px-5 py-2 rounded-2xl text-base font-bold transition border-[1.5px] ${
-                  active
-                    ? 'bg-fir text-white border-fir shadow-sm'
-                    : 'bg-sheet text-slate-text border-fir/40 hover:bg-fir-soft'
-                }`}
-              >
-                {l.isChildLetter ? l.recipientName : `Můj dopis (${l.recipientName})`}
-              </button>
-            );
-          })}
+      {/* Kompaktní horní lišta: přepínač dopisů nalevo + odlehčené akce vpravo (desktop 1 řada, mobil 2 kompaktní řádky) */}
+      <div className="no-print max-w-[780px] mx-auto space-y-2">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+          <div className="flex items-center gap-1.5 overflow-x-auto flex-nowrap no-scrollbar pb-0.5 md:pb-0 min-w-0">
+            {myLetters.map((l) => {
+              const active = l.id === activeLetterId;
+              return (
+                <button
+                  key={l.id}
+                  type="button"
+                  onClick={() => selectLetter(l)}
+                  className={`min-h-[40px] sm:min-h-[42px] whitespace-nowrap shrink-0 px-3.5 sm:px-4 py-1.5 rounded-xl sm:rounded-2xl text-sm sm:text-[15px] font-bold transition border-[1.5px] ${
+                    active
+                      ? 'bg-fir text-white border-fir shadow-xs'
+                      : 'bg-sheet text-slate-text border-fir/35 hover:bg-fir-soft'
+                  }`}
+                >
+                  {l.isChildLetter ? l.recipientName : 'Můj dopis'}
+                </button>
+              );
+            })}
 
-          <button
-            type="button"
-            onClick={() => setNewChildOpen(true)}
-            className="min-h-[46px] inline-flex items-center gap-2 px-4 sm:px-5 py-2 rounded-2xl border-[1.5px] border-dashed border-fir text-fir bg-sheet/85 hover:bg-fir-soft text-base font-bold transition"
-          >
-            <Plus className="w-5 h-5 shrink-0" />
-            <span>Napsat za dítě</span>
-          </button>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            disabled={uploadingPhoto}
-            onClick={() => fileInputRef.current?.click()}
-            className="min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-kraft hover:bg-paper-warm border border-fir/40 text-xs sm:text-sm font-bold text-slate-text transition disabled:opacity-60"
-          >
-            <Camera className="w-4 h-4 text-fir shrink-0" />
-            <span>
-              {uploadingPhoto
-                ? 'Připínám fotku...'
-                : draft.handwrittenPhotoUrl
-                  ? 'Změnit fotku dopisu'
-                  : 'Nahrát fotku papírového dopisu'}
-            </span>
-          </button>
-
-          {draft.isChildLetter && isOwnerOfDraft && (
             <button
               type="button"
-              onClick={openCoParentModal}
-              className="min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-sheet hover:bg-fir-soft border border-fir/35 text-xs sm:text-sm font-bold text-slate-text transition"
+              onClick={() => setNewChildOpen(true)}
+              className="min-h-[40px] sm:min-h-[42px] whitespace-nowrap shrink-0 inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl sm:rounded-2xl border-[1.5px] border-dashed border-fir/70 text-fir bg-sheet/80 hover:bg-fir-soft text-sm sm:text-[15px] font-bold transition"
             >
-              <Users className="w-4 h-4 text-fir shrink-0" />
-              <span>Spravovat společně</span>
+              <Plus className="w-4 h-4 shrink-0" />
+              <span>Napsat za dítě</span>
             </button>
-          )}
+          </div>
 
-          <button
-            type="button"
-            onClick={() => setPrintOpen(true)}
-            className="min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-sheet hover:bg-fir-soft border border-fir/35 text-xs sm:text-sm font-bold text-slate-text transition"
-          >
-            <Printer className="w-4 h-4 text-fir shrink-0" />
-            <span>Vytisknout</span>
-          </button>
+          <div className="flex items-center justify-end gap-1.5 shrink-0 flex-wrap">
+            <button
+              type="button"
+              disabled={uploadingPhoto}
+              onClick={() => fileInputRef.current?.click()}
+              className="min-h-[36px] sm:min-h-[38px] whitespace-nowrap inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-kraft/60 hover:bg-kraft border border-fir/25 text-xs sm:text-[13px] font-semibold text-fir transition disabled:opacity-60"
+            >
+              <Camera className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">
+                {uploadingPhoto
+                  ? 'Připínám...'
+                  : hasPhoto
+                    ? 'Změnit fotku'
+                    : 'Nahrát fotku'}
+              </span>
+              <span className="sm:hidden">
+                {uploadingPhoto
+                  ? 'Připínám...'
+                  : hasPhoto
+                    ? 'Změnit fotku'
+                    : 'Fotka dopisu'}
+              </span>
+            </button>
+
+            {draft.isChildLetter && isOwnerOfDraft && (
+              <button
+                type="button"
+                onClick={openCoParentModal}
+                className="min-h-[36px] sm:min-h-[38px] whitespace-nowrap inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-fir-soft/80 border border-fir/20 text-xs sm:text-[13px] font-semibold text-fir transition"
+              >
+                <Users className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden lg:inline">Spravovat společně</span>
+                <span className="lg:hidden">Společně</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setPrintOpen(true)}
+              className="min-h-[36px] sm:min-h-[38px] whitespace-nowrap inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-fir-soft/80 border border-fir/20 text-xs sm:text-[13px] font-semibold text-fir transition"
+            >
+              <Printer className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Vytisknout</span>
+              <span className="sm:hidden">Tisk</span>
+            </button>
+          </div>
         </div>
+
+        {/* Štítek společné správy dětského dopisu mimo samotný dopisní papír */}
+        {draft.isChildLetter && coParentPartnerNames.length > 0 && (
+          <div className="flex items-center">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-fir-soft/90 border border-fir/25 text-fir text-xs font-semibold">
+              <Users className="w-3.5 h-3.5 shrink-0" />
+              <span>Spravujete společně s: {coParentPartnerNames.join(', ')}</span>
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Formulář pro přidání dětského dopisu */}
@@ -703,15 +759,6 @@ export function MyLettersPage() {
           />
 
           <div className="relative z-10">
-            {draft.isChildLetter && coParentPartnerNames.length > 0 && (
-              <div className="no-print mb-4 pr-28">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-fir-soft/90 border border-fir/25 text-fir text-xs font-bold">
-                  <Users className="w-3.5 h-3.5 shrink-0" />
-                  <span>Spravujete společně s: {coParentPartnerNames.join(', ')}</span>
-                </span>
-              </div>
-            )}
-
             {/* Připnutá papírová fotografie ručně psaného dopisu se 3D mosaznou sponkou */}
             {draft.handwrittenPhotoUrl && (
               <div className="mb-8 relative pt-5 max-w-md mx-auto">
@@ -759,26 +806,41 @@ export function MyLettersPage() {
               </div>
             )}
 
-            {/* Jednolitý tok psaní na jemně linkovaném ručním papíře */}
-            <div className="lined-letter-paper py-2 space-y-6">
-              {/* 1. ÚVOD */}
-              <div>
-                <h1 className="font-handwritten text-4xl sm:text-5xl font-bold text-fir leading-none mb-3 pr-24 sm:pr-32">
-                  Milý Ježíšku,
-                </h1>
-                <label htmlFor="letter-intro-input" className="sr-only">
-                  Úvod dopisu Ježíškovi
-                </label>
-                <textarea
-                  id="letter-intro-input"
-                  ref={introRef}
-                  rows={3}
-                  value={draft.introText}
-                  onChange={(e) => handleTextChange('introText', e.target.value, e.target)}
-                  placeholder="letos jsem se moc snažil/a a pod stromečkem by mi udělalo největší radost..."
-                  className="w-full border-0 bg-transparent p-0 font-handwritten text-[24px] sm:text-[26px] text-[#1E2421] placeholder:text-[#4A544E]/50 leading-[38px] focus:outline-none focus:ring-0 resize-none overflow-hidden"
-                />
-              </div>
+            {/* Jednolitý tok psaní na ručním papíře */}
+            <div className="py-1 space-y-6">
+              {/* 1. ÚVOD (sbalitelný pokud je nahraná fotka papírového dopisu) */}
+              {showDigitalText && (
+                <div>
+                  <div className="flex items-baseline justify-between gap-3 mb-3 pr-24 sm:pr-32">
+                    <h1 className="font-handwritten text-4xl sm:text-5xl font-bold text-fir leading-none">
+                      Milý Ježíšku,
+                    </h1>
+                    {hasPhoto && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPhotoTextOpenMap((prev) => ({ ...prev, [draft.id]: false }))
+                        }
+                        className="no-print text-xs font-semibold text-slate-text-muted hover:text-fir underline underline-offset-2 shrink-0 transition"
+                      >
+                        Skrýt textový vzkaz
+                      </button>
+                    )}
+                  </div>
+                  <label htmlFor="letter-intro-input" className="sr-only">
+                    Úvod dopisu Ježíškovi
+                  </label>
+                  <textarea
+                    id="letter-intro-input"
+                    ref={introRef}
+                    rows={3}
+                    value={draft.introText}
+                    onChange={(e) => handleTextChange('introText', e.target.value, e.target)}
+                    placeholder="letos jsem se moc snažil/a a pod stromečkem by mi udělalo největší radost..."
+                    className="lined-letter-paper w-full border-0 bg-transparent p-0 font-handwritten text-[24px] sm:text-[26px] text-[#1E2421] placeholder:text-[#4A544E]/50 leading-[36px] focus:outline-none focus:ring-0 resize-none overflow-hidden"
+                  />
+                </div>
+              )}
 
               {/* 2. SEZNAM PŘÁNÍ UVNITŘ DOPISU */}
               <div className="space-y-2 pt-1">
@@ -801,7 +863,7 @@ export function MyLettersPage() {
                   </ul>
                 )}
 
-                {/* Klidné tlačítko přímo na řádku papíru (žádný formulářový rámeček) */}
+                {/* Klidné tlačítko přímo na řádku papíru */}
                 <button
                   type="button"
                   onClick={() => {
@@ -815,24 +877,48 @@ export function MyLettersPage() {
                     Přidat přání
                   </span>
                 </button>
+
+                {/* Jemný odkaz pro připsání textového vzkazu k fotce papírového dopisu */}
+                {!showDigitalText && (
+                  <div className="no-print pt-1 px-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPhotoTextOpenMap((prev) => ({ ...prev, [draft.id]: true }));
+                        setTimeout(() => introRef.current?.focus(), 60);
+                      }}
+                      className="text-sm font-semibold text-fir/85 hover:text-fir underline underline-offset-2 transition"
+                    >
+                      {hasDigitalText
+                        ? '+ Zobrazit textový vzkaz k fotce'
+                        : '+ Připsat k fotce textový vzkaz'}
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* 3. ZÁVĚR (ROZLOUČENÍ, PODPIS A 3D VOSKOVÁ PEČEŤ) */}
               <div className="pt-4 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <label htmlFor="letter-outro-input" className="sr-only">
-                    Rozloučení a podpis
-                  </label>
-                  <textarea
-                    id="letter-outro-input"
-                    ref={outroRef}
-                    rows={2}
-                    value={draft.outroText}
-                    onChange={(e) => handleTextChange('outroText', e.target.value, e.target)}
-                    placeholder={`Moc děkuji a měj se krásně,\n${draft.recipientName || ''}`}
-                    className="w-full border-0 bg-transparent p-0 font-handwritten text-[24px] sm:text-[26px] text-[#1E2421] placeholder:text-[#4A544E]/50 leading-[38px] focus:outline-none focus:ring-0 resize-none overflow-hidden"
-                  />
-                </div>
+                {showDigitalText ? (
+                  <div className="flex-1 min-w-0">
+                    <label htmlFor="letter-outro-input" className="sr-only">
+                      Rozloučení a podpis
+                    </label>
+                    <textarea
+                      id="letter-outro-input"
+                      ref={outroRef}
+                      rows={2}
+                      value={draft.outroText}
+                      onChange={(e) => handleTextChange('outroText', e.target.value, e.target)}
+                      placeholder={`Moc děkuji a měj se krásně,\n${draft.recipientName || ''}`}
+                      className="lined-letter-paper w-full border-0 bg-transparent p-0 font-handwritten text-[24px] sm:text-[26px] text-[#1E2421] placeholder:text-[#4A544E]/50 leading-[36px] focus:outline-none focus:ring-0 resize-none overflow-hidden"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex-1 min-w-0 font-handwritten text-[26px] sm:text-[28px] text-[#1E2421] leading-snug">
+                    {draft.recipientName}
+                  </div>
+                )}
 
                 <div className="flex flex-col items-end gap-1.5 shrink-0 select-none">
                   <div
@@ -845,43 +931,56 @@ export function MyLettersPage() {
                       pressed={sealPulseKey > 0}
                     />
                   </div>
-                  <div
-                    className="no-print inline-flex items-center gap-1 text-xs font-semibold text-fir/85"
-                    aria-live="polite"
-                  >
-                    {saveState === 'saving' ? (
-                      <>
-                        <Loader2 className="w-3 h-3 text-gold animate-spin" />
-                        <span>Ukládám...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Uloženo u Ježíška ✓</span>
-                      </>
-                    )}
-                  </div>
+                  {!isSealedClean && (
+                    <div
+                      className="no-print inline-flex items-center gap-1 text-xs font-semibold text-fir/85"
+                      aria-live="polite"
+                    >
+                      {saveState === 'saving' ? (
+                        <>
+                          <Loader2 className="w-3 h-3 text-gold animate-spin" />
+                          <span>Ukládám...</span>
+                        </>
+                      ) : (
+                        <span>Uloženo ✓</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Rituál zapečetění a odeslání */}
-            <div className="no-print mt-8 pt-6 border-t border-[#8B7355]/25 flex flex-wrap items-center justify-between gap-4">
-              <div>
-                {draft.sealedAt && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-fir-soft border border-fir/25 text-sm font-bold text-fir">
-                    Zapečetěno ✓
-                  </span>
-                )}
-              </div>
+            {/* Jednotný spodek dopisu: buď klidný zapečetěný stav nebo hlavní akční tlačítko */}
+            <div className="no-print mt-8 pt-6 border-t border-[#8B7355]/25">
+              {isSealedClean ? (
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="inline-flex items-center gap-2 text-base sm:text-lg font-bold text-fir">
+                    <span className="w-6 h-6 rounded-full bg-fir text-white inline-flex items-center justify-center shrink-0">
+                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                    </span>
+                    <span>Dopis je zapečetěný u Ježíška ✓</span>
+                  </div>
 
-              <button
-                type="button"
-                onClick={handleStartEnvelopeRitual}
-                className="min-h-[52px] w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl bg-crimson hover:bg-crimson-dark text-white text-base sm:text-lg font-bold shadow-md border border-gold/50 transition"
-              >
-                <Mail className="w-5 h-5 shrink-0" />
-                <span>Zapečetit a poslat</span>
-              </button>
+                  <button
+                    type="button"
+                    onClick={() => handleStartEnvelopeRitual(true)}
+                    className="text-sm font-semibold text-fir/85 hover:text-fir underline underline-offset-4 transition"
+                  >
+                    Zobrazit obálku
+                  </button>
+                </div>
+              ) : (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => handleStartEnvelopeRitual(false)}
+                    className="min-h-[52px] w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl bg-crimson hover:bg-crimson-dark text-white text-base sm:text-lg font-bold shadow-md border border-gold/50 transition"
+                  >
+                    <Mail className="w-5 h-5 shrink-0" />
+                    <span>{hasBeenSealed ? 'Znovu zapečetit a poslat' : 'Zapečetit a poslat'}</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {draft.isChildLetter && isOwnerOfDraft && (
@@ -913,7 +1012,7 @@ export function MyLettersPage() {
             <div className="w-full max-w-lg text-center space-y-6">
               {ritualStage !== 'done' ? (
                 <div
-                  className={`relative mx-auto w-full max-w-md pt-16 ${
+                  className={`relative mx-auto w-full max-w-md pt-12 ${
                     ritualStage === 'flying' ? 'animate-envelope-fly-away' : ''
                   }`}
                 >
@@ -930,7 +1029,7 @@ export function MyLettersPage() {
                   )}
 
                   {/* 3D poštovní obálka s uživatelovou známkou v pravém horním rohu a 3D voskovou pečetí uprostřed klopy */}
-                  <div className="relative p-6 sm:p-8 min-h-[280px] sm:min-h-[300px] flex flex-col justify-between overflow-hidden">
+                  <div className="relative px-7 py-6 sm:px-9 sm:py-7 min-h-[280px] sm:min-h-[300px] flex flex-col justify-between">
                     <img
                       src="/assets/obalka-3d.png"
                       alt=""
@@ -939,17 +1038,8 @@ export function MyLettersPage() {
                       className="absolute inset-0 w-full h-full object-fill select-none pointer-events-none drop-shadow-[0_22px_44px_rgba(20,16,12,0.38)]"
                     />
 
-                    {/* Horní řádek obálky: Odesílatel a uživatelova 3D známka v pravém horním rohu */}
-                    <div className="relative z-10 flex items-start justify-between gap-3">
-                      <div className="text-left">
-                        <div className="text-[11px] font-bold uppercase tracking-widest text-fir/80">
-                          Odesílatel
-                        </div>
-                        <div className="font-fairytale font-bold text-xl text-slate-text">
-                          {draft.recipientName}
-                        </div>
-                      </div>
-
+                    {/* Horní řádek obálky: známka v pravém horním rohu */}
+                    <div className="relative z-10 flex items-start justify-end">
                       {profile && (
                         <Avatar
                           avatarId={profile.avatarId}
@@ -960,20 +1050,34 @@ export function MyLettersPage() {
                       )}
                     </div>
 
+                    {/* Odesílatel v čisté ploše levého křídla obálky pod horní šikmou linkou */}
+                    <div className="relative z-10 flex items-center justify-start -mt-6 pl-1 sm:pl-2">
+                      <div className="text-left leading-tight">
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-fir/80">
+                          Odesílatel
+                        </div>
+                        <div className="font-fairytale font-bold text-xl sm:text-2xl text-slate-text mt-0.5">
+                          {draft.recipientName}
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Střed obálky na klopě: 3D vosková pečeť s vyraženou hvězdou */}
-                    <div className="relative z-20 my-2 flex justify-center">
+                    <div className="relative z-20 -mt-10 mb-2 flex justify-center pointer-events-none">
                       {(ritualStage === 'sealing' || ritualStage === 'flying') && (
                         <WaxSealSvg className="w-20 h-20 sm:w-24 sm:h-24" pressed />
                       )}
                     </div>
 
-                    {/* Adresát na obálce */}
-                    <div className="relative z-10 text-right">
-                      <div className="text-xs font-bold uppercase tracking-widest text-fir/80">
-                        Adresát
-                      </div>
-                      <div className="font-handwritten font-bold text-2xl sm:text-3xl text-fir leading-tight">
-                        DOPIS JEŽÍŠKOVI • 24. 12.
+                    {/* Adresát na spodní klopě obálky čistě zarovnaný nad celým textem */}
+                    <div className="relative z-10 flex justify-center sm:justify-end pr-0 sm:pr-2">
+                      <div className="inline-block text-center sm:text-left">
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-fir/80">
+                          Adresát
+                        </div>
+                        <div className="font-handwritten font-bold text-[22px] sm:text-[26px] text-fir leading-none mt-0.5 whitespace-nowrap">
+                          DOPIS JEŽÍŠKOVI • 24. 12.
+                        </div>
                       </div>
                     </div>
                   </div>

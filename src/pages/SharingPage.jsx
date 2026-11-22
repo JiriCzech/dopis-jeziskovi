@@ -364,68 +364,67 @@ export function SharingPage() {
         </div>
       </div>
 
-      {/* 2. Přidat blízkého + dárkové visačky blízkých */}
-      <section className="stationery-sheet rounded-3xl p-5 sm:p-7 space-y-5 relative overflow-hidden">
-        <div className="stationery-inner-frame" aria-hidden="true" />
-        <div className="relative z-10">
-          <h2 className="font-fairytale font-bold text-2xl text-slate-text">
+      {/* 2. Přidat blízkého + volně položené 3D visačky blízkých přímo na krémovém pozadí */}
+      <section className="space-y-6">
+        <div className="space-y-3">
+          <h2 className="font-fairytale font-bold text-2xl sm:text-[28px] text-slate-text">
             Přidat blízkého
           </h2>
-        </div>
 
-        <form onSubmit={handleSearchOrJoin} className="relative z-10 flex flex-col sm:flex-row gap-2.5">
-          <div className="relative flex-1 min-w-0">
-            <Search className="w-5 h-5 text-slate-text-muted absolute left-4 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Např. Dana#7392 nebo SKUPINA-1024"
-              className="w-full min-h-[48px] pl-12 pr-4 py-2.5 rounded-xl border border-paper-warm bg-paper text-base text-slate-text focus:outline-none focus:ring-2 focus:ring-fir/30 focus:border-fir"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={searching || !searchInput.trim()}
-            className="min-h-[48px] whitespace-nowrap px-6 py-2.5 rounded-xl bg-fir hover:bg-fir-hover text-white text-base font-bold transition disabled:opacity-50 shrink-0"
-          >
-            {searching ? 'Ověřuji...' : 'Potvrdit kód'}
-          </button>
-        </form>
-
-        {searchError && (
-          <p className="relative z-10 text-base text-crimson bg-crimson-soft px-4 py-3 rounded-xl">
-            {searchError}
-          </p>
-        )}
-
-        {foundUser && (
-          <div className="relative z-10 p-4 rounded-2xl bg-fir-soft border-[1.5px] border-fir flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <Avatar avatarId={foundUser.avatarId} avatarBg={foundUser.avatarBg} size="md" />
-              <div className="min-w-0">
-                <div className="font-bold text-lg text-slate-text truncate">
-                  {foundUser.displayName}
-                </div>
-                <div className="text-sm text-slate-text-muted truncate">
-                  {foundUser.displayName}#{foundUser.tag}
-                </div>
-              </div>
+          <form onSubmit={handleSearchOrJoin} className="flex flex-col sm:flex-row gap-2.5">
+            <div className="relative flex-1 min-w-0">
+              <Search className="w-5 h-5 text-slate-text-muted absolute left-4 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Např. Dana#7392 nebo SKUPINA-1024"
+                className="w-full min-h-[48px] pl-12 pr-4 py-2.5 rounded-xl border border-fir/30 bg-sheet text-base text-slate-text focus:outline-none focus:ring-2 focus:ring-fir/30 focus:border-fir shadow-xs"
+              />
             </div>
             <button
-              type="button"
-              onClick={() => handleSendInvite(foundUser)}
-              className="min-h-[48px] whitespace-nowrap inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-fir hover:bg-fir-hover text-white text-base font-bold transition shrink-0"
+              type="submit"
+              disabled={searching || !searchInput.trim()}
+              className="min-h-[48px] whitespace-nowrap px-6 py-2.5 rounded-xl bg-fir hover:bg-fir-hover text-white text-base font-bold transition disabled:opacity-50 shrink-0 shadow-xs"
             >
-              <UserPlus className="w-5 h-5 shrink-0" />
-              <span>Odeslat pozvánku</span>
+              {searching ? 'Ověřuji...' : 'Potvrdit kód'}
             </button>
-          </div>
-        )}
+          </form>
+
+          {searchError && (
+            <p className="text-base text-crimson bg-crimson-soft px-4 py-3 rounded-xl">
+              {searchError}
+            </p>
+          )}
+
+          {foundUser && (
+            <div className="p-4 rounded-2xl bg-fir-soft border-[1.5px] border-fir flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <Avatar avatarId={foundUser.avatarId} avatarBg={foundUser.avatarBg} size="md" />
+                <div className="min-w-0">
+                  <div className="font-bold text-lg text-slate-text truncate">
+                    {foundUser.displayName}
+                  </div>
+                  <div className="text-sm text-slate-text-muted truncate">
+                    {foundUser.displayName}#{foundUser.tag}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleSendInvite(foundUser)}
+                className="min-h-[48px] whitespace-nowrap inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-fir hover:bg-fir-hover text-white text-base font-bold transition shrink-0"
+              >
+                <UserPlus className="w-5 h-5 shrink-0" />
+                <span>Odeslat pozvánku</span>
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Čekající pozvánky */}
         {(incomingRequests.length > 0 || outgoingRequests.length > 0) && (
-          <div className="relative z-10 space-y-3 pt-4 border-t border-gold/35">
+          <div className="space-y-3 pt-2">
             <h3 className="text-base font-bold text-slate-text">Čekající pozvánky</h3>
 
             {incomingRequests.map((req) => {
@@ -506,9 +505,9 @@ export function SharingPage() {
           </div>
         )}
 
-        {/* Seznam propojených blízkých */}
-        <div className="relative z-10 space-y-3 pt-4 border-t border-gold/35">
-          <h3 className="text-base font-bold text-slate-text">
+        {/* Seznam propojených blízkých: 3D visačky volně na pozadí */}
+        <div className="space-y-4 pt-1">
+          <h3 className="font-fairytale font-bold text-2xl sm:text-[26px] text-slate-text">
             Propojení blízcí ({acceptedContacts.length})
           </h3>
 
@@ -517,7 +516,7 @@ export function SharingPage() {
               Zatím žádní propojení blízcí.
             </p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-8 pt-1">
               {acceptedContacts.map(({ connectionId, user }) => {
                 const memberCard = familyCards.find(
                   (c) => !c.isChildLetter && c.ownerProfile?.uid === user.uid
@@ -525,7 +524,7 @@ export function SharingPage() {
                 const wishCount = memberCard ? (memberCard.availableWishes || []).length : null;
                 const wishText =
                   wishCount === null
-                    ? 'Propojeno'
+                    ? null
                     : wishCount === 0
                       ? 'všechna přání splněna'
                       : wishCount === 1
@@ -550,32 +549,27 @@ export function SharingPage() {
                       onClick={() => handleDeclineOrRemove(connectionId, 'Propojení bylo odebráno.')}
                       title="Odebrat propojení"
                       aria-label={`Odebrat propojení s ${user.displayName}`}
-                      className="absolute top-20 right-5 z-20 p-1.5 rounded-xl text-slate-text-muted hover:text-crimson hover:bg-crimson-soft/70 transition-colors"
+                      className="absolute top-[74px] right-5 z-20 p-1.5 rounded-xl text-slate-text-muted hover:text-crimson hover:bg-crimson-soft/70 transition-colors"
                     >
                       <X className="w-4 h-4" />
                     </button>
 
-                    <div className="relative z-10 min-h-[320px] px-7 pt-24 pb-8 flex flex-col items-center justify-between">
-                      <div className="my-auto py-2 flex flex-col items-center space-y-2.5 max-w-full">
+                    <div className="relative z-10 min-h-[296px] sm:min-h-[310px] px-5 pt-24 pb-8 flex flex-col items-center justify-center">
+                      <div className="flex flex-col items-center space-y-2.5 max-w-full">
                         <Avatar avatarId={user.avatarId} avatarBg={user.avatarBg} size="lg" onTag />
                         <div className="space-y-1 max-w-full">
-                          <div className="font-fairytale font-bold text-3xl text-slate-text leading-tight break-words">
+                          <div className="font-fairytale font-bold text-[26px] sm:text-[28px] text-slate-text leading-tight break-words">
                             {user.displayName}
                           </div>
-                          <div className="text-sm font-bold text-fir">
-                            {wishText}
-                          </div>
+                          {wishText && (
+                            <div className="text-sm font-bold text-fir">
+                              {wishText}
+                            </div>
+                          )}
                           <div className="text-xs text-slate-text-muted truncate">
                             {user.displayName}#{user.tag}
                           </div>
                         </div>
-                      </div>
-
-                      <div className="pt-2">
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-fir-soft border border-fir/25 text-xs font-bold text-fir">
-                          <Check className="w-3.5 h-3.5 shrink-0" />
-                          <span>Propojeno</span>
-                        </span>
                       </div>
                     </div>
                   </div>
@@ -586,12 +580,11 @@ export function SharingPage() {
         </div>
       </section>
 
-      {/* 3. Správa skupin */}
-      <section className="stationery-sheet rounded-3xl p-5 sm:p-7 space-y-5 relative overflow-hidden">
-        <div className="stationery-inner-frame" aria-hidden="true" />
-        <div className="relative z-10 flex flex-wrap items-center justify-between gap-3">
+      {/* 3. Správa skupin (každá skupina jedna čistá plochá karta bez vnořených rámečků) */}
+      <section className="space-y-4 pt-2">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="font-fairytale font-bold text-2xl text-slate-text flex items-center gap-2">
+            <h2 className="font-fairytale font-bold text-2xl sm:text-[28px] text-slate-text flex items-center gap-2">
               <Users className="w-5 h-5 text-fir shrink-0" />
               <span>Skupiny</span>
             </h2>
@@ -609,7 +602,7 @@ export function SharingPage() {
         {groupFormOpen && (
           <form
             onSubmit={handleSaveGroup}
-            className="relative z-10 rounded-2xl bg-kraft border-[1.5px] border-fir p-4 sm:p-5 space-y-5 animate-slide-up"
+            className="rounded-2xl bg-sheet border-[1.5px] border-fir p-5 space-y-5 shadow-card animate-slide-up"
           >
             <div className="flex items-center justify-between gap-2">
               <h3 className="font-fairytale font-bold text-2xl text-slate-text">
@@ -751,11 +744,11 @@ export function SharingPage() {
         )}
 
         {groups.length === 0 ? (
-          <p className="relative z-10 text-sm text-slate-text-muted">
+          <p className="text-sm text-slate-text-muted">
             Zatím žádné skupiny.
           </p>
         ) : (
-          <div className="relative z-10 space-y-3">
+          <div className="space-y-4">
             {groups.map((g) => {
               const isFounder = g.createdBy === authUser?.uid;
               const codeCopied = copiedGroupId === g.id;
@@ -770,7 +763,7 @@ export function SharingPage() {
               return (
                 <div
                   key={g.id}
-                  className="p-4 rounded-2xl bg-kraft border-[1.5px] border-fir space-y-3"
+                  className="p-5 rounded-2xl bg-sheet border-[1.5px] border-fir/30 shadow-card space-y-3.5"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex items-start gap-3 min-w-0">
@@ -778,15 +771,15 @@ export function SharingPage() {
                         {renderGroupIcon(g.icon, 'w-5 h-5')}
                       </div>
                       <div className="min-w-0">
-                        <div className="font-bold text-slate-text text-base flex flex-wrap items-center gap-2">
+                        <div className="font-bold text-slate-text text-base sm:text-lg flex flex-wrap items-center gap-2">
                           <span>{g.name}</span>
-                          <span className="px-2 py-0.5 rounded-full bg-sheet border border-fir/25 text-xs font-medium text-slate-text-muted">
+                          <span className="px-2.5 py-0.5 rounded-full bg-paper border border-fir/20 text-xs font-medium text-slate-text-muted">
                             {g.showChildLetters === false
                               ? 'Jen osobní dopisy'
                               : 'Včetně dětských dopisů'}
                           </span>
                         </div>
-                        <div className="text-xs text-slate-text-muted mt-1 break-words">
+                        <div className="text-xs sm:text-sm text-slate-text-muted mt-1 break-words">
                           Členové ({(g.memberUids || []).length}): {memberNames.join(', ')}
                         </div>
                       </div>
@@ -798,7 +791,7 @@ export function SharingPage() {
                           <button
                             type="button"
                             onClick={() => openEditGroupForm(g)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sheet border border-fir/35 text-xs font-bold text-slate-text hover:bg-fir-soft"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-paper border border-fir/30 text-xs font-bold text-slate-text hover:bg-fir-soft transition"
                           >
                             <Edit3 className="w-3.5 h-3.5 shrink-0" />
                             <span>Upravit</span>
@@ -808,7 +801,7 @@ export function SharingPage() {
                             onClick={() => setGroupToDelete(g)}
                             title="Smazat skupinu"
                             aria-label={`Smazat skupinu ${g.name}`}
-                            className="p-2 rounded-xl text-crimson hover:bg-crimson-soft"
+                            className="p-2 rounded-xl text-crimson hover:bg-crimson-soft transition"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -817,7 +810,7 @@ export function SharingPage() {
                         <button
                           type="button"
                           onClick={() => handleLeaveGroup(g)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sheet border border-crimson/35 text-xs font-bold text-crimson hover:bg-crimson-soft"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-paper border border-crimson/35 text-xs font-bold text-crimson hover:bg-crimson-soft transition"
                         >
                           <LogOut className="w-3.5 h-3.5 shrink-0" />
                           <span>Opustit skupinu</span>
@@ -827,16 +820,16 @@ export function SharingPage() {
                   </div>
 
                   {g.inviteCode && (
-                    <div className="px-3.5 py-2.5 rounded-xl bg-sheet border border-fir/30 flex flex-wrap items-center justify-between gap-2">
+                    <div className="pt-3 border-t border-paper-warm/80 flex flex-wrap items-center justify-between gap-2.5">
                       <div className="text-xs sm:text-sm text-slate-text">
                         <span className="text-slate-text-muted">Zvací kód skupiny: </span>
                         <strong className="font-bold text-fir">{g.inviteCode}</strong>
                       </div>
-                      <div className="flex flex-wrap items-center gap-1.5">
+                      <div className="flex flex-wrap items-center gap-2">
                         <button
                           type="button"
                           onClick={() => handleCopyGroupLink(g)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-fir hover:bg-fir-hover text-white text-xs font-bold transition"
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-fir hover:bg-fir-hover text-white text-xs font-bold transition"
                         >
                           {copiedGroupLinkId === g.id ? (
                             <Check className="w-3.5 h-3.5 shrink-0" />
@@ -852,7 +845,7 @@ export function SharingPage() {
                         <button
                           type="button"
                           onClick={() => handleCopyGroupCode(g)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-paper hover:bg-kraft border border-paper-warm text-xs font-bold text-slate-text transition"
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-paper hover:bg-kraft border border-paper-warm text-xs font-bold text-slate-text transition"
                         >
                           {codeCopied ? (
                             <Check className="w-3.5 h-3.5 text-fir shrink-0" />

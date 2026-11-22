@@ -53,8 +53,10 @@ const ShoppingItemRow = memo(function ShoppingItemRow({
 
   return (
     <li
-      className={`rounded-2xl bg-kraft/75 border-[1.5px] border-fir px-4 py-3.5 sm:px-5 sm:py-4 flex items-center justify-between gap-3 sm:gap-4 transition-all duration-150 ${
-        item.isBought ? 'opacity-70 bg-paper' : 'shadow-xs'
+      className={`rounded-2xl border-[1.5px] px-4 py-3.5 sm:px-5 sm:py-4 flex items-center justify-between gap-3 sm:gap-4 transition-all duration-150 ${
+        item.isBought
+          ? 'bg-paper/90 border-fir/45'
+          : 'bg-kraft/75 border-fir shadow-xs'
       }`}
     >
       <div className="flex items-start gap-3.5 sm:gap-4 min-w-0 flex-1">
@@ -161,28 +163,23 @@ const ShoppingItemRow = memo(function ShoppingItemRow({
         </div>
       </div>
 
-      {/* 3D ilustrace zabaleného dárku s indikátorem zabalení přímo u ilustrace */}
+      {/* 3D ilustrace zabaleného dárku (při koupení jemně ztlumená opacity bez duplicitních odznaků) */}
       <div
         onClick={() => onToggleBought(item)}
-        className="cursor-pointer shrink-0 select-none flex flex-col items-center"
+        className="cursor-pointer shrink-0 select-none flex items-center justify-center"
         title={
           item.isBought
-            ? 'Dárek je kompletně připravený a zabalený'
-            : 'Kliknutím označíš dárek jako připravený a zabalený'
+            ? 'Dárek je koupený a zabalený'
+            : 'Kliknutím označíš dárek jako zabalený'
         }
       >
         <WrappedPresentSvg
           seed={`${item.id}-${titleText}`}
           isBought={item.isBought}
           className={`w-16 h-16 sm:w-20 sm:h-20 transition-transform duration-200 ${
-            item.isBought ? 'scale-105' : 'opacity-90 hover:scale-105'
+            item.isBought ? '' : 'hover:scale-105'
           }`}
         />
-        {item.isBought && (
-          <span className="mt-0.5 px-2 py-0.5 rounded-full bg-fir text-white text-[10px] font-bold tracking-wide">
-            Zabaleno
-          </span>
-        )}
       </div>
     </li>
   );

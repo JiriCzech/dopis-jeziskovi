@@ -341,6 +341,18 @@ export async function saveLetter(letterData) {
       )
     : [];
 
+  const now = Date.now();
+  const isSealingNow = Boolean(letterData._justSealed);
+  const preserveCleanSeal = Boolean(letterData._preserveSealClean && letterData.sealedAt);
+  const sealedAtVal = isSealingNow ? now : letterData.sealedAt || null;
+  const updatedAtVal = isSealingNow
+    ? now
+    : preserveCleanSeal
+      ? letterData.sealedAt
+      : sealedAtVal
+        ? Math.max(now, sealedAtVal + 1)
+        : now;
+
   const payload = {
     ownerUid: letterData.ownerUid,
     coParentUids,
@@ -352,7 +364,7 @@ export async function saveLetter(letterData) {
       typeof letterData.handwrittenPhotoUrl === 'string'
         ? letterData.handwrittenPhotoUrl
         : '',
-    sealedAt: letterData.sealedAt || null,
+    sealedAt: sealedAtVal,
     printTheme: ['handwritten', 'fairytale', 'minimal'].includes(letterData.printTheme)
       ? letterData.printTheme
       : 'handwritten',
@@ -361,10 +373,10 @@ export async function saveLetter(letterData) {
       title: (w.title || '').trim(),
       url: normalizeUrl(w.url),
       note: (w.note || '').trim(),
-      createdAt: w.createdAt || Date.now(),
+      createdAt: w.createdAt || now,
     })),
-    createdAt: letterData.createdAt || Date.now(),
-    updatedAt: Date.now(),
+    createdAt: letterData.createdAt || now,
+    updatedAt: updatedAtVal,
   };
 
   if (isDemoModeActive()) {

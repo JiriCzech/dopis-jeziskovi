@@ -277,24 +277,10 @@ export function WrappedPresentSvg({ seed = '', isBought = false, className = '' 
         alt=""
         draggable={false}
         aria-hidden="true"
-        className="w-full h-full object-contain drop-shadow-[0_6px_12px_rgba(30,36,33,0.18)]"
+        className={`w-full h-full object-contain drop-shadow-[0_6px_12px_rgba(30,36,33,0.18)] transition-opacity duration-200 ${
+          isBought ? 'opacity-45' : 'opacity-100'
+        }`}
       />
-      {isBought && (
-        <span
-          aria-hidden="true"
-          className="w-6 h-6 rounded-full bg-fir border-2 border-gold-glow text-white flex items-center justify-center shadow-sm absolute -top-1 -right-1"
-        >
-          <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none">
-            <path
-              d="M3.5 8.5 L6.5 11.5 L12.5 5"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </span>
-      )}
     </div>
   );
 }

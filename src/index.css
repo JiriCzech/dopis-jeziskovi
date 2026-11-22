@@ -78,16 +78,28 @@
     inset 0 0 36px rgba(168, 134, 82, 0.12);
 }
 
-/* Diskrétní teplé vodorovné linky na ručním papíře */
+/* Jemné teplé vodorovné linky přesně zarovnané na řádkování Caveat (36px) */
 .lined-letter-paper {
   background-color: transparent;
   background-image: repeating-linear-gradient(
     to bottom,
     transparent 0px,
-    transparent 37px,
-    rgba(139, 115, 85, 0.14) 37px,
-    rgba(139, 115, 85, 0.14) 38px
+    transparent 35px,
+    rgba(139, 115, 85, 0.14) 35px,
+    rgba(139, 115, 85, 0.14) 36px
   );
+  background-size: 100% 36px;
+  background-attachment: local;
+  background-position: 0 0;
+}
+
+/* Skrytí posuvníku u horizontálně rolovatelného přepínače dopisů na mobilu */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Řádek přání přímo na dopisním papíře */

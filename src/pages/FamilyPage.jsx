@@ -2,7 +2,6 @@ import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft,
-  ExternalLink,
   Gift,
   MailOpen,
   UserPlus,
@@ -80,9 +79,8 @@ const KraftGiftTagCard = memo(function KraftGiftTagCard({
         </div>
 
         <div className="pt-2">
-          <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-sheet border border-fir/45 text-xs font-bold text-fir group-hover:bg-fir group-hover:text-white group-hover:border-fir transition-colors">
-            <MailOpen className="w-3.5 h-3.5 shrink-0" />
-            <span>Rozpečetit obálku</span>
+          <span className="inline-flex items-center gap-1 text-sm font-bold text-fir group-hover:text-fir-dark group-hover:translate-x-0.5 transition-all tracking-wide">
+            Rozpečetit dopis →
           </span>
         </div>
       </div>
@@ -107,6 +105,14 @@ export function FamilyPage() {
   const [exitingWishId, setExitingWishId] = useState(null);
 
   useEffect(() => {
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent('kaprik:family-state', { detail: { view: 'overview' } })
+      );
+    };
+  }, []);
+
+  useEffect(() => {
     if (
       selectedGroupFilter !== 'all' &&
       !groups.some((g) => g.id === selectedGroupFilter)
@@ -119,6 +125,15 @@ export function FamilyPage() {
     () => familyCards.find((c) => c.cardId === activeCardId) || null,
     [familyCards, activeCardId]
   );
+
+  useEffect(() => {
+    const view = !activeCard
+      ? 'overview'
+      : unsealedCardIds[activeCard.cardId]
+        ? 'detail'
+        : 'envelope';
+    window.dispatchEvent(new CustomEvent('kaprik:family-state', { detail: { view } }));
+  }, [activeCard, unsealedCardIds]);
 
   const showGroupFilters = groups.length >= 2;
 
@@ -199,7 +214,7 @@ export function FamilyPage() {
             <button
               type="button"
               onClick={() => handleBreakEnvelopeSeal(activeCard.cardId)}
-              className="w-full p-7 sm:p-11 text-left relative overflow-hidden group focus:outline-none min-h-[340px] sm:min-h-[390px] flex flex-col justify-between"
+              className="w-full p-7 sm:p-11 text-left relative group focus:outline-none min-h-[340px] sm:min-h-[390px] flex flex-col justify-between"
             >
               <img
                 src="/assets/obalka-3d.png"
@@ -211,15 +226,15 @@ export function FamilyPage() {
 
               {/* Horní řádek: Odesílatel + 3D poštovní známka v pravém horním rohu */}
               <div className="relative z-10 flex items-start justify-between gap-4">
-                <div>
-                  <div className="text-[11px] font-bold uppercase tracking-widest text-fir">
+                <div className="pt-4 sm:pt-6 pl-1 sm:pl-3">
+                  <div className="text-[11px] font-bold uppercase tracking-widest text-fir/85">
                     Dopis od
                   </div>
-                  <div className="font-fairytale font-bold text-2xl sm:text-3xl text-slate-text">
+                  <div className="font-fairytale font-bold text-2xl sm:text-3xl text-slate-text leading-tight">
                     {activeCard.recipientName}
                   </div>
                   {activeCard.isChildLetter && activeCard.parentName && (
-                    <div className="text-xs font-semibold text-slate-text-muted">
+                    <div className="text-xs font-semibold text-slate-text-muted mt-0.5">
                       píše {activeCard.parentName}
                     </div>
                   )}
@@ -248,31 +263,49 @@ export function FamilyPage() {
               </div>
 
               {/* Spodní řádek obálky */}
-              <div className="relative z-10 flex items-end justify-between gap-4 pt-2">
+              <div className="relative z-10 flex items-end justify-between gap-4 pt-2 px-1 sm:px-2">
                 <div className="text-sm font-bold text-fir">
                   {formatWishCount(wishes.length)}
                 </div>
-                <div className="font-handwritten font-bold text-2xl sm:text-3xl text-fir">
+                <div className="font-handwritten font-bold text-xl sm:text-2xl text-fir">
                   DOPIS JEŽÍŠKOVI • 24. 12.
                 </div>
               </div>
             </button>
           </div>
         ) : (
-          <div className="space-y-6 animate-letter-slide-out">
-            {/* Vysunutý list ručního dopisního papíru (#F9F1DF) */}
-            <article className="relative p-6 sm:p-11 rounded-[20px] handmade-letter-paper overflow-hidden">
-              <img
-                src="/assets/vetvicka-3d.png"
-                alt=""
-                draggable={false}
+          <div className="animate-letter-slide-out">
+            {/* Hmatatelný blok ručních dopisních papírů stejně jako při psaní dopisu */}
+            <div className="relative my-2">
+              <div
                 aria-hidden="true"
-                className="w-24 sm:w-32 h-auto absolute top-3 right-4 pointer-events-none select-none z-20 drop-shadow-[0_6px_12px_rgba(27,67,50,0.18)]"
+                style={{ filter: 'url(#handmade-paper-edge)' }}
+                className="print:hidden no-print absolute inset-0 -rotate-[0.7deg] translate-y-2 -translate-x-1 rounded-[18px] handmade-letter-paper opacity-90 pointer-events-none"
+              />
+              <div
+                aria-hidden="true"
+                style={{ filter: 'url(#handmade-paper-edge)' }}
+                className="print:hidden no-print absolute inset-0 rotate-[0.5deg] translate-y-3 translate-x-1 rounded-[18px] handmade-letter-paper opacity-85 pointer-events-none"
               />
 
-              <div className="relative z-10">
-                <div className="flex items-center justify-between gap-4 pb-5 border-b border-[#8B7355]/25 pr-24 sm:pr-28">
-                  <div className="flex items-center gap-4 min-w-0">
+              <article className="relative p-6 sm:p-12 md:px-14 md:py-12">
+                <div
+                  aria-hidden="true"
+                  style={{ filter: 'url(#handmade-paper-edge)' }}
+                  className="print:hidden no-print absolute inset-0 rounded-[20px] handmade-letter-paper pointer-events-none"
+                />
+
+                <img
+                  src="/assets/vetvicka-3d.png"
+                  alt=""
+                  draggable={false}
+                  aria-hidden="true"
+                  className="w-28 sm:w-36 h-auto absolute top-2 right-3 sm:top-3 sm:right-5 pointer-events-none select-none z-20 drop-shadow-[0_6px_12px_rgba(27,67,50,0.18)]"
+                />
+
+                <div className="relative z-10">
+                  {/* Hlavička autora dopisu se známkou */}
+                  <div className="flex items-center gap-4 pb-5 border-b border-[#8B7355]/25 pr-24 sm:pr-32">
                     <Avatar avatarId={avatarId} avatarBg={avatarBg} size="lg" onTag />
                     <div className="min-w-0">
                       <h1 className="font-fairytale font-bold text-[32px] sm:text-[38px] leading-tight text-slate-text break-words">
@@ -285,120 +318,120 @@ export function FamilyPage() {
                       )}
                     </div>
                   </div>
-                </div>
 
-                {/* Připnutá papírová fotografie ručně psaného dopisu se 3D mosaznou sponkou */}
-                {letter?.handwrittenPhotoUrl && (
-                  <div className="mt-6 mb-4 relative pt-5 max-w-md mx-auto">
-                    <PaperClipSvg className="w-9 h-14 sm:w-10 sm:h-16 absolute -top-2 left-8 z-30 pointer-events-none" />
-                    <div className="-rotate-1 bg-[#FFFDF8] p-3 pb-4 rounded-xl shadow-[0_10px_24px_rgba(30,36,33,0.16)] border border-[#E2D6BE]">
-                      <img
-                        src={letter.handwrittenPhotoUrl}
-                        alt={`Ručně psaný dopis (${activeCard.recipientName})`}
-                        className="max-h-[360px] w-full object-contain rounded-lg bg-paper mx-auto"
-                      />
+                  {/* Připnutá papírová fotografie ručně psaného dopisu se 3D mosaznou sponkou */}
+                  {letter?.handwrittenPhotoUrl && (
+                    <div className="mt-7 mb-7 relative pt-5 max-w-md mx-auto">
+                      <PaperClipSvg className="w-9 h-14 sm:w-10 sm:h-16 absolute -top-2 left-8 z-30 pointer-events-none" />
+                      <div className="-rotate-1 bg-[#FFFDF8] p-3 pb-4 rounded-xl shadow-[0_10px_24px_rgba(30,36,33,0.16)] border border-[#E2D6BE]">
+                        <img
+                          src={letter.handwrittenPhotoUrl}
+                          alt={`Ručně psaný dopis (${activeCard.recipientName})`}
+                          className="max-h-[360px] w-full object-contain rounded-lg bg-paper mx-auto"
+                        />
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {!letter ? (
-                  <p className="py-8 text-lg text-slate-text-muted text-center">
-                    {activeCard.recipientName} zatím svůj dopis Ježíškovi teprve chystá.
-                  </p>
-                ) : (
-                  <div className="mt-6 lined-letter-paper py-2 space-y-5">
-                    <div className="font-handwritten text-3xl sm:text-4xl font-bold text-fir w-full">
-                      Milý Ježíšku,
-                    </div>
-
-                    {letter.introText && (
-                      <p className="font-handwritten text-[24px] sm:text-[27px] text-[#1E2421] whitespace-pre-line leading-[38px] break-words">
-                        {letter.introText}
-                      </p>
-                    )}
-
-                    <div className="pt-5 border-t border-[#8B7355]/25 flex items-end justify-between gap-4">
-                      <p className="font-handwritten text-[24px] sm:text-[27px] text-[#1E2421] whitespace-pre-line leading-relaxed break-words">
-                        {letter.outroText || activeCard.recipientName}
-                      </p>
-                      <WaxSealSvg className="w-16 h-16 sm:w-18 sm:h-18 shrink-0" />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </article>
-
-            {/* Seznam přání k tajné rezervaci */}
-            <section className="space-y-4">
-              <h2 className="font-fairytale font-bold text-2xl sm:text-3xl text-slate-text">
-                Přání v dopise ({wishes.length})
-              </h2>
-
-              {wishes.length === 0 ? (
-                <div className="py-8 text-center">
-                  <p className="font-fairytale font-bold text-2xl text-slate-text">
-                    Všechna přání jsou zamluvená
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {wishes.map((wish, idx) => {
-                    const isExiting = exitingWishId === wish.id;
-                    return (
-                      <div
-                        key={wish.id}
-                        className={`gift-tag-card rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-                          isExiting ? 'animate-wish-claim-exit' : ''
-                        }`}
-                      >
-                        <div className="flex items-start gap-3.5 min-w-0 flex-1">
-                          <img
-                            src={`/assets/darek-${(idx % 3) + 1}-3d.png`}
-                            alt=""
-                            draggable={false}
-                            aria-hidden="true"
-                            className="w-8 h-8 object-contain shrink-0 mt-1 drop-shadow-[0_3px_6px_rgba(30,36,33,0.18)] select-none"
-                          />
-                          <div className="space-y-1 min-w-0 flex-1">
-                            <h3 className="font-handwritten text-2xl sm:text-3xl font-bold text-slate-text leading-snug break-words">
-                              {wish.title}
-                            </h3>
-                            {wish.note && (
-                              <p className="text-base italic text-slate-text-muted leading-relaxed break-words">
-                                {wish.note}
-                              </p>
-                            )}
-                            {wish.url && (
-                              <div className="pt-1">
-                                <a
-                                  href={wish.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gold-soft border border-gold/45 text-slate-text text-sm font-bold hover:bg-gold/30 transition"
-                                >
-                                  <span>Ukázka</span>
-                                  <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                                </a>
-                              </div>
-                            )}
-                          </div>
+                  {!letter ? (
+                    <p className="py-8 text-lg text-slate-text-muted text-center">
+                      {activeCard.recipientName} zatím svůj dopis Ježíškovi teprve chystá.
+                    </p>
+                  ) : (
+                    <div className="mt-6 space-y-6">
+                      {/* 1. Úvodní vzkaz */}
+                      <div className="space-y-3">
+                        <div className="font-handwritten text-4xl sm:text-5xl font-bold text-fir leading-none">
+                          Milý Ježíšku,
                         </div>
 
-                        <button
-                          type="button"
-                          disabled={isExiting}
-                          onClick={() => handleClaimWish(activeCard, wish)}
-                          className="min-h-[50px] shrink-0 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-fir hover:bg-fir-hover text-white text-base font-bold shadow-sm border border-gold/45 transition disabled:opacity-60"
-                        >
-                          <Gift className="w-5 h-5 text-gold-glow shrink-0" />
-                          <span>Tohle koupím</span>
-                        </button>
+                        {letter.introText && (
+                          <p className="lined-letter-paper font-handwritten text-[24px] sm:text-[26px] text-[#1E2421] whitespace-pre-line leading-[36px] break-words">
+                            {letter.introText}
+                          </p>
+                        )}
                       </div>
-                    );
-                  })}
+
+                      {/* 2. Seznam přání přímo UVNITŘ dopisního papíru */}
+                      <div className="space-y-2 pt-1">
+                        <div className="font-handwritten font-bold text-2xl sm:text-3xl text-crimson">
+                          Moje přání pod stromeček:
+                        </div>
+
+                        {wishes.length === 0 ? (
+                          <p className="font-handwritten text-2xl text-slate-text-muted py-2">
+                            Všechna přání jsou již tajně zamluvená ♥
+                          </p>
+                        ) : (
+                          <ul className="space-y-0.5">
+                            {wishes.map((wish, idx) => {
+                              const isExiting = exitingWishId === wish.id;
+                              return (
+                                <li
+                                  key={wish.id}
+                                  className={`letter-wish-line py-2.5 px-1.5 sm:px-2.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 ${
+                                    isExiting ? 'animate-wish-claim-exit' : ''
+                                  }`}
+                                >
+                                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                                    <img
+                                      src={`/assets/darek-${(idx % 3) + 1}-3d.png`}
+                                      alt=""
+                                      draggable={false}
+                                      aria-hidden="true"
+                                      className="w-7 h-7 object-contain shrink-0 translate-y-1 drop-shadow-[0_2px_4px_rgba(30,36,33,0.18)] select-none"
+                                    />
+                                    <div className="min-w-0 flex-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                                      <span className="font-handwritten font-bold text-[#1E2421] text-[25px] sm:text-[28px] leading-snug break-words">
+                                        {wish.title}
+                                      </span>
+                                      {wish.note && (
+                                        <span className="font-handwritten italic text-xl sm:text-2xl text-slate-text-muted break-words">
+                                          ({wish.note})
+                                        </span>
+                                      )}
+                                      {wish.url && (
+                                        <a
+                                          href={wish.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          title="Otevřít ukázku dárku"
+                                          className="inline-flex items-center gap-0.5 text-xs sm:text-sm font-sans font-semibold text-fir/85 hover:text-fir underline underline-offset-2 transition"
+                                        >
+                                          <span>Ukázka ↗</span>
+                                        </a>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    disabled={isExiting}
+                                    onClick={() => handleClaimWish(activeCard, wish)}
+                                    className="min-h-[42px] w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-fir hover:bg-fir-hover text-white text-sm font-bold shadow-xs border border-gold/40 transition disabled:opacity-60"
+                                  >
+                                    <Gift className="w-4 h-4 text-gold-glow shrink-0" />
+                                    <span>Tohle koupím</span>
+                                  </button>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </div>
+
+                      {/* 3. Podpis / rozloučení a 3D vosková pečeť */}
+                      <div className="pt-4 flex items-end justify-between gap-4">
+                        <p className="lined-letter-paper flex-1 min-w-0 font-handwritten text-[24px] sm:text-[26px] text-[#1E2421] whitespace-pre-line leading-[36px] break-words">
+                          {letter.outroText || activeCard.recipientName}
+                        </p>
+                        <WaxSealSvg className="w-16 h-16 sm:w-20 sm:h-20 shrink-0" />
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </section>
+              </article>
+            </div>
           </div>
         )}
       </div>
