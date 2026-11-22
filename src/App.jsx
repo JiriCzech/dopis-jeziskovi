@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { AppDataProvider } from './hooks/useAppData';
 import { Layout } from './components/Layout';
@@ -9,7 +9,6 @@ import { FamilyPage } from './pages/FamilyPage';
 import { ShoppingListPage } from './pages/ShoppingListPage';
 import { SharingPage } from './pages/SharingPage';
 import { ProfilePage } from './pages/ProfilePage';
-import { needsOnboarding } from './lib/db';
 
 function AppRoutes() {
   const {
@@ -22,33 +21,22 @@ function AppRoutes() {
     justSignedIn,
     consumeJustSignedIn,
   } = useAuth();
-  const location = useLocation();
   const navigate = useNavigate();
 
-  const isOnboarding = needsOnboarding(profile);
-
   useEffect(() => {
-    if (loading || !authUser || !profile) return;
-    if (isOnboarding) {
-      if (!location.pathname.startsWith('/profil')) {
-        navigate('/profil', { replace: true });
+    if (loading) return;
+    if (!authUser) {
+      if (window.location.pathname !== '/') {
+        navigate('/', { replace: true });
       }
       return;
     }
+    if (!profile) return;
     if (justSignedIn) {
       consumeJustSignedIn();
-      navigate('/dopis', { replace: true });
+      navigate('/', { replace: true });
     }
-  }, [
-    loading,
-    authUser,
-    profile,
-    isOnboarding,
-    justSignedIn,
-    consumeJustSignedIn,
-    location.pathname,
-    navigate,
-  ]);
+  }, [loading, authUser, profile, justSignedIn, consumeJustSignedIn, navigate]);
 
   if (loading) {
     return (
@@ -99,23 +87,16 @@ function AppRoutes() {
 
   return (
     <AppDataProvider>
-      <Layout onboardingMode={isOnboarding}>
-        {isOnboarding ? (
-          <Routes>
-            <Route path="/profil" element={<ProfilePage />} />
-            <Route path="*" element={<Navigate to="/profil" replace />} />
-          </Routes>
-        ) : (
-          <Routes>
-            <Route path="/" element={<MyLettersPage />} />
-            <Route path="/dopis" element={<MyLettersPage />} />
-            <Route path="/rodina" element={<FamilyPage />} />
-            <Route path="/nakupni-seznam" element={<ShoppingListPage />} />
-            <Route path="/sdileni" element={<SharingPage />} />
-            <Route path="/profil" element={<ProfilePage />} />
-            <Route path="*" element={<Navigate to="/dopis" replace />} />
-          </Routes>
-        )}
+      <Layout>
+        <Routes>
+          <Route path="/" element={<MyLettersPage />} />
+          <Route path="/dopis" element={<MyLettersPage />} />
+          <Route path="/rodina" element={<FamilyPage />} />
+          <Route path="/nakupni-seznam" element={<ShoppingListPage />} />
+          <Route path="/sdileni" element={<SharingPage />} />
+          <Route path="/profil" element={<ProfilePage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </Layout>
     </AppDataProvider>
   );

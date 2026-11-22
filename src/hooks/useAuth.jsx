@@ -183,7 +183,7 @@ export function AuthProvider({ children }) {
         displayName: 'Nový pisatel',
         avatarId: defaults.avatarId,
         avatarBg: defaults.avatarBg,
-        onboardingCompleted: false,
+        onboardingCompleted: true,
       });
     }
     setAuthUser({ uid: state.activeUid, isDemo: true });
@@ -216,7 +216,7 @@ export function AuthProvider({ children }) {
         if (runId !== undefined && authRunIdRef.current !== runId) return;
 
         if (!userProf) {
-          // První založení účtu po přihlášení přes Google (onboardingCompleted: false)
+          // Automatické založení profilu při prvním přihlášení přes Google rovnou do psaní dopisu
           const rawName = (
             user.displayName ||
             user.email?.split('@')[0] ||
@@ -231,7 +231,7 @@ export function AuthProvider({ children }) {
               displayName: rawName || 'Pisatel',
               avatarId: defaults.avatarId,
               avatarBg: defaults.avatarBg,
-              onboardingCompleted: false,
+              onboardingCompleted: true,
             });
           } catch (createErr) {
             console.error(
@@ -343,7 +343,7 @@ export function AuthProvider({ children }) {
         displayName: fresh.displayName,
         avatarId: defaults.avatarId,
         avatarBg: defaults.avatarBg,
-        onboardingCompleted: false,
+        onboardingCompleted: true,
       });
       setAuthUser({ uid: fresh.uid, isDemo: true });
       setProfile(created);
@@ -405,6 +405,9 @@ export function AuthProvider({ children }) {
     dismissUndoToast();
     setJustSignedIn(false);
     setProfileError(null);
+    if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+      window.history.replaceState({}, '', `/${window.location.search}${window.location.hash}`);
+    }
     if (demoMode) {
       setDemoModeActive(false);
       setDemoMode(false);

@@ -10,7 +10,6 @@ import { PENDING_INVITE_STORAGE_KEY, useAuth } from '../hooks/useAuth';
 import {
   findUserByTag,
   joinGroupByInviteCode,
-  needsOnboarding,
   sendConnectionRequest,
 } from '../lib/db';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -31,11 +30,7 @@ export function ProfilePage({ isSetup = false }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const isOnboarding =
-    isSetup ||
-    searchParams.get('setup') === '1' ||
-    !profile ||
-    needsOnboarding(profile);
+  const isOnboarding = isSetup || searchParams.get('setup') === '1' || !profile;
 
   const [displayName, setDisplayName] = useState(profile?.displayName || '');
   const [avatarId, setAvatarId] = useState(() =>
