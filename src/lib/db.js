@@ -216,7 +216,17 @@ export async function getUsersByUidsBatch(uids = []) {
   return result;
 }
 
-export async function createUserProfile({ uid, displayName, avatarId, avatarBg }) {
+export function needsOnboarding(profile) {
+  return Boolean(profile && profile.onboardingCompleted === false);
+}
+
+export async function createUserProfile({
+  uid,
+  displayName,
+  avatarId,
+  avatarBg,
+  onboardingCompleted = false,
+}) {
   const tag = await generateUniqueTag();
   const profile = {
     uid,
@@ -224,6 +234,7 @@ export async function createUserProfile({ uid, displayName, avatarId, avatarBg }
     tag,
     avatarId,
     avatarBg,
+    onboardingCompleted: Boolean(onboardingCompleted),
     createdAt: Date.now(),
   };
 
@@ -244,6 +255,10 @@ export async function updateUserProfile(uid, updates) {
     displayName: updates.displayName.trim(),
     avatarId: updates.avatarId,
     avatarBg: updates.avatarBg,
+    onboardingCompleted:
+      typeof updates.onboardingCompleted === 'boolean'
+        ? updates.onboardingCompleted
+        : true,
   };
 
   if (isDemoModeActive()) {

@@ -1,4 +1,5 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Briefcase,
   Check,
@@ -63,8 +64,18 @@ export function SharingPage() {
   const [copiedGroupId, setCopiedGroupId] = useState(null);
   const [copiedGroupLinkId, setCopiedGroupLinkId] = useState(null);
 
-  const [searchInput, setSearchInput] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('code') || '');
   const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    const prefill = searchParams.get('code');
+    if (prefill) {
+      setSearchInput(prefill);
+      searchParams.delete('code');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
   const [foundUser, setFoundUser] = useState(null);
   const [searchError, setSearchError] = useState('');
 

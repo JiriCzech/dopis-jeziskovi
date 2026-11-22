@@ -18,6 +18,7 @@ service cloud.firestore {
     //      - tag: string (required, exactly 4 ASCII digits e.g. "4821")
     //      - avatarId: string (required, 1..50 chars)
     //      - avatarBg: string (required, 1..50 chars)
+    //      - onboardingCompleted: bool (optional; false on first signup, true after onboarding)
     //      - createdAt: timestamp or non-negative number (required, immutable)
     //
     // 2. Collection: letters
@@ -166,13 +167,14 @@ service cloud.firestore {
 
     function isValidUser(data, uid) {
       return hasRequiredFields(['uid', 'displayName', 'tag', 'avatarId', 'avatarBg', 'createdAt']) &&
-        hasOnlyAllowedFields(['uid', 'displayName', 'tag', 'avatarId', 'avatarBg', 'createdAt']) &&
+        hasOnlyAllowedFields(['uid', 'displayName', 'tag', 'avatarId', 'avatarBg', 'onboardingCompleted', 'createdAt']) &&
         isValidUid(data.uid) &&
         data.uid == uid &&
         isValidNonEmptyString(data.displayName, 60) &&
         data.tag is string && data.tag.matches('^[0-9]{4}$') &&
         isValidNonEmptyString(data.avatarId, 50) &&
         isValidNonEmptyString(data.avatarBg, 50) &&
+        (!('onboardingCompleted' in data) || data.onboardingCompleted is bool) &&
         isValidTime(data.createdAt);
     }
 

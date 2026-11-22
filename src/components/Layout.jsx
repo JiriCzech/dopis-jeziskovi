@@ -1,6 +1,6 @@
 import React, { memo, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Check,
   FileHeart,
@@ -127,7 +127,7 @@ const AtmosphereBackground = memo(function AtmosphereBackground() {
 
 const COUNTDOWN_TEXT = getChristmasCountdownText();
 
-export function Layout({ children }) {
+export function Layout({ children, onboardingMode = false }) {
   const {
     authUser,
     profile,
@@ -145,6 +145,8 @@ export function Layout({ children }) {
   const { pendingRequestsCount, unboughtShoppingCount } = useAppData();
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const isLetterRoute = location.pathname === '/' || location.pathname.startsWith('/dopis');
   const [joiningInvite, setJoiningInvite] = useState(false);
   const [musicOn, setMusicOn] = useState(() => isChristmasMusicBoxPlaying());
 
@@ -193,7 +195,11 @@ export function Layout({ children }) {
     }`;
 
   return (
-    <div className="min-h-screen flex flex-col pb-24 md:pb-12 relative overflow-x-hidden max-w-full">
+    <div
+      className={`min-h-screen flex flex-col ${
+        onboardingMode ? 'pb-10' : 'pb-24'
+      } md:pb-12 relative overflow-x-hidden max-w-full`}
+    >
       {/* Sdílený SVG filtr pro přirozený organický okraj ručního papíru */}
       <svg className="sr-only" aria-hidden="true">
         <defs>
@@ -206,8 +212,8 @@ export function Layout({ children }) {
 
       <AtmosphereBackground />
 
-      {/* Ukázkový přepínač osob (pouze při ?demo=1) */}
-      {demoMode && (
+      {/* Ukázkový přepínač osob (pouze při ?demo=1 mimo čistý onboarding) */}
+      {!onboardingMode && demoMode && (
         <div className="demo-banner no-print relative z-20 bg-gold-soft border-b border-fir/30 px-4 py-2 text-sm text-slate-text">
           <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
@@ -243,90 +249,96 @@ export function Layout({ children }) {
         </div>
       )}
 
-      {/* Horní navigace aplikace Dopis Ježíškovi */}
-      <header className="no-print relative z-20 bg-sheet/95 backdrop-blur-md border-b-[1.5px] border-fir sticky top-0 shadow-xs">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 min-h-[72px] md:h-20 py-2 flex items-center justify-between gap-2.5">
-          <NavLink to="/" className="flex items-center gap-2.5 group shrink-0">
-            <div>
-              <div className="font-fairytale font-bold text-fir text-xl sm:text-2xl leading-none whitespace-nowrap">
-                Dopis Ježíškovi
+      {/* Horní navigace aplikace Dopis Ježíškovi (skrytá během prvního zakládání profilu) */}
+      {!onboardingMode && (
+        <header className="no-print relative z-20 bg-sheet/95 backdrop-blur-md border-b-[1.5px] border-fir sticky top-0 shadow-xs">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 min-h-[72px] md:h-20 py-2 flex items-center justify-between gap-2.5">
+            <NavLink to="/dopis" className="flex items-center gap-2.5 group shrink-0">
+              <div>
+                <div className="font-fairytale font-bold text-fir text-xl sm:text-2xl leading-none whitespace-nowrap">
+                  Dopis Ježíškovi
+                </div>
+                <div className="text-xs text-slate-text-muted flex items-center gap-1 whitespace-nowrap mt-0.5">
+                  <Star className="w-3 h-3 text-gold fill-gold shrink-0" />
+                  <span>{COUNTDOWN_TEXT}</span>
+                </div>
               </div>
-              <div className="text-xs text-slate-text-muted flex items-center gap-1 whitespace-nowrap mt-0.5">
-                <Star className="w-3 h-3 text-gold fill-gold shrink-0" />
-                <span>{COUNTDOWN_TEXT}</span>
-              </div>
-            </div>
-          </NavLink>
-
-          {/* 4 hlavní záložky na desktopu */}
-          <nav className="hidden md:flex items-center gap-1" aria-label="Hlavní navigace">
-            <NavLink to="/" end className={navLinkClass}>
-              <FileHeart className="w-4 h-4 shrink-0" />
-              <span>Napsat dopis</span>
             </NavLink>
 
-            <NavLink to="/rodina" className={navLinkClass}>
-              <Gift className="w-4 h-4 shrink-0" />
-              <span>Komu koupit dárek</span>
-            </NavLink>
-
-            <NavLink to="/nakupni-seznam" className={navLinkClass}>
-              <ShoppingBag className="w-4 h-4 shrink-0" />
-              <span>Můj nákupní seznam</span>
-              {unboughtShoppingCount > 0 && (
-                <span className="ml-0.5 px-2 py-0.5 text-xs font-bold rounded-full bg-crimson text-white leading-none">
-                  {unboughtShoppingCount}
-                </span>
-              )}
-            </NavLink>
-
-            <NavLink to="/sdileni" className={navLinkClass}>
-              <Users className="w-4 h-4 shrink-0" />
-              <span>Sdílení a skupiny</span>
-              {pendingRequestsCount > 0 && (
-                <span className="ml-0.5 px-2 py-0.5 text-xs font-bold rounded-full bg-crimson text-white leading-none">
-                  {pendingRequestsCount}
-                </span>
-              )}
-            </NavLink>
-          </nav>
-
-          {/* Hudební hrací skříňka + Odkaz do profilu vpravo */}
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={handleToggleMusic}
-              title={musicOn ? 'Vypnout vánoční hrací skříňku' : 'Zapnout jemnou vánoční hrací skříňku'}
-              aria-label={musicOn ? 'Vypnout vánoční hrací skříňku' : 'Zapnout vánoční hrací skříňku'}
-              className={`min-h-[42px] inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition ${
-                musicOn
-                  ? 'bg-fir text-white border-gold/60 shadow-xs'
-                  : 'bg-paper text-slate-text border-paper-warm hover:bg-fir-soft/60'
-              }`}
-            >
-              {musicOn ? (
-                <Music className="w-4 h-4 text-gold-glow animate-pulse shrink-0" />
-              ) : (
-                <VolumeX className="w-4 h-4 text-slate-text-muted shrink-0" />
-              )}
-              <span className="hidden sm:inline">{musicOn ? 'Koleda hraje' : 'Koleda'}</span>
-            </button>
-
-            {profile && (
+            {/* 4 hlavní záložky na desktopu */}
+            <nav className="hidden md:flex items-center gap-1" aria-label="Hlavní navigace">
               <NavLink
-                to="/profil"
-                title="Můj profil a poštovní známka"
-                className="min-h-[56px] inline-flex items-center gap-3 px-2.5 py-1 rounded-2xl hover:bg-fir-soft/60 border border-transparent hover:border-fir/25 transition-colors shrink-0"
+                to="/"
+                end
+                className={({ isActive }) => navLinkClass({ isActive: isActive || isLetterRoute })}
               >
-                <Avatar avatarId={profile.avatarId} avatarBg={profile.avatarBg} size="nav" zoomAnimal />
-                <span className="font-fairytale font-bold text-[18px] leading-none text-slate-text whitespace-nowrap max-w-[110px] sm:max-w-[160px] truncate">
-                  {profile.displayName}
-                </span>
+                <FileHeart className="w-4 h-4 shrink-0" />
+                <span>Napsat dopis</span>
               </NavLink>
-            )}
+
+              <NavLink to="/rodina" className={navLinkClass}>
+                <Gift className="w-4 h-4 shrink-0" />
+                <span>Komu koupit dárek</span>
+              </NavLink>
+
+              <NavLink to="/nakupni-seznam" className={navLinkClass}>
+                <ShoppingBag className="w-4 h-4 shrink-0" />
+                <span>Můj nákupní seznam</span>
+                {unboughtShoppingCount > 0 && (
+                  <span className="ml-0.5 px-2 py-0.5 text-xs font-bold rounded-full bg-crimson text-white leading-none">
+                    {unboughtShoppingCount}
+                  </span>
+                )}
+              </NavLink>
+
+              <NavLink to="/sdileni" className={navLinkClass}>
+                <Users className="w-4 h-4 shrink-0" />
+                <span>Sdílení a skupiny</span>
+                {pendingRequestsCount > 0 && (
+                  <span className="ml-0.5 px-2 py-0.5 text-xs font-bold rounded-full bg-crimson text-white leading-none">
+                    {pendingRequestsCount}
+                  </span>
+                )}
+              </NavLink>
+            </nav>
+
+            {/* Hudební hrací skříňka + Odkaz do profilu vpravo */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleToggleMusic}
+                title={musicOn ? 'Vypnout vánoční hrací skříňku' : 'Zapnout jemnou vánoční hrací skříňku'}
+                aria-label={musicOn ? 'Vypnout vánoční hrací skříňku' : 'Zapnout vánoční hrací skříňku'}
+                className={`min-h-[42px] inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition ${
+                  musicOn
+                    ? 'bg-fir text-white border-gold/60 shadow-xs'
+                    : 'bg-paper text-slate-text border-paper-warm hover:bg-fir-soft/60'
+                }`}
+              >
+                {musicOn ? (
+                  <Music className="w-4 h-4 text-gold-glow animate-pulse shrink-0" />
+                ) : (
+                  <VolumeX className="w-4 h-4 text-slate-text-muted shrink-0" />
+                )}
+                <span className="hidden sm:inline">{musicOn ? 'Koleda hraje' : 'Koleda'}</span>
+              </button>
+
+              {profile && (
+                <NavLink
+                  to="/profil"
+                  title="Můj profil a poštovní známka"
+                  className="min-h-[56px] inline-flex items-center gap-3 px-2.5 py-1 rounded-2xl hover:bg-fir-soft/60 border border-transparent hover:border-fir/25 transition-colors shrink-0"
+                >
+                  <Avatar avatarId={profile.avatarId} avatarBg={profile.avatarBg} size="nav" zoomAnimal />
+                  <span className="font-fairytale font-bold text-[18px] leading-none text-slate-text whitespace-nowrap max-w-[110px] sm:max-w-[160px] truncate">
+                    {profile.displayName}
+                  </span>
+                </NavLink>
+              )}
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* Hlavní obsah */}
       <main className="relative z-10 flex-1 max-w-2xl xl:max-w-3xl w-full mx-auto px-3.5 sm:px-6 lg:pl-20 xl:pl-6 py-4 sm:py-8 min-w-0">
@@ -334,7 +346,10 @@ export function Layout({ children }) {
       </main>
 
       {/* Celopostavový 3D kapr průvodce volně v prostoru aplikace */}
-      <KaprikGuide variant="floating" />
+      <KaprikGuide
+        variant="floating"
+        contextKey={onboardingMode ? 'profil-onboarding' : undefined}
+      />
 
       {/* Patička aplikace */}
       <footer className="no-print relative z-10 max-w-2xl xl:max-w-3xl w-full mx-auto px-4 sm:px-6 pt-4 pb-8 text-center">
@@ -346,70 +361,74 @@ export function Layout({ children }) {
         </div>
       </footer>
 
-      {/* Pevná spodní mobilní navigace (< 768px) */}
-      <nav
-        className="no-print md:hidden fixed bottom-0 inset-x-0 z-40 bg-sheet/95 backdrop-blur-md border-t-[1.5px] border-fir px-1.5 py-1.5 grid grid-cols-4 gap-1 shadow-soft"
-        aria-label="Mobilní navigace"
-      >
-        <NavLink
-          to="/"
-          end
-          className={({ isActive }) =>
-            `min-h-[48px] flex flex-col items-center justify-center gap-0.5 px-1 py-1 rounded-xl text-xs font-bold whitespace-nowrap ${
-              isActive ? 'text-fir bg-fir-soft border border-fir/20' : 'text-slate-text-muted'
-            }`
-          }
+      {/* Pevná spodní mobilní navigace (< 768px, skrytá během prvního zakládání profilu) */}
+      {!onboardingMode && (
+        <nav
+          className="no-print md:hidden fixed bottom-0 inset-x-0 z-40 bg-sheet/95 backdrop-blur-md border-t-[1.5px] border-fir px-1.5 py-1.5 grid grid-cols-4 gap-1 shadow-soft"
+          aria-label="Mobilní navigace"
         >
-          <FileHeart className="w-5 h-5 shrink-0" />
-          <span>Dopis</span>
-        </NavLink>
+          <NavLink
+            to="/"
+            end
+            className={({ isActive }) =>
+              `min-h-[48px] flex flex-col items-center justify-center gap-0.5 px-1 py-1 rounded-xl text-xs font-bold whitespace-nowrap ${
+                isActive || isLetterRoute
+                  ? 'text-fir bg-fir-soft border border-fir/20'
+                  : 'text-slate-text-muted'
+              }`
+            }
+          >
+            <FileHeart className="w-5 h-5 shrink-0" />
+            <span>Dopis</span>
+          </NavLink>
 
-        <NavLink
-          to="/rodina"
-          className={({ isActive }) =>
-            `min-h-[48px] flex flex-col items-center justify-center gap-0.5 px-1 py-1 rounded-xl text-xs font-bold relative whitespace-nowrap ${
-              isActive ? 'text-fir bg-fir-soft border border-fir/20' : 'text-slate-text-muted'
-            }`
-          }
-        >
-          <Gift className="w-5 h-5 shrink-0" />
-          <span>Rodina</span>
-        </NavLink>
+          <NavLink
+            to="/rodina"
+            className={({ isActive }) =>
+              `min-h-[48px] flex flex-col items-center justify-center gap-0.5 px-1 py-1 rounded-xl text-xs font-bold relative whitespace-nowrap ${
+                isActive ? 'text-fir bg-fir-soft border border-fir/20' : 'text-slate-text-muted'
+              }`
+            }
+          >
+            <Gift className="w-5 h-5 shrink-0" />
+            <span>Rodina</span>
+          </NavLink>
 
-        <NavLink
-          to="/nakupni-seznam"
-          className={({ isActive }) =>
-            `min-h-[48px] flex flex-col items-center justify-center gap-0.5 px-1 py-1 rounded-xl text-xs font-bold relative whitespace-nowrap ${
-              isActive ? 'text-fir bg-fir-soft border border-fir/20' : 'text-slate-text-muted'
-            }`
-          }
-        >
-          <ShoppingBag className="w-5 h-5 shrink-0" />
-          <span>Nákup</span>
-          {unboughtShoppingCount > 0 && (
-            <span className="absolute top-1 right-3 px-1.5 min-w-[18px] h-[18px] text-[10px] font-bold rounded-full bg-crimson text-white flex items-center justify-center">
-              {unboughtShoppingCount}
-            </span>
-          )}
-        </NavLink>
+          <NavLink
+            to="/nakupni-seznam"
+            className={({ isActive }) =>
+              `min-h-[48px] flex flex-col items-center justify-center gap-0.5 px-1 py-1 rounded-xl text-xs font-bold relative whitespace-nowrap ${
+                isActive ? 'text-fir bg-fir-soft border border-fir/20' : 'text-slate-text-muted'
+              }`
+            }
+          >
+            <ShoppingBag className="w-5 h-5 shrink-0" />
+            <span>Nákup</span>
+            {unboughtShoppingCount > 0 && (
+              <span className="absolute top-1 right-3 px-1.5 min-w-[18px] h-[18px] text-[10px] font-bold rounded-full bg-crimson text-white flex items-center justify-center">
+                {unboughtShoppingCount}
+              </span>
+            )}
+          </NavLink>
 
-        <NavLink
-          to="/sdileni"
-          className={({ isActive }) =>
-            `min-h-[48px] flex flex-col items-center justify-center gap-0.5 px-1 py-1 rounded-xl text-xs font-bold relative whitespace-nowrap ${
-              isActive ? 'text-fir bg-fir-soft border border-fir/20' : 'text-slate-text-muted'
-            }`
-          }
-        >
-          <Users className="w-5 h-5 shrink-0" />
-          <span>Sdílení</span>
-          {pendingRequestsCount > 0 && (
-            <span className="absolute top-1 right-3 px-1.5 min-w-[18px] h-[18px] text-[10px] font-bold rounded-full bg-crimson text-white flex items-center justify-center">
-              {pendingRequestsCount}
-            </span>
-          )}
-        </NavLink>
-      </nav>
+          <NavLink
+            to="/sdileni"
+            className={({ isActive }) =>
+              `min-h-[48px] flex flex-col items-center justify-center gap-0.5 px-1 py-1 rounded-xl text-xs font-bold relative whitespace-nowrap ${
+                isActive ? 'text-fir bg-fir-soft border border-fir/20' : 'text-slate-text-muted'
+              }`
+            }
+          >
+            <Users className="w-5 h-5 shrink-0" />
+            <span>Sdílení</span>
+            {pendingRequestsCount > 0 && (
+              <span className="absolute top-1 right-3 px-1.5 min-w-[18px] h-[18px] text-[10px] font-bold rounded-full bg-crimson text-white flex items-center justify-center">
+                {pendingRequestsCount}
+              </span>
+            )}
+          </NavLink>
+        </nav>
+      )}
 
       {/* Pojistka proti ukliknutí: 8sekundová lišta dole */}
       {undoToast && (
@@ -468,8 +487,9 @@ export function Layout({ children }) {
         </div>
       )}
 
-      {/* Okamžité připojení jedním klikem z odkazu (?invite=...) */}
-      {authUser &&
+      {/* Okamžité připojení jedním klikem z odkazu (?invite=..., mimo onboarding) */}
+      {!onboardingMode &&
+        authUser &&
         profile &&
         pendingInviteCode &&
         createPortal(

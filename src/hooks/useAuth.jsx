@@ -18,7 +18,7 @@ import {
 } from '../lib/db.js';
 
 const AuthContext = createContext(null);
-const PENDING_INVITE_STORAGE_KEY = 'dopis_jeziskovi_pending_invite';
+export const PENDING_INVITE_STORAGE_KEY = 'dopis_jeziskovi_pending_invite';
 const WELCOME_STRIP_PREFIX = 'dopis_jeziskovi_welcome_seen_';
 
 function readInitialInviteCode() {
@@ -27,11 +27,18 @@ function readInitialInviteCode() {
       const params = new URLSearchParams(window.location.search);
       const fromUrl = params.get('invite');
       if (fromUrl && fromUrl.trim()) {
-        const cleaned = fromUrl.trim();
+        let cleaned = fromUrl.trim();
+        let consumedHash = false;
+        // Pokud aplikace zpráv rozbila %23 na #, tag #1234 skončil v window.location.hash
+        if (!cleaned.includes('#') && /^#\d{4}$/.test(window.location.hash || '')) {
+          cleaned = `${cleaned}${window.location.hash}`;
+          consumedHash = true;
+        }
         sessionStorage.setItem(PENDING_INVITE_STORAGE_KEY, cleaned);
         params.delete('invite');
         const nextSearch = params.toString();
-        const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
+        const nextHash = consumedHash ? '' : window.location.hash;
+        const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${nextHash}`;
         window.history.replaceState({}, '', nextUrl);
         return cleaned;
       }
@@ -63,9 +70,14 @@ export function AuthProvider({ children }) {
   const [unboughtShoppingCount, setUnboughtShoppingCount] = useState(0);
   const [showOnboardingBanner, setShowOnboardingBanner] = useState(false);
   const [pendingInviteCode, setPendingInviteCodeState] = useState(() => readInitialInviteCode());
+  const [justSignedIn, setJustSignedIn] = useState(false);
   const [toast, setToast] = useState(null);
   const [undoToast, setUndoToast] = useState(null);
   const undoTimerRef = useRef(null);
+
+  const consumeJustSignedIn = useCallback(() => {
+    setJustSignedIn(false);
+  }, []);
 
   const clearPendingInviteCode = useCallback(() => {
     setPendingInviteCodeState('');
@@ -169,8 +181,8 @@ export function AuthProvider({ children }) {
         displayName: 'Nový pisatel',
         avatarId: defaults.avatarId,
         avatarBg: defaults.avatarBg,
+        onboardingCompleted: false,
       });
-      setShowOnboardingBanner(true);
     }
     setAuthUser({ uid: state.activeUid, isDemo: true });
     setProfile(demoUser);
@@ -204,7 +216,7 @@ export function AuthProvider({ children }) {
       try {
         let userProf = await getUserProfile(user.uid);
         if (!userProf) {
-          // Automatické vytvoření profilu při prvním přihlášení bez zastávky v nastavení
+          // První založení účtu po přihlášení přes Google (onboardingCompleted: false)
           const rawName = (
             user.displayName ||
             user.email?.split('@')[0] ||
@@ -218,14 +230,8 @@ export function AuthProvider({ children }) {
             displayName: rawName || 'Pisatel',
             avatarId: defaults.avatarId,
             avatarBg: defaults.avatarBg,
+            onboardingCompleted: false,
           });
-          try {
-            if (!localStorage.getItem(`${WELCOME_STRIP_PREFIX}${user.uid}`)) {
-              setShowOnboardingBanner(true);
-            }
-          } catch {
-            setShowOnboardingBanner(true);
-          }
         }
         setProfile(userProf);
         await Promise.all([
@@ -248,12 +254,19 @@ export function AuthProvider({ children }) {
     }
     setDemoModeActive(false);
     setDemoMode(false);
-    await signInWithPopup(auth, googleProvider);
+    setJustSignedIn(true);
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err) {
+      setJustSignedIn(false);
+      throw err;
+    }
   };
 
   const enterDemoMode = async (asFreshUser = false) => {
     setDemoModeActive(true);
     setDemoMode(true);
+    setJustSignedIn(true);
     if (asFreshUser) {
       const fresh = createDemoSessionUser();
       const defaults = pickDefaultAvatarForUid(fresh.uid);
@@ -262,10 +275,10 @@ export function AuthProvider({ children }) {
         displayName: fresh.displayName,
         avatarId: defaults.avatarId,
         avatarBg: defaults.avatarBg,
+        onboardingCompleted: false,
       });
       setAuthUser({ uid: fresh.uid, isDemo: true });
       setProfile(created);
-      setShowOnboardingBanner(true);
       setPendingRequestsCount(0);
       setUnboughtShoppingCount(0);
       setLoading(false);
@@ -288,16 +301,21 @@ export function AuthProvider({ children }) {
     notify('Ukázková data byla obnovena do výchozího stavu.');
   };
 
-  const completeProfileSetup = async ({ displayName, avatarId, avatarBg }) => {
+  const completeProfileSetup = async ({
+    displayName,
+    avatarId,
+    avatarBg,
+    onboardingCompleted = true,
+  }) => {
     if (!authUser) throw new Error('Uživatel není přihlášen.');
     const created = await createUserProfile({
       uid: authUser.uid,
       displayName,
       avatarId,
       avatarBg,
+      onboardingCompleted,
     });
     setProfile(created);
-    setShowOnboardingBanner(true);
     await Promise.all([
       refreshPendingCount(authUser.uid),
       refreshShoppingCount(authUser.uid),
@@ -305,16 +323,19 @@ export function AuthProvider({ children }) {
     return created;
   };
 
-  const saveProfileUpdates = async (updates) => {
+  const saveProfileUpdates = async (updates, options = {}) => {
     if (!authUser) throw new Error('Uživatel není přihlášen.');
     const updated = await updateUserProfile(authUser.uid, updates);
     setProfile(updated);
-    notify('Profil byl úspěšně upraven.');
+    if (!options.silent) {
+      notify('Změny uloženy ✓');
+    }
     return updated;
   };
 
   const signOut = async () => {
     dismissUndoToast();
+    setJustSignedIn(false);
     if (demoMode) {
       setDemoModeActive(false);
       setDemoMode(false);
@@ -336,6 +357,7 @@ export function AuthProvider({ children }) {
   const deleteAccount = async () => {
     if (!authUser) return;
     dismissUndoToast();
+    setJustSignedIn(false);
     await deleteUserAccountCompletely(authUser.uid, demoMode ? null : auth.currentUser);
     if (demoMode) {
       await hydrateDemoSession();
@@ -360,6 +382,8 @@ export function AuthProvider({ children }) {
     dismissOnboardingBanner,
     pendingInviteCode,
     clearPendingInviteCode,
+    justSignedIn,
+    consumeJustSignedIn,
     toast,
     dismissToast: () => setToast(null),
     undoToast,

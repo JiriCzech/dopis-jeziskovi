@@ -12,7 +12,8 @@ export type KaprikContextKey =
   | 'rodina-detail'
   | 'nakup'
   | 'sdileni'
-  | 'profil';
+  | 'profil'
+  | 'profil-onboarding';
 export type FamilyViewState = 'overview' | 'envelope' | 'detail';
 
 export interface KaprikGuideProps {
@@ -122,6 +123,14 @@ const CONTEXT_CONFIG: Record<KaprikContextKey, ContextConfig> = {
       'Zvířátko na známce je jen na tobě. Kapr zůstává v rohu jako hlavní průvodce.',
       'Po úpravě nezapomeň kliknout na tlačítko Uložit.',
       'Hezká známka dělá půl dojmu z dopisu. Druhou půlku dělá čitelný seznam přání.',
+    ],
+  },
+  'profil-onboarding': {
+    defaultPose: 'vitej',
+    messages: [
+      'Ahoj! Napiš, jak ti doma říkají, vyber si svou vánoční známku a hned jdeme psát dopis Ježíškovi.',
+      'Vybrané jméno a poštovní známku uvidí tvoje rodina na obálkách i dárkových visačkách.',
+      'Až budeš mít vybráno, klikni dole na Hotovo, jdeme psát dopis.',
     ],
   },
 };
@@ -238,7 +247,8 @@ export function KaprikGuide({
     if (!location.pathname.startsWith('/rodina') && familyView !== 'overview') {
       setFamilyView('overview');
     }
-    if (location.pathname !== '/') {
+    const isLetterPath = location.pathname === '/' || location.pathname.startsWith('/dopis');
+    if (!isLetterPath) {
       setIsHiddenByModal(false);
     }
   }, [location.pathname, familyView]);
@@ -265,7 +275,7 @@ export function KaprikGuide({
 
   useEffect(() => {
     clearAutoHideTimers();
-    if (isLogin || !isBubbleOpen || isMobileViewport()) {
+    if (isLogin || activeContext === 'profil-onboarding' || !isBubbleOpen || isMobileViewport()) {
       return undefined;
     }
     fadeTimerRef.current = window.setTimeout(() => {

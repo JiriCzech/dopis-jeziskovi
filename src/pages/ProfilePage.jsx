@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Check, Copy } from 'lucide-react';
 import {
@@ -6,12 +6,22 @@ import {
   Avatar,
   normalizeStampId,
 } from '../assets/avatars';
-import { useAuth } from '../hooks/useAuth';
+import { PENDING_INVITE_STORAGE_KEY, useAuth } from '../hooks/useAuth';
+import {
+  findUserByTag,
+  joinGroupByInviteCode,
+  needsOnboarding,
+  sendConnectionRequest,
+} from '../lib/db';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 
 export function ProfilePage({ isSetup = false }) {
   const {
+    authUser,
     profile,
+    pendingInviteCode,
+    clearPendingInviteCode,
+    refreshPendingCount,
     completeProfileSetup,
     saveProfileUpdates,
     signOut,
@@ -21,7 +31,11 @@ export function ProfilePage({ isSetup = false }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const isFirstSetup = isSetup || searchParams.get('setup') === '1' || !profile;
+  const isOnboarding =
+    isSetup ||
+    searchParams.get('setup') === '1' ||
+    !profile ||
+    needsOnboarding(profile);
 
   const [displayName, setDisplayName] = useState(profile?.displayName || '');
   const [avatarId, setAvatarId] = useState(() =>
@@ -32,8 +46,24 @@ export function ProfilePage({ isSetup = false }) {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  useEffect(() => {
+    if (!profile) return;
+    setDisplayName(profile.displayName || '');
+    setAvatarId(normalizeStampId(profile.avatarId || 'prasatko'));
+  }, [profile?.uid]);
+
   const liveName = displayName.trim() || profile?.displayName || 'Tvoje jméno';
   const fullTag = profile ? `${profile.displayName}#${profile.tag}` : '';
+
+  const readStoredInviteCode = () => {
+    try {
+      return (sessionStorage.getItem(PENDING_INVITE_STORAGE_KEY) || pendingInviteCode || '').trim();
+    } catch {
+      return (pendingInviteCode || '').trim();
+    }
+  };
+
+  const activeOnboardingInvite = isOnboarding ? readStoredInviteCode() : '';
 
   const handleCopyTag = async () => {
     if (!fullTag) return;
@@ -56,22 +86,57 @@ export function ProfilePage({ isSetup = false }) {
     }
     setSaving(true);
     try {
+      let savedProfile = profile;
       if (!profile) {
-        await completeProfileSetup({
+        savedProfile = await completeProfileSetup({
           displayName: cleaned,
           avatarId,
           avatarBg: '#F5EEDB',
+          onboardingCompleted: true,
         });
-        navigate('/');
       } else {
-        await saveProfileUpdates({
-          displayName: cleaned,
-          avatarId,
-          avatarBg: '#F5EEDB',
-        });
-        if (isFirstSetup) {
-          navigate('/');
+        savedProfile = await saveProfileUpdates(
+          {
+            displayName: cleaned,
+            avatarId,
+            avatarBg: '#F5EEDB',
+            onboardingCompleted: true,
+          },
+          { silent: isOnboarding }
+        );
+      }
+
+      if (isOnboarding) {
+        const inviteToProcess = readStoredInviteCode();
+        clearPendingInviteCode();
+
+        if (inviteToProcess) {
+          const uid = savedProfile?.uid || authUser?.uid;
+          try {
+            if (/^SKUPINA-\d{3,6}$/i.test(inviteToProcess)) {
+              const joined = await joinGroupByInviteCode(uid, inviteToProcess);
+              await refreshPendingCount();
+              notify(`Vítej! Připojil/a ses do skupiny „${joined.name}“.`);
+            } else {
+              const found = await findUserByTag(inviteToProcess, uid);
+              await sendConnectionRequest(uid, found.uid);
+              await refreshPendingCount();
+              notify(`Vítej! Pozvánka pro ${found.displayName} byla odeslána ✓`);
+            }
+            navigate('/dopis', { replace: true });
+          } catch (inviteErr) {
+            notify(
+              inviteErr.message || 'Zvací kód z odkazu můžeš potvrdit tady.',
+              'error'
+            );
+            navigate(`/sdileni?code=${encodeURIComponent(inviteToProcess)}`, {
+              replace: true,
+            });
+          }
+          return;
         }
+
+        navigate('/dopis', { replace: true });
       }
     } catch (err) {
       notify(err.message || 'Nepodařilo se uložit profil.', 'error');
@@ -182,12 +247,27 @@ export function ProfilePage({ isSetup = false }) {
           disabled={saving}
           className="min-h-[56px] w-full py-3.5 px-7 rounded-2xl bg-[#1B4332] hover:bg-[#2D6A4F] text-[#FFFDF8] text-lg font-bold shadow-soft border-[1.5px] border-[#C9963B] transition disabled:opacity-60"
         >
-          {saving ? 'Ukládám...' : 'Uložit'}
+          {saving
+            ? isOnboarding
+              ? 'Připravuji dopis...'
+              : 'Ukládám...'
+            : isOnboarding
+              ? 'Hotovo, jdeme psát dopis →'
+              : 'Uložit'}
         </button>
       </form>
 
-      {/* Diskrétní patička profilu (mimo jmenovku, pouze pro již založený účet) */}
-      {profile && (
+      {isOnboarding && activeOnboardingInvite && (
+        <div className="text-center">
+          <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#FFFDF8] border border-[#1B4332]/25 text-sm text-[#4A544E]">
+            Zvací kód připraven k propojení:{' '}
+            <strong className="font-bold text-[#1B4332]">{activeOnboardingInvite}</strong>
+          </span>
+        </div>
+      )}
+
+      {/* Diskrétní patička profilu (pouze mimo onboarding režim) */}
+      {profile && !isOnboarding && (
         <div className="pt-4 border-t border-[#1B4332]/15 flex flex-wrap items-center justify-between gap-4 text-sm text-[#525E58]">
           <div className="flex items-center gap-2">
             <span>Tvůj kód:</span>
