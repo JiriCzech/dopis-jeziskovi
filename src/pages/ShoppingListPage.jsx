@@ -124,7 +124,7 @@ const ShoppingItemRow = memo(function ShoppingItemRow({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-sm font-bold text-fir hover:underline"
               >
-                <span>Ukázka dárku</span>
+                <span>Ukázka</span>
                 <ExternalLink className="w-3.5 h-3.5 shrink-0" />
               </a>
             )}
@@ -135,7 +135,7 @@ const ShoppingItemRow = memo(function ShoppingItemRow({
                 onClick={() => onReleaseClaim(item)}
                 className="text-xs sm:text-sm font-medium text-slate-text-muted hover:text-crimson underline decoration-slate-text-muted/40 hover:decoration-crimson transition"
               >
-                Uvolnit zpět do dopisu
+                Uvolnit
               </button>
             ) : (
               <div className="inline-flex items-center gap-2">
@@ -431,57 +431,41 @@ export function ShoppingListPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-fairytale font-bold text-[32px] sm:text-[38px] leading-tight text-slate-text">
-            Můj nákupní seznam
+            Nákupní seznam
           </h1>
           {totalCount > 0 && (
             <p className="text-base font-bold text-fir mt-0.5">
-              Připraveno pod stromeček: {boughtCount} z {totalCount}
+              {boughtCount} z {totalCount} koupeno
             </p>
           )}
         </div>
 
-        {/* Jedno centrální velké tlačítko + Přidat tajný nápad */}
+        {/* Jedno centrální velké tlačítko + Přidat nápad */}
         <button
           type="button"
           onClick={openNewIdeaModal}
           className="min-h-[50px] inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl bg-crimson hover:bg-crimson-dark text-white text-base font-bold shadow-sm border border-gold/45 transition shrink-0"
         >
           <Plus className="w-5 h-5 shrink-0" />
-          <span>Přidat tajný nápad</span>
+          <span>Přidat nápad</span>
         </button>
       </div>
 
       {recipientKeys.length === 0 ? (
-        <div className="stationery-sheet rounded-3xl p-10 sm:p-12 text-center space-y-3 relative overflow-hidden">
-          <div className="stationery-inner-frame" aria-hidden="true" />
-          <div className="relative z-10 max-w-md mx-auto space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-gold-soft text-fir border border-gold/45 flex items-center justify-center mx-auto">
-              <Gift className="w-6 h-6" />
-            </div>
-            <h2 className="font-fairytale font-bold text-2xl sm:text-3xl text-slate-text">
-              Ježíškův pytel je zatím prázdný
-            </h2>
-            <p className="text-base text-slate-text-muted leading-relaxed">
-              Vyber si někoho z blízkých v záložce <strong>Komu koupit dárek</strong> a podívej se,
-              co si přeje, nebo si sem zapiš vlastní tajný nápad na překvapení.
-            </p>
-          </div>
+        <div className="py-12 text-center">
+          <h2 className="font-fairytale font-bold text-2xl sm:text-3xl text-slate-text">
+            Seznam je prázdný
+          </h2>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-7">
           {recipientKeys.map((recipient) => (
-            <section
-              key={recipient}
-              className="stationery-sheet rounded-3xl p-4 sm:p-6 space-y-3.5 relative overflow-hidden"
-            >
-              <div className="stationery-inner-frame" aria-hidden="true" />
-              <div className="relative z-10 px-2 pt-1 flex items-center justify-between gap-3">
-                <h2 className="font-fairytale font-bold text-2xl sm:text-[30px] text-fir leading-none">
-                  {formatForRecipient(recipient)}
-                </h2>
-              </div>
+            <section key={recipient} className="space-y-3">
+              <h2 className="font-fairytale font-bold text-2xl sm:text-[30px] text-fir leading-none px-1">
+                {formatForRecipient(recipient)}
+              </h2>
 
-              <ul className="relative z-10 space-y-3">
+              <ul className="space-y-3">
                 {grouped[recipient].map((item) => (
                   <ShoppingItemRow
                     key={item.id}

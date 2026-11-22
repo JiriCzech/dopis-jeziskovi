@@ -106,7 +106,7 @@ export function SharingPage() {
     try {
       await navigator.clipboard.writeText(link);
       setCopiedPersonalLink(true);
-      notify('Zvací odkaz zkopírován — pošli ho do zprávy nebo na WhatsApp.');
+      notify('Zvací odkaz zkopírován.');
       setTimeout(() => setCopiedPersonalLink(false), 2500);
     } catch {
       notify(`Zvací odkaz: ${link}`);
@@ -319,77 +319,58 @@ export function SharingPage() {
     <div className="max-w-3xl mx-auto space-y-6 animate-page-transition">
       <div>
         <h1 className="font-fairytale font-bold text-[32px] sm:text-[38px] leading-tight text-slate-text">
-          Pozvat blízké a spravovat skupiny
+          Sdílení a skupiny
         </h1>
-        <p className="text-base text-slate-text-muted mt-0.5">
-          Propoj se s rodinou, přáteli či kolegy, abyste si mohli číst dopisy a tajně rezervovat dárky.
-        </p>
       </div>
 
-      {/* 1. Tvůj osobní kód a zvací odkaz */}
-      <section className="stationery-sheet rounded-3xl p-5 sm:p-7 space-y-4 relative overflow-hidden">
-        <div className="stationery-inner-frame" aria-hidden="true" />
-        <div className="relative z-10">
-          <h2 className="font-fairytale font-bold text-2xl text-slate-text">
-            Tvůj osobní kód a zvací odkaz
-          </h2>
-          <p className="text-sm text-slate-text-muted mt-0.5">
-            Pošli odkaz na WhatsApp nebo Messenger — po kliknutí se babičce či blízkým nabídne propojení jedním klikem.
-          </p>
-        </div>
-
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl bg-kraft border-[1.5px] border-fir">
-          <div className="flex items-center gap-3 min-w-0">
-            <Avatar avatarId={profile.avatarId} avatarBg={profile.avatarBg} size="md" />
-            <div className="min-w-0">
-              <div className="text-xs font-bold uppercase tracking-wider text-fir">
-                Tvůj osobní kód
-              </div>
-              <div className="font-fairytale font-bold text-2xl sm:text-3xl text-slate-text break-all leading-tight">
-                {fullCode}
-              </div>
+      {/* 1. Osobní kód a zvací odkaz */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl bg-kraft border-[1.5px] border-fir shadow-xs">
+        <div className="flex items-center gap-3 min-w-0">
+          <Avatar avatarId={profile.avatarId} avatarBg={profile.avatarBg} size="md" />
+          <div className="min-w-0">
+            <div className="text-xs font-bold uppercase tracking-wider text-fir">
+              Osobní kód
+            </div>
+            <div className="font-fairytale font-bold text-2xl sm:text-3xl text-slate-text break-all leading-tight">
+              {fullCode}
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={handleCopyPersonalLink}
-              className="min-h-[46px] whitespace-nowrap inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-fir hover:bg-fir-hover text-white text-sm sm:text-base font-bold shadow-xs transition"
-            >
-              {copiedPersonalLink ? (
-                <Check className="w-4 h-4 shrink-0" />
-              ) : (
-                <LinkIcon className="w-4 h-4 shrink-0" />
-              )}
-              <span>{copiedPersonalLink ? 'Odkaz zkopírován' : 'Sdílet odkaz'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleCopyPersonalCode}
-              className="min-h-[46px] whitespace-nowrap inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-sheet border border-fir/45 hover:bg-fir-soft text-sm sm:text-base font-bold text-slate-text transition"
-            >
-              {copiedPersonal ? (
-                <Check className="w-4 h-4 text-fir shrink-0" />
-              ) : (
-                <Copy className="w-4 h-4 shrink-0" />
-              )}
-              <span>{copiedPersonal ? 'Zkopírováno' : 'Zkopírovat kód'}</span>
-            </button>
-          </div>
         </div>
-      </section>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleCopyPersonalLink}
+            className="min-h-[46px] whitespace-nowrap inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-fir hover:bg-fir-hover text-white text-sm sm:text-base font-bold shadow-xs transition"
+          >
+            {copiedPersonalLink ? (
+              <Check className="w-4 h-4 shrink-0" />
+            ) : (
+              <LinkIcon className="w-4 h-4 shrink-0" />
+            )}
+            <span>{copiedPersonalLink ? 'Odkaz zkopírován' : 'Sdílet odkaz'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleCopyPersonalCode}
+            className="min-h-[46px] whitespace-nowrap inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-sheet border border-fir/45 hover:bg-fir-soft text-sm sm:text-base font-bold text-slate-text transition"
+          >
+            {copiedPersonal ? (
+              <Check className="w-4 h-4 text-fir shrink-0" />
+            ) : (
+              <Copy className="w-4 h-4 shrink-0" />
+            )}
+            <span>{copiedPersonal ? 'Zkopírováno' : 'Kód'}</span>
+          </button>
+        </div>
+      </div>
 
-      {/* 2. Přidat člověka nebo se připojit ke skupině + dárkové jmenovky blízkých */}
+      {/* 2. Přidat blízkého + dárkové visačky blízkých */}
       <section className="stationery-sheet rounded-3xl p-5 sm:p-7 space-y-5 relative overflow-hidden">
         <div className="stationery-inner-frame" aria-hidden="true" />
         <div className="relative z-10">
           <h2 className="font-fairytale font-bold text-2xl text-slate-text">
-            Přidat blízkého nebo se připojit ke skupině
+            Přidat blízkého
           </h2>
-          <p className="text-sm text-slate-text-muted mt-0.5">
-            Zadej osobní kód člověka (např. <strong>Dana#7392</strong>) nebo zvací kód skupiny (např.{' '}
-            <strong>SKUPINA-1024</strong>).
-          </p>
         </div>
 
         <form onSubmit={handleSearchOrJoin} className="relative z-10 flex flex-col sm:flex-row gap-2.5">
@@ -525,15 +506,15 @@ export function SharingPage() {
           </div>
         )}
 
-        {/* Seznam propojených blízkých jako dárkové jmenovky s 3D známkami a statusy */}
+        {/* Seznam propojených blízkých */}
         <div className="relative z-10 space-y-3 pt-4 border-t border-gold/35">
           <h3 className="text-base font-bold text-slate-text">
-            Tvoji propojení blízcí ({acceptedContacts.length})
+            Propojení blízcí ({acceptedContacts.length})
           </h3>
 
           {acceptedContacts.length === 0 ? (
             <p className="text-sm text-slate-text-muted">
-              Zatím nemáš žádné přímé propojení. Pošli někomu svůj odkaz nebo zadej jeho kód výše.
+              Zatím žádní propojení blízcí.
             </p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
@@ -605,18 +586,15 @@ export function SharingPage() {
         </div>
       </section>
 
-      {/* 3. Správa skupin (Rodina, Kamarádi, Kolegové) */}
+      {/* 3. Správa skupin */}
       <section className="stationery-sheet rounded-3xl p-5 sm:p-7 space-y-5 relative overflow-hidden">
         <div className="stationery-inner-frame" aria-hidden="true" />
         <div className="relative z-10 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="font-fairytale font-bold text-2xl text-slate-text flex items-center gap-2">
               <Users className="w-5 h-5 text-fir shrink-0" />
-              <span>Skupiny (Rodina, Kamarádi, Kolegové)</span>
+              <span>Skupiny</span>
             </h2>
-            <p className="text-sm text-slate-text-muted mt-0.5">
-              Všichni členové jedné skupiny si automaticky vidí své dopisy navzájem.
-            </p>
           </div>
           <button
             type="button"
@@ -701,8 +679,7 @@ export function SharingPage() {
               </span>
               {selectableContacts.length === 0 ? (
                 <p className="text-sm text-slate-text-muted">
-                  Zatím nemáš žádné propojené kontakty — po založení skupiny ale můžeš komukoliv
-                  poslat její zvací odkaz.
+                  Zatím žádné propojené kontakty.
                 </p>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -740,25 +717,17 @@ export function SharingPage() {
             </div>
 
             {/* Soukromí dětských dopisů */}
-            <div className="p-3.5 rounded-xl bg-sheet border border-paper-warm">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={showChildLetters}
-                  onChange={(e) => setShowChildLetters(e.target.checked)}
-                  className="mt-1 w-5 h-5 accent-[#1B4332] rounded cursor-pointer shrink-0"
-                />
-                <div>
-                  <div className="text-sm font-bold text-slate-text">
-                    Zobrazovat v této skupině i dětské dopisy
-                  </div>
-                  <div className="text-xs text-slate-text-muted mt-0.5">
-                    U rodiny nech zapnuté. U skupiny kamarádů nebo kolegů můžeš vypnout, aby
-                    viděli jen tvůj vlastní dopis.
-                  </div>
-                </div>
-              </label>
-            </div>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showChildLetters}
+                onChange={(e) => setShowChildLetters(e.target.checked)}
+                className="w-5 h-5 accent-[#1B4332] rounded cursor-pointer shrink-0"
+              />
+              <span className="text-sm font-bold text-slate-text">
+                Včetně dětských dopisů
+              </span>
+            </label>
 
             <div className="flex flex-wrap justify-end gap-2">
               <button
@@ -783,7 +752,7 @@ export function SharingPage() {
 
         {groups.length === 0 ? (
           <p className="relative z-10 text-sm text-slate-text-muted">
-            Zatím nejsi v žádné skupině. Založ skupinu tlačítkem výše nebo zadej zvací kód.
+            Zatím žádné skupiny.
           </p>
         ) : (
           <div className="relative z-10 space-y-3">

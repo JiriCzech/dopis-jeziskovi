@@ -62,10 +62,13 @@ const KraftGiftTagCard = memo(function KraftGiftTagCard({
               {card.recipientName}
             </h2>
             <p className="text-sm font-bold text-fir break-words">
-              {card.isChildLetter && card.parentName
-                ? `(píše ${card.parentName}) – ${formatWishCount(wishCount)}`
-                : formatWishCount(wishCount)}
+              {formatWishCount(wishCount)}
             </p>
+            {card.isChildLetter && card.parentName && (
+              <p className="text-xs font-semibold text-slate-text-muted break-words">
+                píše {card.parentName}
+              </p>
+            )}
             {showGroupFilters &&
               card.groupNames &&
               card.groupNames.length > 0 && (
@@ -208,9 +211,9 @@ export function FamilyPage() {
 
               {/* Horní řádek: Odesílatel + 3D poštovní známka v pravém horním rohu */}
               <div className="relative z-10 flex items-start justify-between gap-4">
-                <div className="bg-sheet/80 px-3.5 py-2 rounded-2xl border border-fir/25">
+                <div>
                   <div className="text-[11px] font-bold uppercase tracking-widest text-fir">
-                    Vánoční dopis od
+                    Dopis od
                   </div>
                   <div className="font-fairytale font-bold text-2xl sm:text-3xl text-slate-text">
                     {activeCard.recipientName}
@@ -239,9 +242,7 @@ export function FamilyPage() {
                 <span className="mt-3 inline-flex items-center gap-2 px-5 py-2 rounded-full bg-crimson text-white text-sm sm:text-base font-bold shadow-md border border-gold/50 group-hover:bg-crimson-dark transition-colors">
                   <MailOpen className="w-4 h-4 shrink-0" />
                   <span>
-                    {isBreaking
-                      ? 'Otevírám pečeť a vysouvám dopis...'
-                      : 'Klikni na pečeť pro otevření dopisu'}
+                    {isBreaking ? 'Otevírám...' : 'Otevřít dopis'}
                   </span>
                 </span>
               </div>
@@ -249,10 +250,10 @@ export function FamilyPage() {
               {/* Spodní řádek obálky */}
               <div className="relative z-10 flex items-end justify-between gap-4 pt-2">
                 <div className="text-sm font-bold text-fir">
-                  {formatWishCount(wishes.length)} uvnitř obálky
+                  {formatWishCount(wishes.length)}
                 </div>
                 <div className="font-handwritten font-bold text-2xl sm:text-3xl text-fir">
-                  Ježíškova pošta · 24. XII.
+                  DOPIS JEŽÍŠKOVI • 24. 12.
                 </div>
               </div>
             </button>
@@ -293,7 +294,7 @@ export function FamilyPage() {
                     <div className="-rotate-1 bg-[#FFFDF8] p-3 pb-4 rounded-xl shadow-[0_10px_24px_rgba(30,36,33,0.16)] border border-[#E2D6BE]">
                       <img
                         src={letter.handwrittenPhotoUrl}
-                        alt={`Ručně psaný dopis — ${activeCard.recipientName}`}
+                        alt={`Ručně psaný dopis (${activeCard.recipientName})`}
                         className="max-h-[360px] w-full object-contain rounded-lg bg-paper mx-auto"
                       />
                     </div>
@@ -334,16 +335,9 @@ export function FamilyPage() {
               </h2>
 
               {wishes.length === 0 ? (
-                <div className="stationery-sheet rounded-3xl p-8 text-center space-y-2">
-                  <div className="w-11 h-11 rounded-2xl bg-gold-soft text-fir border border-gold/50 flex items-center justify-center mx-auto">
-                    <Gift className="w-5 h-5" />
-                  </div>
+                <div className="py-8 text-center">
                   <p className="font-fairytale font-bold text-2xl text-slate-text">
-                    Všechna přání z tohoto dopisu už mají svého tajného Ježíška
-                  </p>
-                  <p className="text-base text-slate-text-muted max-w-md mx-auto">
-                    Pokud chceš přesto udělat radost něčím navíc, můžeš si připsat vlastní tajný
-                    nápad ve svém nákupním seznamu.
+                    Všechna přání jsou zamluvená
                   </p>
                 </div>
               ) : (
@@ -382,7 +376,7 @@ export function FamilyPage() {
                                   rel="noopener noreferrer"
                                   className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gold-soft border border-gold/45 text-slate-text text-sm font-bold hover:bg-gold/30 transition"
                                 >
-                                  <span>Ukázka dárku</span>
+                                  <span>Ukázka</span>
                                   <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                                 </a>
                               </div>
@@ -397,7 +391,7 @@ export function FamilyPage() {
                           className="min-h-[50px] shrink-0 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-fir hover:bg-fir-hover text-white text-base font-bold shadow-sm border border-gold/45 transition disabled:opacity-60"
                         >
                           <Gift className="w-5 h-5 text-gold-glow shrink-0" />
-                          <span>Tohle koupím já</span>
+                          <span>Tohle koupím</span>
                         </button>
                       </div>
                     );
@@ -418,9 +412,6 @@ export function FamilyPage() {
           <h1 className="font-fairytale font-bold text-[32px] sm:text-[38px] leading-tight text-slate-text">
             Komu koupit dárek
           </h1>
-          <p className="text-base text-slate-text-muted mt-0.5">
-            Klikni na dárkovou jmenovku, rozlom pečeť na obálce a tajně si zamluv přání.
-          </p>
         </div>
 
         <Link
@@ -428,7 +419,7 @@ export function FamilyPage() {
           className="min-h-[48px] inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-sheet border-[1.5px] border-fir hover:bg-fir-soft text-base font-bold text-slate-text shadow-card transition shrink-0"
         >
           <UserPlus className="w-5 h-5 text-fir shrink-0" />
-          <span>Pozvat blízké a skupiny</span>
+          <span>Pozvat blízké</span>
           {pendingRequestsCount > 0 && (
             <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-crimson text-white">
               {pendingRequestsCount}
@@ -474,29 +465,21 @@ export function FamilyPage() {
       )}
 
       {visibleCards.length === 0 ? (
-        <div className="stationery-sheet rounded-3xl p-10 sm:p-12 text-center space-y-4 max-w-xl mx-auto relative overflow-hidden">
-          <div className="stationery-inner-frame" aria-hidden="true" />
-          <div className="relative z-10 space-y-3">
-            <WaxSealSvg className="w-20 h-20 mx-auto" />
-            <h2 className="font-fairytale font-bold text-2xl sm:text-3xl text-slate-text">
-              {familyCards.length === 0
-                ? 'Zatím tu je klid jako před Štědrým večerem'
-                : 'V této skupině zatím nejsou žádné dopisy'}
-            </h2>
-            <p className="text-base text-slate-text-muted leading-relaxed">
-              {familyCards.length === 0
-                ? 'Pozvi rodinu nebo přátele přes zvací odkaz, abyste si mohli rozpečetit obálky a tajně vybírat dárky.'
-                : 'Přidej do skupiny své blízké nebo jim pošli zvací odkaz.'}
-            </p>
-            <div className="pt-2">
-              <Link
-                to="/sdileni"
-                className="min-h-[48px] inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-fir hover:bg-fir-hover text-white text-base font-bold shadow-sm transition"
-              >
-                <UserPlus className="w-5 h-5 shrink-0" />
-                <span>Pozvat blízké a spravovat skupiny</span>
-              </Link>
-            </div>
+        <div className="py-10 text-center space-y-4 max-w-xl mx-auto">
+          <WaxSealSvg className="w-20 h-20 mx-auto" />
+          <h2 className="font-fairytale font-bold text-2xl sm:text-3xl text-slate-text">
+            {familyCards.length === 0
+              ? 'Zatím tu nejsou žádné dopisy'
+              : 'Ve skupině nejsou žádné dopisy'}
+          </h2>
+          <div>
+            <Link
+              to="/sdileni"
+              className="min-h-[48px] inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-fir hover:bg-fir-hover text-white text-base font-bold shadow-sm transition"
+            >
+              <UserPlus className="w-5 h-5 shrink-0" />
+              <span>Pozvat blízké</span>
+            </Link>
           </div>
         </div>
       ) : (

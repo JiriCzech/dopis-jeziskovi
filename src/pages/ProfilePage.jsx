@@ -126,7 +126,7 @@ export function ProfilePage({ isSetup = false }) {
             htmlFor="edit-display-name"
             className="block text-lg font-bold text-[#1E2421] mb-2"
           >
-            Jak ti doma říkají?
+            Tvoje jméno
           </label>
           <input
             id="edit-display-name"
@@ -139,10 +139,10 @@ export function ProfilePage({ isSetup = false }) {
           />
         </div>
 
-        {/* Mřížka 6 ručně kreslených poštovních známek (3 × 2 na desktopu, 2 × 3 na mobilu) */}
+        {/* Mřížka 6 ručně kreslených poštovních známek */}
         <div>
           <span className="block text-lg font-bold text-[#1E2421] mb-4">
-            Vyber si svou poštovní známku
+            Poštovní známka
           </span>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-7 gap-x-5 pt-1">
             {AVATAR_OPTIONS.map((opt) => {
@@ -182,11 +182,7 @@ export function ProfilePage({ isSetup = false }) {
           disabled={saving}
           className="min-h-[56px] w-full py-3.5 px-7 rounded-2xl bg-[#1B4332] hover:bg-[#2D6A4F] text-[#FFFDF8] text-lg font-bold shadow-soft border-[1.5px] border-[#C9963B] transition disabled:opacity-60"
         >
-          {saving
-            ? 'Ukládám...'
-            : isFirstSetup
-              ? 'Hotovo, jdeme psát dopis'
-              : 'Uložit změny'}
+          {saving ? 'Ukládám...' : 'Uložit'}
         </button>
       </form>
 

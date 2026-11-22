@@ -62,7 +62,7 @@ export function WishFormModal({ open, initialWish = null, onSave, onClose }) {
         />
         <div className="relative z-10 flex items-center justify-between gap-3 mb-5">
           <h3 className="font-fairytale font-bold text-2xl sm:text-3xl text-slate-text leading-tight">
-            {initialWish ? 'Upravit přání' : 'Připsat přání do dopisu'}
+            {initialWish ? 'Upravit přání' : 'Přidat přání'}
           </h3>
           <button
             type="button"
@@ -143,7 +143,7 @@ export function WishFormModal({ open, initialWish = null, onSave, onClose }) {
               className="min-h-[48px] inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-fir hover:bg-fir-hover text-white text-base font-bold shadow-sm transition"
             >
               <Check className="w-5 h-5 shrink-0" />
-              <span>{initialWish ? 'Uložit úpravy' : 'Připsat do dopisu'}</span>
+              <span>{initialWish ? 'Uložit' : 'Přidat přání'}</span>
             </button>
           </div>
         </form>

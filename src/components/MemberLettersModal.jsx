@@ -75,7 +75,7 @@ export function MemberLettersModal({ open, member, onClose }) {
             <Avatar avatarId={member.avatarId} avatarBg={member.avatarBg} size="md" />
             <div className="min-w-0">
               <h2 className="text-lg sm:text-xl font-bold text-slate-text truncate">
-                Dopisy pro Ježíška — {member.displayName}
+                Dopis Ježíškovi ({member.displayName})
               </h2>
               <p className="text-xs text-slate-text-muted">
                 {member.displayName}#{member.tag} · Když si dárek vybereš, ostatním se hned skryje

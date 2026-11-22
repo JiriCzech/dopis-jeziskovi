@@ -65,7 +65,7 @@ export function createInitialDemoState() {
             id: 'wish-j2',
             title: 'Vlněné teplé ponožky na hory',
             url: '',
-            note: 'Velikost 43–44, tmavě zelená nebo šedá',
+            note: 'Velikost 43 až 44, tmavě zelená nebo šedá',
             createdAt: now - 3600000 * 10,
           },
         ],

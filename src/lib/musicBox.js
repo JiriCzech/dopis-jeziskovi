@@ -1,5 +1,5 @@
 /**
- * Tichá vánoční hrací skříňka (Web Audio API) — jemný klavírní / celestový doprovod koledy Tichá noc
+ * Tichá vánoční hrací skříňka (Web Audio API) pro jemný klavírní doprovod koledy Tichá noc
  * Funguje 100% offline bez externích MP3 souborů a s minimální zátěží procesoru.
  */
 

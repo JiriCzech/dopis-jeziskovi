@@ -1,6 +1,6 @@
 # Dopis Ježíškovi
 
-Rodinná webová aplikace pro psaní vánočních dopisů, tajné zamlouvání dárků a tisk pohádkových dopisů — bez duplicitních dárků a se zachováním stoprocentního kouzla překvapení.
+Rodinná webová aplikace pro psaní vánočních dopisů, tajné zamlouvání dárků a tisk pohádkových dopisů bez duplicitních dárků a se zachováním stoprocentního kouzla překvapení.
 
 ## Hlavní funkce
 
@@ -40,7 +40,7 @@ VITE_FIREBASE_APP_ID=...
 ```
 
 5. Nahraj přiložená bezpečnostní pravidla ze souboru `firestore.rules` (přes záložku **Firestore Database → Rules** v konzoli nebo přes Firebase CLI příkazem `firebase deploy --only firestore:rules`).
-6. *(Volitelné)* Pokud v nákupním seznamu přibude více dat, můžeš pro složený dotaz na kolekci `claims` (`claimedByUid ==` a `letterOwnerUid !=`) vytvořit doporučený index z konzole — aplikace se však automaticky přepne na záložní dotaz i bez něj.
+6. *(Volitelné)* Pokud v nákupním seznamu přibude více dat, můžeš pro složený dotaz na kolekci `claims` (`claimedByUid ==` a `letterOwnerUid !=`) vytvořit doporučený index z konzole (aplikace se však automaticky přepne na záložní dotaz i bez něj).
 
 ---
 

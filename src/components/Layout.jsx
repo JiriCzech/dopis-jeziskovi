@@ -233,13 +233,13 @@ export function Layout({ children }) {
         </div>
       )}
 
-      {/* Horní navigace Ježíškovy pošty */}
+      {/* Horní navigace aplikace Dopis Ježíškovi */}
       <header className="no-print relative z-20 bg-sheet/95 backdrop-blur-md border-b-[1.5px] border-fir sticky top-0 shadow-xs">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 min-h-[72px] md:h-20 py-2 flex items-center justify-between gap-2.5">
           <NavLink to="/" className="flex items-center gap-2.5 group shrink-0">
             <div>
               <div className="font-fairytale font-bold text-fir text-xl sm:text-2xl leading-none whitespace-nowrap">
-                Ježíškova pošta
+                Dopis Ježíškovi
               </div>
               <div className="text-xs text-slate-text-muted flex items-center gap-1 whitespace-nowrap mt-0.5">
                 <Star className="w-3 h-3 text-gold fill-gold shrink-0" />
@@ -319,19 +319,19 @@ export function Layout({ children }) {
       </header>
 
       {/* Hlavní obsah */}
-      <main className="relative z-10 flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10 min-w-0">
+      <main className="relative z-10 flex-1 max-w-2xl xl:max-w-3xl w-full mx-auto px-4 sm:px-6 lg:pl-20 xl:pl-6 py-6 sm:py-10 min-w-0">
         {children}
       </main>
 
       {/* Celopostavový 3D kapr průvodce volně v prostoru aplikace */}
       <KaprikGuide variant="floating" />
 
-      {/* Útulná vánoční patička aplikace */}
-      <footer className="no-print relative z-10 max-w-5xl w-full mx-auto px-4 sm:px-6 pt-4 pb-8 text-center">
+      {/* Patička aplikace */}
+      <footer className="no-print relative z-10 max-w-2xl xl:max-w-3xl w-full mx-auto px-4 sm:px-6 pt-4 pb-8 text-center">
         <div className="border-t border-fir/20 pt-6 flex flex-col items-center gap-2">
           <FairytaleOrnamentSvg className="w-40 h-7 opacity-80" />
           <p className="font-fairytale italic text-lg sm:text-xl text-slate-text-muted">
-            Ježíškova pošta — Krásné a klidné české Vánoce plné překvapení
+            Dopis Ježíškovi
           </p>
         </div>
       </footer>

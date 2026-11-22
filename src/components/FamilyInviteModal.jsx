@@ -111,7 +111,7 @@ export function FamilyInviteModal({
     try {
       await navigator.clipboard.writeText(link);
       setCopiedPersonalLink(true);
-      notify('Zvací odkaz zkopírován — pošli ho do zprávy nebo na WhatsApp.');
+      notify('Zvací odkaz zkopírován.');
       setTimeout(() => setCopiedPersonalLink(false), 2500);
     } catch {
       notify(`Zvací odkaz: ${link}`);
@@ -643,8 +643,7 @@ export function FamilyInviteModal({
                   </span>
                   {selectableContacts.length === 0 ? (
                     <p className="text-sm text-slate-text-muted">
-                      Zatím nemáš žádné propojené kontakty — po založení skupiny ale můžeš komukoliv
-                      poslat její zvací kód.
+                      Zatím žádné propojené kontakty.
                     </p>
                   ) : (
                     <div className="flex flex-wrap gap-2">

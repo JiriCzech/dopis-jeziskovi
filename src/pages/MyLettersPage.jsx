@@ -30,7 +30,7 @@ function autoResizeTextarea(el) {
 }
 
 /**
- * Komprese nahrané fotky ručně psaného dopisu na klientovi přes HTML5 canvas (~50–95 KB JPEG)
+ * Komprese nahrané fotky ručně psaného dopisu na klientovi přes HTML5 canvas (cca 50 az 95 KB JPEG)
  */
 function compressHandwrittenImage(file) {
   return new Promise((resolve, reject) => {
@@ -730,13 +730,13 @@ export function MyLettersPage() {
                   >
                     <img
                       src={draft.handwrittenPhotoUrl}
-                      alt={`Ručně psaný dopis — ${draft.recipientName}`}
+                      alt={`Ručně psaný dopis (${draft.recipientName})`}
                       className="max-h-[320px] w-full object-contain mx-auto"
                     />
                   </button>
                   <div className="no-print mt-2.5 flex items-center justify-between gap-2 px-1">
                     <span className="font-handwritten text-xl text-slate-text-muted">
-                      Ručně psaný dopis — {draft.recipientName}
+                      Ručně psaný dopis ({draft.recipientName})
                     </span>
                     <div className="flex items-center gap-2 shrink-0">
                       <button
@@ -812,7 +812,7 @@ export function MyLettersPage() {
                 >
                   <Plus className="w-5 h-5 text-crimson group-hover:text-fir transition shrink-0" />
                   <span className="font-handwritten font-bold text-[24px] sm:text-[27px] text-crimson group-hover:text-fir">
-                    Připsat další přání...
+                    Přidat přání
                   </span>
                 </button>
               </div>
@@ -837,7 +837,7 @@ export function MyLettersPage() {
                 <div className="flex flex-col items-end gap-1.5 shrink-0 select-none">
                   <div
                     key={sealPulseKey}
-                    title="Vosková pečeť Ježíškovy pošty"
+                    title="Vosková pečeť Dopisu Ježíškovi"
                     className="print:hidden no-print"
                   >
                     <WaxSealSvg
@@ -865,19 +865,14 @@ export function MyLettersPage() {
             </div>
 
             {/* Rituál zapečetění a odeslání */}
-            <div className="no-print mt-8 pt-6 border-t border-[#8B7355]/25 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-base leading-relaxed text-slate-text-muted text-center sm:text-left">
-                {draft.sealedAt ? (
-                  <>
-                    <strong className="text-fir">Dopis je zapečetěný a u Ježíška!</strong> Kdykoliv do
-                    něj můžeš připsat další přání a znovu ho přepečetit.
-                  </>
-                ) : (
-                  <>
-                    Až budeš mít všechna přání sepsaná, vlož dopis do obálky a pošli ho Ježíškovi.
-                  </>
+            <div className="no-print mt-8 pt-6 border-t border-[#8B7355]/25 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                {draft.sealedAt && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-fir-soft border border-fir/25 text-sm font-bold text-fir">
+                    Zapečetěno ✓
+                  </span>
                 )}
-              </p>
+              </div>
 
               <button
                 type="button"
@@ -885,7 +880,7 @@ export function MyLettersPage() {
                 className="min-h-[52px] w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl bg-crimson hover:bg-crimson-dark text-white text-base sm:text-lg font-bold shadow-md border border-gold/50 transition"
               >
                 <Mail className="w-5 h-5 shrink-0" />
-                <span>Zapečetit a poslat Ježíškovi</span>
+                <span>Zapečetit a poslat</span>
               </button>
             </div>
 
@@ -977,8 +972,8 @@ export function MyLettersPage() {
                       <div className="text-xs font-bold uppercase tracking-widest text-fir/80">
                         Adresát
                       </div>
-                      <div className="font-handwritten font-bold text-3xl text-fir leading-tight">
-                        Ježíškova pošta — Boží Dar
+                      <div className="font-handwritten font-bold text-2xl sm:text-3xl text-fir leading-tight">
+                        DOPIS JEŽÍŠKOVI • 24. 12.
                       </div>
                     </div>
                   </div>
@@ -986,15 +981,11 @@ export function MyLettersPage() {
               ) : (
                 <div className="stationery-sheet rounded-3xl p-6 sm:p-8 max-w-md mx-auto space-y-5 animate-slide-up relative">
                   <div className="stationery-inner-frame" aria-hidden="true" />
-                  <div className="relative z-10 flex flex-col items-center gap-3">
+                  <div className="relative z-10 flex flex-col items-center gap-4">
                     <WaxSealSvg className="w-20 h-20" pressed />
                     <h3 className="font-fairytale font-bold text-3xl text-fir">
                       Dopis letí k Ježíškovi!
                     </h3>
-                    <p className="text-base text-slate-text-muted leading-relaxed">
-                      Obálka byla opatřena tvou poštovní známkou a zapečetěna červeným voskem.
-                      Tvoji blízcí si teď mohou přání z dopisu tajně zamluvit.
-                    </p>
                     <button
                       type="button"
                       onClick={() => setRitualStage('idle')}
@@ -1024,7 +1015,7 @@ export function MyLettersPage() {
             <div className="relative max-w-3xl w-full rounded-3xl bg-sheet border-2 border-fir p-4 sm:p-6 shadow-2xl space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="font-fairytale font-bold text-2xl text-slate-text">
-                  Ručně psaný dopis — {draft.recipientName}
+                  Ručně psaný dopis ({draft.recipientName})
                 </h3>
                 <button
                   type="button"
@@ -1070,7 +1061,7 @@ export function MyLettersPage() {
               />
               <div className="relative z-10 flex items-center justify-between gap-3">
                 <h3 className="font-fairytale font-bold text-2xl sm:text-3xl text-slate-text leading-tight">
-                  Spravovat dopis společně
+                  Spravovat společně
                 </h3>
                 <button
                   type="button"
@@ -1081,13 +1072,6 @@ export function MyLettersPage() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
-              <p className="relative z-10 text-sm sm:text-base text-slate-text-muted leading-relaxed">
-                Vyber druhého rodiče, který bude moci dopis pro{' '}
-                <strong className="text-slate-text">{draft.recipientName}</strong> také upravovat,
-                přidávat do něj přání a tisknout ho. Ani jeden z vás neuvidí, kdo z rodiny dárky
-                zamluvil.
-              </p>
 
               <form onSubmit={handleSaveCoParents} className="relative z-10 space-y-4">
                 {acceptedContacts.length === 0 ? (

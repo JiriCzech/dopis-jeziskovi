@@ -82,7 +82,7 @@ export function PrintPreviewModal({ open, letter, onThemeChange, onClose }) {
         >
           <div className="flex items-center justify-between gap-3">
             <h3 className="font-fairytale font-bold text-2xl sm:text-3xl text-slate-text leading-tight">
-              Vzhled dopisu k tisku — {letter.recipientName}
+              Tisk dopisu ({letter.recipientName})
             </h3>
             <button
               type="button"
