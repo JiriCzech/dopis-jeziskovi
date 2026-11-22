@@ -5,8 +5,6 @@ import {
   AVATAR_OPTIONS,
   Avatar,
   normalizeStampId,
-  RedWhiteTwineCordSvg,
-  RoundPostmarkSvg,
 } from '../assets/avatars';
 import { useAuth } from '../hooks/useAuth';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -99,36 +97,23 @@ export function ProfilePage({ isSetup = false }) {
 
   return (
     <div className="max-w-xl mx-auto space-y-8 animate-page-transition py-2">
-      {/* 1. Realistická papírová dárková jmenovka s nalepenou známkou a kroucenou červeno-bílou šňůrkou */}
-      <div className="relative pt-8">
-        <RedWhiteTwineCordSvg className="w-14 h-16 absolute -top-2 left-1/2 -translate-x-1/2 z-20 pointer-events-none" />
+      {/* 1. 3D dárková jmenovka s nalepenou poštovní známkou a jménem v písmu Cormorant Garamond */}
+      <div className="relative w-full">
+        <img
+          src="/assets/visacka-3d.png"
+          alt=""
+          draggable={false}
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-fill select-none pointer-events-none drop-shadow-[0_14px_26px_rgba(45,38,26,0.18)]"
+        />
+        <div className="relative z-10 min-h-[175px] sm:min-h-[256px] pl-24 sm:pl-36 pr-6 sm:pr-12 py-6 sm:py-8 flex flex-row items-center gap-4 sm:gap-8">
+          <div className="shrink-0">
+            <Avatar avatarId={avatarId} size="xl" onTag />
+          </div>
 
-        <div
-          style={{ filter: 'drop-shadow(0 12px 24px rgba(45, 38, 26, 0.16))' }}
-          className="relative"
-        >
-          <div className="profile-paper-tag relative px-6 sm:px-10 pt-11 pb-8 flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
-            {/* Jemná vnitřní linka jmenovky */}
-            <div
-              className="pointer-events-none absolute inset-3 border border-[#C9963B]/45 rounded-b-2xl"
-              style={{
-                clipPath:
-                  'polygon(20px 0%, calc(100% - 20px) 0%, 100% 20px, 100% 100%, 0% 100%, 0% 20px)',
-              }}
-              aria-hidden="true"
-            />
-
-            {/* 1. Vlevo nalepená vybraná poštovní známka se zoubkovaným okrajem (-rotate-2) + kulaté poštovní razítko přes roh */}
-            <div className="relative shrink-0 -rotate-2">
-              <Avatar avatarId={avatarId} size="xl" onTag />
-              <RoundPostmarkSvg className="w-16 h-16 absolute -bottom-3 -right-5 pointer-events-none" />
-            </div>
-
-            {/* 2. Uprostřed velkým písmem Cormorant Garamond jméno uživatele */}
-            <div className="flex-1 min-w-0 text-center sm:text-left">
-              <div className="font-fairytale font-bold text-4xl sm:text-5xl text-[#1E2421] leading-tight tracking-tight break-words">
-                {liveName}
-              </div>
+          <div className="flex-1 min-w-0 text-left">
+            <div className="font-fairytale font-bold text-3xl sm:text-5xl text-[#1E2421] leading-tight tracking-tight break-words">
+              {liveName}
             </div>
           </div>
         </div>
@@ -167,9 +152,7 @@ export function ProfilePage({ isSetup = false }) {
                   key={opt.id}
                   type="button"
                   onClick={() => setAvatarId(opt.id)}
-                  className={`group flex flex-col items-center gap-2.5 focus:outline-none transition-transform duration-200 ${
-                    active ? '-translate-y-1.5' : 'hover:-translate-y-1'
-                  }`}
+                  className="group flex flex-col items-center gap-2.5 focus:outline-none"
                 >
                   <div className="relative">
                     <Avatar
@@ -177,9 +160,6 @@ export function ProfilePage({ isSetup = false }) {
                       size="stampGrid"
                       selected={active}
                     />
-                    {active && (
-                      <RoundPostmarkSvg className="w-13 h-13 absolute -bottom-2 -right-3 pointer-events-none animate-fade-in" />
-                    )}
                   </div>
                   <span
                     className={`text-base leading-tight text-center transition-colors ${

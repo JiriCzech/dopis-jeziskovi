@@ -10,11 +10,8 @@ import {
 } from 'lucide-react';
 import {
   Avatar,
-  CompactMistletoeSvg,
   getChildAvatar,
   PaperClipSvg,
-  TagMistletoeCornerSvg,
-  TagPostalStampSvg,
   WaxSealSvg,
 } from '../assets/avatars';
 import { useAuth } from '../hooks/useAuth';
@@ -29,7 +26,7 @@ function formatWishCount(count) {
 }
 
 /**
- * Přírodní kraftová dárková jmenovka (#EFE5D1) s 3D poštovní známkou člověka, jménem a počtem přání
+ * Svislá 3D dárková visačka s poštovní známkou člověka, jménem a počtem přání
  */
 const KraftGiftTagCard = memo(function KraftGiftTagCard({
   card,
@@ -45,49 +42,20 @@ const KraftGiftTagCard = memo(function KraftGiftTagCard({
     <button
       type="button"
       onClick={() => onSelect(card.cardId)}
-      className="kraft-gift-tag-wrapper group relative text-center focus:outline-none pt-3 min-w-0"
+      className="group relative text-center focus:outline-none min-w-0 w-full"
     >
-      {/* Jutový provázek vedoucí z otvoru nahoru mimo jmenovku */}
-      <svg
-        viewBox="0 0 40 36"
-        className="w-10 h-9 absolute -top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none"
-        fill="none"
+      <img
+        src="/assets/visacka-karta-3d.png"
+        alt=""
+        draggable={false}
         aria-hidden="true"
-      >
-        <path
-          d="M20 26 C18 16 22 7 25 1"
-          stroke="#1B4332"
-          strokeWidth="2.4"
-          strokeLinecap="round"
-        />
-        <path
-          d="M21 26 C23 17 17 8 15 2"
-          stroke="#C9963B"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-        />
-      </svg>
+        className="absolute inset-0 w-full h-full object-fill select-none pointer-events-none drop-shadow-[0_12px_24px_rgba(27,67,50,0.16)] group-hover:drop-shadow-[0_18px_32px_rgba(27,67,50,0.24)] transition-shadow duration-200"
+      />
 
-      {/* Tělo přírodní kraftové jmenovky (#EFE5D1) s tmavě zeleným okrajem a zlatou vnitřní linkou */}
-      <div className="kraft-gift-tag relative min-h-[284px] px-5 sm:px-6 pt-12 pb-6 flex flex-col items-center justify-between">
-        {/* Dírka s kroužkem nahoře */}
-        <div
-          className="w-7 h-7 rounded-full bg-paper border-[3px] border-fir shadow-inner absolute top-3.5 left-1/2 -translate-x-1/2 z-10"
-          aria-hidden="true"
-        />
-
-        {/* Vnitřní zlatá linka jmenovky */}
-        <div
-          className="pointer-events-none absolute inset-2.5 border border-gold/55 rounded-2xl"
-          aria-hidden="true"
-        />
-
-        <TagPostalStampSvg className="w-24 h-12 absolute top-7 right-3 pointer-events-none" />
-        <TagMistletoeCornerSvg className="w-24 h-20 absolute bottom-2 left-2 pointer-events-none" />
-
+      <div className="relative z-10 min-h-[340px] sm:min-h-[360px] px-7 pt-24 pb-8 flex flex-col items-center justify-between">
         {/* 3D Poštovní známka člověka + Jméno + Počet přání */}
-        <div className="relative z-10 my-auto py-3 flex flex-col items-center space-y-2.5 max-w-full">
-          <Avatar avatarId={avatarId} avatarBg={avatarBg} size="md" />
+        <div className="my-auto py-2 flex flex-col items-center space-y-2.5 max-w-full">
+          <Avatar avatarId={avatarId} avatarBg={avatarBg} size="lg" onTag />
 
           <div className="space-y-1">
             <h2 className="font-fairytale font-bold text-3xl sm:text-[34px] text-slate-text leading-tight tracking-tight break-words">
@@ -108,7 +76,7 @@ const KraftGiftTagCard = memo(function KraftGiftTagCard({
           </div>
         </div>
 
-        <div className="relative z-10 pt-1">
+        <div className="pt-2">
           <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-sheet border border-fir/45 text-xs font-bold text-fir group-hover:bg-fir group-hover:text-white group-hover:border-fir transition-colors">
             <MailOpen className="w-3.5 h-3.5 shrink-0" />
             <span>Rozpečetit obálku</span>
@@ -222,46 +190,25 @@ export function FamilyPage() {
           </button>
         </div>
 
-        {/* Zavřená kraftová obálka s voskovou pečetí a známkou v rohu — kliknutím se pečeť rozlomí */}
+        {/* Zavřená 3D poštovní obálka s voskovou pečetí a známkou v pravém horním rohu */}
         {!isUnsealed ? (
           <div className="py-4">
             <button
               type="button"
               onClick={() => handleBreakEnvelopeSeal(activeCard.cardId)}
-              className="kraft-envelope w-full rounded-[30px] p-6 sm:p-10 text-left relative overflow-hidden group transition-transform hover:-translate-y-1 focus:outline-none"
+              className="w-full p-7 sm:p-11 text-left relative overflow-hidden group focus:outline-none min-h-[340px] sm:min-h-[390px] flex flex-col justify-between"
             >
-              <div
-                className="pointer-events-none absolute inset-3 rounded-2xl border border-gold/55"
+              <img
+                src="/assets/obalka-3d.png"
+                alt=""
+                draggable={false}
                 aria-hidden="true"
+                className="absolute inset-0 w-full h-full object-fill select-none pointer-events-none drop-shadow-[0_18px_36px_rgba(27,67,50,0.22)]"
               />
-
-              {/* Horní klopa obálky (SVG trojúhelníkový lem) */}
-              <svg
-                viewBox="0 0 400 130"
-                preserveAspectRatio="none"
-                className={`w-full h-32 sm:h-40 absolute top-0 inset-x-0 pointer-events-none transition-transform duration-500 origin-top ${
-                  isBreaking ? 'scale-y-0 opacity-40' : ''
-                }`}
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M0 0 L200 122 L400 0 Z"
-                  fill="#E5D7BC"
-                  stroke="#1B4332"
-                  strokeWidth="3"
-                />
-                <path
-                  d="M14 4 L200 114 L386 4"
-                  stroke="#C9963B"
-                  strokeWidth="1.5"
-                  strokeDasharray="4 4"
-                />
-              </svg>
 
               {/* Horní řádek: Odesílatel + 3D poštovní známka v pravém horním rohu */}
               <div className="relative z-10 flex items-start justify-between gap-4">
-                <div className="bg-sheet/85 backdrop-blur-xs px-3.5 py-2 rounded-2xl border border-fir/30">
+                <div className="bg-sheet/80 px-3.5 py-2 rounded-2xl border border-fir/25">
                   <div className="text-[11px] font-bold uppercase tracking-widest text-fir">
                     Vánoční dopis od
                   </div>
@@ -275,24 +222,21 @@ export function FamilyPage() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 bg-sheet/80 p-1.5 rounded-2xl border border-fir/25">
-                  <TagPostalStampSvg className="w-20 h-10 hidden sm:block" />
-                  <Avatar avatarId={avatarId} avatarBg={avatarBg} size="lg" />
+                <div className="shrink-0">
+                  <Avatar avatarId={avatarId} avatarBg={avatarBg} size="lg" onTag />
                 </div>
               </div>
 
-              {/* Střed obálky: Červená vosková pečeť (kliknutím se rozlomí) */}
-              <div className="relative z-20 my-8 flex flex-col items-center justify-center">
+              {/* Střed obálky na klopě: 3D červená vosková pečeť */}
+              <div className="relative z-20 my-6 flex flex-col items-center justify-center">
                 <div
-                  className={`transition-all duration-400 ${
-                    isBreaking
-                      ? 'scale-125 opacity-0 rotate-12'
-                      : 'group-hover:scale-110'
+                  className={`transition-opacity duration-300 ${
+                    isBreaking ? 'opacity-0' : 'opacity-100'
                   }`}
                 >
                   <WaxSealSvg className="w-24 h-24 sm:w-28 sm:h-28 mx-auto" />
                 </div>
-                <span className="mt-3 inline-flex items-center gap-2 px-5 py-2 rounded-full bg-crimson text-white text-sm sm:text-base font-bold shadow-md border border-gold/50 group-hover:bg-crimson-dark transition">
+                <span className="mt-3 inline-flex items-center gap-2 px-5 py-2 rounded-full bg-crimson text-white text-sm sm:text-base font-bold shadow-md border border-gold/50 group-hover:bg-crimson-dark transition-colors">
                   <MailOpen className="w-4 h-4 shrink-0" />
                   <span>
                     {isBreaking
@@ -334,7 +278,6 @@ export function FamilyPage() {
                       )}
                     </div>
                   </div>
-                  <CompactMistletoeSvg className="w-28 h-9 hidden sm:block shrink-0" />
                 </div>
 
                 {/* Připnutá fotka ručně psaného papírového dopisu, pokud ji autor nahrál */}

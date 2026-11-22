@@ -4,7 +4,6 @@ import { Printer, X } from 'lucide-react';
 import {
   FairytaleOrnamentSvg,
   MinimalSnowflakeSvg,
-  SpruceCornerSvg,
 } from '../assets/avatars';
 
 const TEMPLATES = [
@@ -127,7 +126,6 @@ export function PrintPreviewModal({ open, letter, onThemeChange, onClose }) {
               style={{ backgroundColor: '#FFFDF8' }}
               className="print-sheet print-letter-sheet relative max-w-[700px] mx-auto bg-[#FFFDF8] rounded-xl shadow-md border border-[#E5DEC9] p-8 sm:p-12 overflow-hidden"
             >
-              <SpruceCornerSvg className="w-28 h-24 sm:w-32 sm:h-28 absolute top-2 right-2 pointer-events-none" />
               <div className="relative z-10 font-handwritten text-slate-text">
                 <h2 className="text-4xl sm:text-5xl font-bold text-fir mb-6">
                   Milý Ježíšku,

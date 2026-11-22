@@ -18,7 +18,7 @@ import {
   Wine,
   X,
 } from 'lucide-react';
-import { Avatar, GiftTagCordSvg } from '../assets/avatars';
+import { Avatar } from '../assets/avatars';
 import { useAuth } from '../hooks/useAuth';
 import { useAppData } from '../hooks/useAppData';
 import {
@@ -53,6 +53,7 @@ export function SharingPage() {
   const {
     connections,
     groups,
+    familyCards,
     usersById: usersMap,
     acceptedContacts,
   } = useAppData();
@@ -535,44 +536,70 @@ export function SharingPage() {
               Zatím nemáš žádné přímé propojení. Pošli někomu svůj odkaz nebo zadej jeho kód výše.
             </p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              {acceptedContacts.map(({ connectionId, user }) => (
-                <div
-                  key={connectionId}
-                  className="relative rounded-2xl bg-kraft border-[1.5px] border-fir p-4 pl-6 flex items-center justify-between gap-3 shadow-xs overflow-hidden"
-                >
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+              {acceptedContacts.map(({ connectionId, user }) => {
+                const memberCard = familyCards.find(
+                  (c) => !c.isChildLetter && c.ownerProfile?.uid === user.uid
+                );
+                const wishCount = memberCard ? (memberCard.availableWishes || []).length : null;
+                const wishText =
+                  wishCount === null
+                    ? 'Propojeno'
+                    : wishCount === 0
+                      ? 'všechna přání splněna'
+                      : wishCount === 1
+                        ? '1 přání'
+                        : `${wishCount} přání`;
+
+                return (
                   <div
-                    className="pointer-events-none absolute inset-1.5 rounded-xl border border-gold/45"
-                    aria-hidden="true"
-                  />
-                  <GiftTagCordSvg className="w-10 h-8 absolute -top-1 -left-1 pointer-events-none" />
-                  <div className="relative z-10 flex items-center gap-3 min-w-0">
-                    <Avatar avatarId={user.avatarId} avatarBg={user.avatarBg} size="md" />
-                    <div className="min-w-0">
-                      <div className="font-fairytale font-bold text-2xl text-slate-text truncate leading-tight">
-                        {user.displayName}
+                    key={connectionId}
+                    className="relative text-center min-w-0"
+                  >
+                    <img
+                      src="/assets/visacka-karta-3d.png"
+                      alt=""
+                      draggable={false}
+                      aria-hidden="true"
+                      className="absolute inset-0 w-full h-full object-fill select-none pointer-events-none drop-shadow-[0_12px_24px_rgba(27,67,50,0.16)]"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => handleDeclineOrRemove(connectionId, 'Propojení bylo odebráno.')}
+                      title="Odebrat propojení"
+                      aria-label={`Odebrat propojení s ${user.displayName}`}
+                      className="absolute top-20 right-5 z-20 p-1.5 rounded-xl text-slate-text-muted hover:text-crimson hover:bg-crimson-soft/70 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+
+                    <div className="relative z-10 min-h-[320px] px-7 pt-24 pb-8 flex flex-col items-center justify-between">
+                      <div className="my-auto py-2 flex flex-col items-center space-y-2.5 max-w-full">
+                        <Avatar avatarId={user.avatarId} avatarBg={user.avatarBg} size="lg" onTag />
+                        <div className="space-y-1 max-w-full">
+                          <div className="font-fairytale font-bold text-3xl text-slate-text leading-tight break-words">
+                            {user.displayName}
+                          </div>
+                          <div className="text-sm font-bold text-fir">
+                            {wishText}
+                          </div>
+                          <div className="text-xs text-slate-text-muted truncate">
+                            {user.displayName}#{user.tag}
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs text-slate-text-muted truncate">
-                          {user.displayName}#{user.tag}
-                        </span>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-fir-soft border border-fir/25 text-[11px] font-bold text-fir">
-                          <Check className="w-3 h-3 shrink-0" />
+
+                      <div className="pt-2">
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-fir-soft border border-fir/25 text-xs font-bold text-fir">
+                          <Check className="w-3.5 h-3.5 shrink-0" />
                           <span>Propojeno</span>
                         </span>
                       </div>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleDeclineOrRemove(connectionId, 'Propojení bylo odebráno.')}
-                    title="Odebrat propojení"
-                    className="relative z-10 p-2 rounded-xl text-slate-text-muted hover:text-crimson hover:bg-crimson-soft/60 transition shrink-0"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

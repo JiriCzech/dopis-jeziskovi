@@ -17,9 +17,7 @@ import {
 } from 'lucide-react';
 import {
   Avatar,
-  CompactMistletoeSvg,
   PaperClipSvg,
-  TagPostalStampSvg,
   WaxSealSvg,
 } from '../assets/avatars';
 import { useAuth } from '../hooks/useAuth';
@@ -627,8 +625,6 @@ export function MyLettersPage() {
           {/* Horní lišta uvnitř dopisního archu */}
           <div className="flex flex-wrap items-center justify-between gap-2.5 pb-4 mb-6 border-b border-gold/35">
             <div className="flex flex-wrap items-center gap-2">
-              <CompactMistletoeSvg className="w-24 h-7 -ml-1 shrink-0" />
-
               {draft.isChildLetter && coParentPartnerNames.length > 0 && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-fir-soft border border-fir/25 text-fir text-xs font-bold">
                   <Users className="w-3.5 h-3.5 shrink-0" />
@@ -899,14 +895,17 @@ export function MyLettersPage() {
                     </div>
                   )}
 
-                  {/* Kraftová obálka s poštovní známkou z profilu a červenou voskovou pečetí */}
-                  <div className="kraft-envelope relative rounded-3xl p-6 sm:p-8 min-h-[250px] flex flex-col justify-between overflow-hidden">
-                    <div
-                      className="pointer-events-none absolute inset-2.5 rounded-2xl border border-gold/55"
+                  {/* 3D poštovní obálka s uživatelovou známkou v pravém horním rohu a 3D voskovou pečetí uprostřed klopy */}
+                  <div className="relative p-6 sm:p-8 min-h-[280px] sm:min-h-[300px] flex flex-col justify-between overflow-hidden">
+                    <img
+                      src="/assets/obalka-3d.png"
+                      alt=""
+                      draggable={false}
                       aria-hidden="true"
+                      className="absolute inset-0 w-full h-full object-fill select-none pointer-events-none drop-shadow-[0_22px_44px_rgba(20,16,12,0.38)]"
                     />
 
-                    {/* Horní řádek obálky: Poštovní razítko a uživatelova 3D známka v pravém horním rohu */}
+                    {/* Horní řádek obálky: Odesílatel a uživatelova 3D známka v pravém horním rohu */}
                     <div className="relative z-10 flex items-start justify-between gap-3">
                       <div className="text-left">
                         <div className="text-[11px] font-bold uppercase tracking-widest text-fir/80">
@@ -917,19 +916,17 @@ export function MyLettersPage() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5">
-                        <TagPostalStampSvg className="w-20 h-10" />
-                        {profile && (
-                          <Avatar
-                            avatarId={profile.avatarId}
-                            avatarBg={profile.avatarBg}
-                            size="md"
-                          />
-                        )}
-                      </div>
+                      {profile && (
+                        <Avatar
+                          avatarId={profile.avatarId}
+                          avatarBg={profile.avatarBg}
+                          size="md"
+                          onTag
+                        />
+                      )}
                     </div>
 
-                    {/* Střed obálky: Vosková pečeť s vyraženou hvězdou */}
+                    {/* Střed obálky na klopě: 3D vosková pečeť s vyraženou hvězdou */}
                     <div className="relative z-20 my-2 flex justify-center">
                       {(ritualStage === 'sealing' || ritualStage === 'flying') && (
                         <WaxSealSvg className="w-20 h-20 sm:w-24 sm:h-24" pressed />

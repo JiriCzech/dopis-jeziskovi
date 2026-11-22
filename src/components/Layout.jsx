@@ -235,7 +235,7 @@ export function Layout({ children }) {
 
       {/* Horní navigace Ježíškovy pošty */}
       <header className="no-print relative z-20 bg-sheet/95 backdrop-blur-md border-b-[1.5px] border-fir sticky top-0 shadow-xs">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 min-h-[72px] py-2 flex items-center justify-between gap-2.5">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 min-h-[72px] md:h-20 py-2 flex items-center justify-between gap-2.5">
           <NavLink to="/" className="flex items-center gap-2.5 group shrink-0">
             <div>
               <div className="font-fairytale font-bold text-fir text-xl sm:text-2xl leading-none whitespace-nowrap">
@@ -306,10 +306,10 @@ export function Layout({ children }) {
               <NavLink
                 to="/profil"
                 title="Můj profil a poštovní známka"
-                className="min-h-[44px] inline-flex items-center gap-2 px-2.5 py-1 rounded-2xl hover:bg-fir-soft/60 border border-transparent hover:border-fir/25 transition shrink-0"
+                className="min-h-[56px] inline-flex items-center gap-3 px-2.5 py-1 rounded-2xl hover:bg-fir-soft/60 border border-transparent hover:border-fir/25 transition-colors shrink-0"
               >
-                <Avatar avatarId={profile.avatarId} avatarBg={profile.avatarBg} size="sm" />
-                <span className="text-sm sm:text-base font-bold text-slate-text whitespace-nowrap max-w-[96px] sm:max-w-[130px] truncate">
+                <Avatar avatarId={profile.avatarId} avatarBg={profile.avatarBg} size="nav" zoomAnimal />
+                <span className="font-fairytale font-bold text-[18px] leading-none text-slate-text whitespace-nowrap max-w-[110px] sm:max-w-[160px] truncate">
                   {profile.displayName}
                 </span>
               </NavLink>

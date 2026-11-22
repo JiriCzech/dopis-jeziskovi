@@ -142,6 +142,7 @@ export function Avatar({
   size = 'md',
   selected = false,
   onTag = false,
+  zoomAnimal = false,
   className = '',
 }) {
   const stampId = normalizeStampId(avatarId);
@@ -155,6 +156,7 @@ export function Avatar({
   const pixelDims = {
     xs: { width: '36px', height: '42px', pad: '3px' },
     sm: { width: '44px', height: '52px', pad: '4px' },
+    nav: { width: '48px', height: '56px', pad: '3.5px' },
     md: { width: '58px', height: '68px', pad: '5px' },
     lg: { width: '76px', height: '88px', pad: '6px' },
     xl: { width: '104px', height: '122px', pad: '6px' },
@@ -170,7 +172,7 @@ export function Avatar({
         height: dim.height,
         padding: dim.pad,
       }}
-      className={`perforated-stamp relative inline-flex items-center justify-center shrink-0 select-none transition-transform duration-200 ${
+      className={`perforated-stamp relative inline-flex items-center justify-center shrink-0 select-none transition-shadow duration-200 ${
         onTag ? 'perforated-stamp-on-tag' : ''
       } ${selected ? 'perforated-stamp-selected' : ''} ${className}`}
     >
@@ -185,13 +187,26 @@ export function Avatar({
           <img
             src={option.src}
             alt={option.label}
+            draggable={false}
             onError={() => setImgFailed(true)}
-            className="w-full h-full object-cover block"
+            className={`w-full h-full object-cover object-center block ${
+              zoomAnimal ? 'scale-[1.18]' : ''
+            }`}
           />
         ) : (
           renderFallbackAnimalSvg(stampId)
         )}
       </div>
+
+      {selected && (
+        <img
+          src="/assets/pecet-3d.png"
+          alt=""
+          draggable={false}
+          aria-hidden="true"
+          className="w-7 h-7 sm:w-8 sm:h-8 absolute -bottom-2 -right-2 object-contain pointer-events-none select-none drop-shadow-[0_3px_6px_rgba(30,36,33,0.28)] z-20"
+        />
+      )}
     </div>
   );
 }
@@ -207,103 +222,6 @@ export function getChildAvatar(childName = '') {
     avatarId: stamps[hash % stamps.length],
     avatarBg: '#F5EEDB',
   };
-}
-
-/**
- * Kulaté červenohnědé poštovní razítko „JEŽÍŠKOVA POŠTA“ (jemný poloprůhledný detail opacity-45)
- */
-export function RoundPostmarkSvg({ className = '' }) {
-  return (
-    <svg viewBox="0 0 92 92" className={`opacity-45 ${className}`} fill="none" aria-hidden="true">
-      <g transform="rotate(-14 46 46)">
-        <circle cx="46" cy="46" r="41" stroke="#7A231D" strokeWidth="2.4" strokeDasharray="18 3 9 2" />
-        <circle cx="46" cy="46" r="35" stroke="#7A231D" strokeWidth="1.4" />
-        <line x1="12" y1="36" x2="80" y2="36" stroke="#7A231D" strokeWidth="1.4" />
-        <line x1="12" y1="56" x2="80" y2="56" stroke="#7A231D" strokeWidth="1.4" />
-        <text
-          x="46"
-          y="27"
-          textAnchor="middle"
-          fill="#7A231D"
-          fontSize="7.5"
-          fontWeight="800"
-          letterSpacing="1.2"
-        >
-          JEŽÍŠKOVA
-        </text>
-        <text
-          x="46"
-          y="49.5"
-          textAnchor="middle"
-          fill="#7A231D"
-          fontSize="9.5"
-          fontWeight="800"
-          letterSpacing="1.6"
-        >
-          24 · XII
-        </text>
-        <text
-          x="46"
-          y="69"
-          textAnchor="middle"
-          fill="#7A231D"
-          fontSize="7.5"
-          fontWeight="800"
-          letterSpacing="1.5"
-        >
-          POŠTA
-        </text>
-      </g>
-    </svg>
-  );
-}
-
-/**
- * Kroucená červeno-bílá šňůrka se zlatým kroužkem v dírce dárkové jmenovky
- */
-export function RedWhiteTwineCordSvg({ className = '' }) {
-  return (
-    <svg viewBox="0 0 56 64" className={className} fill="none" aria-hidden="true">
-      {/* Kroucená červeno-bílá šňůrka vedoucí z dírky nahoru */}
-      <path
-        d="M28 45 C25 32 30 16 26 2"
-        stroke="#FFFDF8"
-        strokeWidth="4.6"
-        strokeLinecap="round"
-      />
-      <path
-        d="M28 45 C25 32 30 16 26 2"
-        stroke="#8E1C1C"
-        strokeWidth="4.2"
-        strokeLinecap="round"
-        strokeDasharray="4.5 5"
-      />
-      <path
-        d="M28 45 C31 33 24 18 32 3"
-        stroke="#8E1C1C"
-        strokeWidth="2.8"
-        strokeLinecap="round"
-        strokeDasharray="3.5 4.5"
-      />
-      {/* Zlatý kroužek dírky v papíru */}
-      <circle
-        cx="28"
-        cy="47"
-        r="8.5"
-        fill="#F7F2E7"
-        stroke="#C9963B"
-        strokeWidth="3.2"
-      />
-      <circle
-        cx="28"
-        cy="47"
-        r="5.5"
-        fill="#F7F2E7"
-        stroke="#1B4332"
-        strokeWidth="1"
-      />
-    </svg>
-  );
 }
 
 /**
@@ -335,138 +253,20 @@ export function PaperClipSvg({ className = '' }) {
   );
 }
 
-export function SpruceCornerSvg({ className = '' }) {
-  return (
-    <svg viewBox="0 0 140 120" className={className} fill="none" aria-hidden="true">
-      <path d="M12 96 C42 74 74 48 118 16" stroke="#6E4E37" strokeWidth="2.8" strokeLinecap="round" />
-      <path d="M26 84 L18 64 M26 84 L48 88" stroke="#1B4332" strokeWidth="2.4" strokeLinecap="round" />
-      <path d="M44 70 L36 48 M44 70 L68 75" stroke="#1B4332" strokeWidth="2.4" strokeLinecap="round" />
-      <path d="M64 55 L56 33 M64 55 L88 60" stroke="#2D6A4F" strokeWidth="2.3" strokeLinecap="round" />
-      <path d="M84 40 L78 21 M84 40 L106 44" stroke="#2D6A4F" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M102 27 L98 13 M102 27 L119 29" stroke="#3F7865" strokeWidth="2" strokeLinecap="round" />
-      <path
-        d="M52 62 C41 53 34 61 42 69 C46 72 50 67 52 62 Z"
-        fill="#8E1C1C"
-        stroke="#5E1010"
-        strokeWidth="1.4"
-      />
-      <path
-        d="M55 62 C66 53 73 61 65 69 C61 72 57 67 55 62 Z"
-        fill="#8E1C1C"
-        stroke="#5E1010"
-        strokeWidth="1.4"
-      />
-      <path d="M51 65 L45 81 L51 78 L53 66" fill="#8E1C1C" />
-      <path d="M56 65 L62 81 L56 78 L54 66" fill="#8E1C1C" />
-      <circle cx="53.5" cy="63" r="3.2" fill="#5E1010" />
-      <g className="hanging-star-swing">
-        <line x1="88" y1="42" x2="88" y2="57" stroke="#C9963B" strokeWidth="1.4" strokeDasharray="2 2" />
-        <path
-          d="M88 57 L91.2 64.2 L99 65 L93.2 70.2 L94.8 78 L88 73.8 L81.2 78 L82.8 70.2 L77 65 L84.8 64.2 Z"
-          fill="#E5BE6B"
-          stroke="#C9963B"
-          strokeWidth="1.4"
-          strokeLinejoin="round"
-        />
-        <circle cx="88" cy="68" r="2.2" fill="#FFFDF8" opacity="0.85" />
-      </g>
-    </svg>
-  );
-}
-
+/**
+ * 3D vosková pečeť v hluboké karmínové červeni s vyraženou hvězdou
+ */
 export function WaxSealSvg({ className = '', pressed = false }) {
   return (
-    <svg
-      viewBox="0 0 88 88"
-      className={`${className} ${pressed ? 'wax-seal-press' : ''}`}
-      fill="none"
+    <img
+      src="/assets/pecet-3d.png"
+      alt=""
+      draggable={false}
       aria-hidden="true"
-    >
-      <defs>
-        <radialGradient id="waxRimGrad" cx="32%" cy="28%" r="72%">
-          <stop offset="0%" stopColor="#B82E2E" />
-          <stop offset="52%" stopColor="#8E1C1C" />
-          <stop offset="100%" stopColor="#570E0E" />
-        </radialGradient>
-        <radialGradient id="waxInnerGrad" cx="65%" cy="70%" r="65%">
-          <stop offset="0%" stopColor="#9E2222" />
-          <stop offset="100%" stopColor="#661212" />
-        </radialGradient>
-      </defs>
-      <ellipse cx="45" cy="49" rx="34" ry="33" fill="rgba(27, 67, 50, 0.22)" />
-      <path
-        d="M44 8 C53 7 59 11 66 15 C73 19 80 25 80 35 C80 44 79 52 75 60 C71 68 65 76 56 79 C47 82 39 79 30 77 C21 75 13 69 10 60 C7 51 8 42 10 33 C12 24 17 16 25 12 C33 8 36 9 44 8 Z"
-        fill="url(#waxRimGrad)"
-        stroke="#4D0C0C"
-        strokeWidth="1.4"
-      />
-      <path
-        d="M22 20 C29 13 41 11 52 13"
-        stroke="#E88D8D"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        opacity="0.45"
-      />
-      <circle
-        cx="44"
-        cy="44"
-        r="24"
-        fill="url(#waxInnerGrad)"
-        stroke="#4D0C0C"
-        strokeWidth="1.8"
-      />
-      <circle
-        cx="44"
-        cy="44"
-        r="21.5"
-        stroke="#E5BE6B"
-        strokeWidth="1"
-        strokeDasharray="2.5 2"
-        opacity="0.75"
-      />
-      <path
-        d="M44 27 L47.6 37.8 L59 38.6 L50.2 45.8 L53 56.8 L44 50.6 L35 56.8 L37.8 45.8 L29 38.6 L40.4 37.8 Z"
-        fill="#E5BE6B"
-        fillOpacity="0.35"
-        stroke="#E5BE6B"
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-      <circle cx="44" cy="44" r="2.4" fill="#FFFDF8" opacity="0.88" />
-    </svg>
-  );
-}
-
-export function GiftTagCordSvg({ className = '' }) {
-  return (
-    <svg viewBox="0 0 64 48" className={className} fill="none" aria-hidden="true">
-      <path
-        d="M2 10 C12 6 24 14 34 24"
-        stroke="#C9963B"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M8 2 C16 10 26 16 34 24"
-        stroke="#E5BE6B"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-      <circle
-        cx="36"
-        cy="25"
-        r="7"
-        fill="#EFE5D1"
-        stroke="#1B4332"
-        strokeWidth="2.2"
-      />
-      <circle
-        cx="36"
-        cy="25"
-        r="4.2"
-        fill="#FFFDF8"
-      />
-    </svg>
+      className={`object-contain select-none pointer-events-none drop-shadow-[0_6px_12px_rgba(77,12,12,0.28)] ${className} ${
+        pressed ? 'wax-seal-press' : ''
+      }`}
+    />
   );
 }
 
@@ -514,142 +314,6 @@ export function ChristmasTreeLogoSvg({ className = '' }) {
         strokeWidth="1.1"
         strokeLinejoin="round"
       />
-    </svg>
-  );
-}
-
-export function CompactMistletoeSvg({ className = '' }) {
-  return (
-    <svg viewBox="0 0 120 36" className={className} fill="none" aria-hidden="true">
-      <path d="M12 24 Q55 14 104 20" stroke="#6E4E37" strokeWidth="1.8" strokeLinecap="round" />
-      <path
-        d="M36 18 C28 9 20 12 25 20 C28 24 34 21 36 18 Z"
-        fill="#2D6A4F"
-        stroke="#1B4332"
-        strokeWidth="1.2"
-      />
-      <path
-        d="M42 18 C46 8 55 10 51 18 C49 22 44 20 42 18 Z"
-        fill="#4F8A6E"
-        stroke="#1B4332"
-        strokeWidth="1.2"
-      />
-      <path
-        d="M68 18 C62 8 54 11 58 19 C60 22 66 20 68 18 Z"
-        fill="#2D6A4F"
-        stroke="#1B4332"
-        strokeWidth="1.2"
-      />
-      <path
-        d="M74 19 C80 10 89 12 85 20 C82 24 76 21 74 19 Z"
-        fill="#4F8A6E"
-        stroke="#1B4332"
-        strokeWidth="1.2"
-      />
-      <circle cx="39" cy="20" r="2.8" fill="#FFFDF8" stroke="#C9963B" strokeWidth="1.1" />
-      <circle cx="43" cy="22" r="2.5" fill="#FFFDF8" stroke="#C9963B" strokeWidth="1.1" />
-      <circle cx="71" cy="20" r="2.8" fill="#FFFDF8" stroke="#C9963B" strokeWidth="1.1" />
-      <circle cx="67" cy="22.5" r="2.4" fill="#FFFDF8" stroke="#C9963B" strokeWidth="1.1" />
-    </svg>
-  );
-}
-
-export function TagMistletoeCornerSvg({ className = '' }) {
-  return (
-    <svg viewBox="0 0 96 84" className={className} fill="none" aria-hidden="true">
-      <path d="M10 74 C24 56 42 42 64 34" stroke="#5A422E" strokeWidth="2" strokeLinecap="round" />
-      <path d="M22 62 C26 44 34 30 46 18" stroke="#5A422E" strokeWidth="1.8" strokeLinecap="round" />
-      <path
-        d="M32 50 C20 42 15 49 23 57 C27 61 31 54 32 50 Z"
-        fill="#2D6A4F"
-        stroke="#1B4332"
-        strokeWidth="1.3"
-      />
-      <path
-        d="M44 42 C48 30 58 32 53 42 C50 47 45 45 44 42 Z"
-        fill="#588770"
-        stroke="#1B4332"
-        strokeWidth="1.3"
-      />
-      <path
-        d="M34 33 C24 23 20 30 27 38 C30 41 33 36 34 33 Z"
-        fill="#588770"
-        stroke="#1B4332"
-        strokeWidth="1.3"
-      />
-      <path
-        d="M42 24 C45 13 54 15 50 24 C48 28 43 26 42 24 Z"
-        fill="#2D6A4F"
-        stroke="#1B4332"
-        strokeWidth="1.3"
-      />
-      <path
-        d="M54 38 C62 32 69 38 61 44 C57 47 54 41 54 38 Z"
-        fill="#2D6A4F"
-        stroke="#1B4332"
-        strokeWidth="1.3"
-      />
-      <circle cx="36" cy="46" r="3.4" fill="#FFFDF8" stroke="#8C7355" strokeWidth="1.1" />
-      <circle cx="41" cy="49" r="3" fill="#FFFDF8" stroke="#8C7355" strokeWidth="1.1" />
-      <circle cx="39" cy="42" r="2.8" fill="#FFFDF8" stroke="#8C7355" strokeWidth="1.1" />
-      <circle cx="36" cy="29" r="3" fill="#FFFDF8" stroke="#8C7355" strokeWidth="1.1" />
-      <circle cx="41" cy="31" r="2.7" fill="#FFFDF8" stroke="#8C7355" strokeWidth="1.1" />
-    </svg>
-  );
-}
-
-export function TagPostalStampSvg({ className = '' }) {
-  return (
-    <svg viewBox="0 0 120 56" className={className} fill="none" aria-hidden="true">
-      <path
-        d="M4 18 Q16 14 28 18 T52 18 M4 26 Q16 22 28 26 T52 26 M4 34 Q16 30 28 34 T52 34 M4 42 Q16 38 28 42 T52 42"
-        stroke="#8E1C1C"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-        opacity="0.65"
-      />
-      <circle
-        cx="84"
-        cy="28"
-        r="23"
-        stroke="#8E1C1C"
-        strokeWidth="1.6"
-        opacity="0.72"
-      />
-      <circle
-        cx="84"
-        cy="28"
-        r="19"
-        stroke="#8E1C1C"
-        strokeWidth="1"
-        strokeDasharray="2.5 2"
-        opacity="0.6"
-      />
-      <line x1="65" y1="22" x2="103" y2="22" stroke="#8E1C1C" strokeWidth="1.1" opacity="0.65" />
-      <line x1="65" y1="34" x2="103" y2="34" stroke="#8E1C1C" strokeWidth="1.1" opacity="0.65" />
-      <text
-        x="84"
-        y="31"
-        textAnchor="middle"
-        fill="#8E1C1C"
-        opacity="0.82"
-        fontSize="7.5"
-        fontWeight="700"
-        letterSpacing="1"
-      >
-        JEŽÍŠEK
-      </text>
-      <text
-        x="84"
-        y="19"
-        textAnchor="middle"
-        fill="#8E1C1C"
-        opacity="0.72"
-        fontSize="5.5"
-        fontWeight="600"
-      >
-        24 · XII
-      </text>
     </svg>
   );
 }
