@@ -27,6 +27,7 @@ import { useAppData } from '../hooks/useAppData';
 import { WishFormModal } from '../components/WishFormModal';
 import { PrintPreviewModal } from '../components/PrintPreviewModal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { KaprikGuide } from '../components/KaprikGuide';
 
 function autoResizeTextarea(el) {
   if (!el) return;
@@ -523,36 +524,27 @@ export function MyLettersPage() {
     <div className="space-y-6 animate-page-transition min-w-0">
       {/* Jednorázová vřelá kapříkova bublina po prvním přihlášení */}
       {showOnboardingBanner && (
-        <div className="max-w-[780px] mx-auto rounded-3xl bg-kraft border-[1.5px] border-fir shadow-card p-4 sm:p-5 flex items-start justify-between gap-4 relative">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 min-w-0">
-            <div className="w-14 h-14 rounded-2xl overflow-hidden border-[1.5px] border-fir shadow-xs bg-[#E8DEC8] shrink-0">
-              <img
-                src="/assets/kaprik.png"
-                alt="Vánoční kapřík"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="bg-sheet rounded-2xl border border-fir/40 px-4 py-3 text-base text-slate-text leading-relaxed">
-              „Vítej! Svůj dopis můžeš začít psát rovnou tady. Vánoční obrázek a kód pro pozvání
-              rodiny najdeš kdykoliv v{' '}
-              <Link to="/profil" className="font-bold text-fir underline hover:text-fir-hover">
-                profilu
-              </Link>{' '}
-              nebo v sekci{' '}
-              <Link to="/sdileni" className="font-bold text-fir underline hover:text-fir-hover">
-                Sdílení a skupiny
-              </Link>
-              .“
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={dismissOnboardingBanner}
-            className="p-1.5 rounded-xl text-slate-text-muted hover:text-slate-text hover:bg-sheet/80 shrink-0"
-            aria-label="Zavřít uvítání"
-          >
-            <X className="w-5 h-5" />
-          </button>
+        <div className="max-w-[780px] mx-auto">
+          <KaprikGuide
+            pose="vitej"
+            size="compact"
+            bubbleDirection="left"
+            onDismiss={dismissOnboardingBanner}
+            message={
+              <>
+                „Vítej! Svůj dopis můžeš začít psát rovnou tady. Vánoční obrázek a kód pro pozvání
+                rodiny najdeš kdykoliv v{' '}
+                <Link to="/profil" className="font-bold text-fir underline hover:text-fir-hover">
+                  profilu
+                </Link>{' '}
+                nebo v sekci{' '}
+                <Link to="/sdileni" className="font-bold text-fir underline hover:text-fir-hover">
+                  Sdílení a skupiny
+                </Link>
+                .“
+              </>
+            }
+          />
         </div>
       )}
 
@@ -856,17 +848,14 @@ export function MyLettersPage() {
           </div>
 
           {/* Fyzický rituál odeslání (Kapřík + tlačítko Zapečetit a poslat Ježíškovi) */}
-          <div className="mt-8 pt-6 border-t border-gold/40 flex flex-col sm:flex-row items-center justify-between gap-4 bg-kraft/60 rounded-2xl p-4 sm:p-5 border border-fir/30">
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-xl overflow-hidden border-[1.5px] border-fir shadow-xs bg-[#E8DEC8] shrink-0">
-                <img
-                  src="/assets/kaprik.png"
-                  alt="Kapřík"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="text-sm sm:text-base text-slate-text font-medium leading-snug">
-                {draft.sealedAt ? (
+          <div className="mt-8 pt-6 border-t border-gold/40 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <KaprikGuide
+              pose="dopis"
+              size="compact"
+              bubbleDirection="left"
+              className="flex-1 w-full"
+              message={
+                draft.sealedAt ? (
                   <>
                     <strong className="text-fir">Dopis je zapečetěný a u Ježíška!</strong> Kdykoliv
                     do něj můžeš připsat další přání a znovu ho přepečetit.
@@ -876,9 +865,9 @@ export function MyLettersPage() {
                     „Krásný dopis! Pojďme ho vložit do obálky, natisknout známku a poslat
                     Ježíškovi.“
                   </>
-                )}
-              </div>
-            </div>
+                )
+              }
+            />
 
             <button
               type="button"
