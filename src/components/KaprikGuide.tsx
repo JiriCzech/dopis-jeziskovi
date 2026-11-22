@@ -23,7 +23,7 @@ const POSE_SRC_MAP: Record<KaprikPose, string> = {
 const FALLBACK_SRC = '/assets/kaprik.png';
 
 /**
- * Znovupoužitelný 3D průvodce Kapřík v klenutém portrétním medailonu se skutečnou mluvící bublinou
+ * 3D průvodce Kapřík volně v prostoru — úplně bez rámečku, s jemným vznášením a mluvící bublinou
  */
 export function KaprikGuide({
   pose = 'default',
@@ -55,31 +55,28 @@ export function KaprikGuide({
       ? 'flex-col sm:flex-row items-center'
       : 'flex-row items-center';
 
-  // Klenutý portrétní medailon (poměr stran 4/5, zaoblený oblouk nahoře)
-  const medallionSizeClass = isHero
-    ? 'w-[164px] h-[205px] sm:w-[196px] sm:h-[245px]'
-    : 'w-[76px] h-[95px] sm:w-[88px] sm:h-[110px]';
+  const imgSizeClass = isHero
+    ? 'w-[185px] h-[185px] sm:w-[235px] sm:h-[235px] md:w-[260px] md:h-[260px]'
+    : 'w-[88px] h-[88px] sm:w-[108px] sm:h-[108px]';
 
   return (
-    <div className={`flex ${containerLayoutClass} gap-5 sm:gap-7 ${className}`}>
-      {/* Portrétní medailon kapříka — klenutý oblouk, jedlově zelený rám #1B4332 a vnitřní zlatá linka #C9963B */}
-      <div
-        className={`relative shrink-0 select-none rounded-t-full rounded-b-3xl border-2 border-[#1B4332] bg-[#E8DEC8] shadow-md overflow-hidden ${medallionSizeClass}`}
-      >
-        <img
-          src={imgSrc}
-          onError={handleImgError}
-          alt="Vánoční kapřík — průvodce Ježíškovou poštou"
-          className="w-full h-full object-cover object-top pointer-events-none"
-        />
-        {/* Tenká vnitřní zlatá linka medailonu */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-1.5 rounded-t-full rounded-b-[18px] border border-[#C9963B]/65 ring-1 ring-inset ring-[#C9963B]/40"
-        />
-      </div>
+    <div className={`flex ${containerLayoutClass} gap-4 sm:gap-6 ${className}`}>
+      {/* Kapr volně v prostoru bez jakéhokoliv rámečku, s jemnou animací vznášení */}
+      <img
+        src={imgSrc}
+        onError={handleImgError}
+        alt="Vánoční kapřík — průvodce Ježíškovou poštou"
+        style={{
+          mixBlendMode: 'multiply',
+          WebkitMaskImage:
+            'radial-gradient(circle at 50% 48%, black 52%, transparent 72%)',
+          maskImage:
+            'radial-gradient(circle at 50% 48%, black 52%, transparent 72%)',
+        }}
+        className={`shrink-0 select-none object-contain pointer-events-none animate-kaprik-float ${imgSizeClass}`}
+      />
 
-      {/* Skutečná mluvící bublina se zobáčkem mířícím přímo ke kapříkovi (bez uvozovek) */}
+      {/* Skutečná mluvící bublina se zobáčkem mířícím přímo ke kapříkovi */}
       <div
         style={{ backgroundColor: '#FFFDF8' }}
         className={`relative rounded-[24px] bg-[#FFFDF8] border-[1.5px] border-[#1B4332] shadow-soft ${
@@ -101,7 +98,7 @@ export function KaprikGuide({
           }`}
         />
 
-        {/* Trojúhelníkový zobáček doleva (míří přímo k medailonu kapříka) */}
+        {/* Trojúhelníkový zobáček doleva (míří přímo ke kapříkovi) */}
         {!isTopLayout && (
           <span
             aria-hidden="true"

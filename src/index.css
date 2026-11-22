@@ -140,21 +140,40 @@
     0 4px 0 0 #1B4332;
 }
 
-/* Skutečná zoubkovaná poštovní známka (perforovaný bílý/krémový okraj přes CSS masku + drop-shadow, žádný dvojitý obdélníkový box) */
+/* Čistá poštovní známka se zoubkováním pouze po obvodu (žádná maska přes obrázek!) */
 .perforated-stamp {
   background-color: #FFFDF8;
-  -webkit-mask-image: radial-gradient(circle at 5px 5px, transparent 3.2px, black 3.5px);
-  -webkit-mask-position: -5px -5px;
-  -webkit-mask-size: 10px 10px;
-  mask-image: radial-gradient(circle at 5px 5px, transparent 3.2px, black 3.5px);
-  mask-position: -5px -5px;
-  mask-size: 10px 10px;
-  filter: drop-shadow(0 4px 8px rgba(27, 67, 50, 0.22));
+  box-shadow: 0 3px 10px rgba(30, 36, 33, 0.12);
+  outline: 3px dotted #F7F2E7;
+  outline-offset: -1.5px;
+}
+
+.perforated-stamp-on-tag {
+  outline: 3px dotted #F5EEDB;
+  outline-offset: -1.5px;
 }
 
 .perforated-stamp-selected {
-  background-color: #FBF3DC;
-  filter: drop-shadow(0 8px 14px rgba(27, 67, 50, 0.32));
+  background-color: #FFFDF8;
+  box-shadow:
+    0 8px 18px rgba(27, 67, 50, 0.24),
+    0 0 0 2px #1B4332;
+}
+
+/* Jemné vznášení průvodce Kapříka (0px -> -4px -> 0px) */
+@keyframes kaprikFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -4px, 0);
+  }
+}
+
+.animate-kaprik-float {
+  animation: kaprikFloat 4s ease-in-out infinite;
+  will-change: transform;
 }
 
 /* Realistická papírová dárková jmenovka v profilu (#F5EEDB se zkosenými horními rohy) */

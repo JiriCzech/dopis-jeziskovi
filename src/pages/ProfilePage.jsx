@@ -131,9 +131,9 @@ export function ProfilePage({ isSetup = false }) {
               aria-hidden="true"
             />
 
-            {/* 1. Vlevo nalepená vybraná poštovní známka se zoubkovaným okrajem + kulaté poštovní razítko přes roh */}
-            <div className="relative shrink-0 rotate-[-2deg]">
-              <Avatar avatarId={avatarId} size="xl" selected />
+            {/* 1. Vlevo nalepená vybraná poštovní známka se zoubkovaným okrajem (-rotate-2) + kulaté poštovní razítko přes roh */}
+            <div className="relative shrink-0 -rotate-2">
+              <Avatar avatarId={avatarId} size="xl" onTag />
               <RoundPostmarkSvg className="w-16 h-16 absolute -bottom-3 -right-5 pointer-events-none" />
             </div>
 

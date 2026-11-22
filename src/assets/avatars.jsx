@@ -135,12 +135,13 @@ function renderFallbackAnimalSvg(stampId) {
 }
 
 /**
- * Zoubkovaná poštovní známka s ručně kresleným zimním zvířátkem (skutečný zoubkovaný okraj bez dvojitého boxu)
+ * Zoubkovaná poštovní známka s ručně kresleným zimním zvířátkem (čistý ostrý obrázek, zoubkování pouze po obvodu)
  */
 export function Avatar({
   avatarId = 'prasatko',
   size = 'md',
   selected = false,
+  onTag = false,
   className = '',
 }) {
   const stampId = normalizeStampId(avatarId);
@@ -156,8 +157,8 @@ export function Avatar({
     sm: { width: '44px', height: '52px', pad: '4px' },
     md: { width: '58px', height: '68px', pad: '5px' },
     lg: { width: '76px', height: '88px', pad: '6px' },
-    xl: { width: '104px', height: '122px', pad: '8px' },
-    stampGrid: { width: '118px', height: '138px', pad: '8px' },
+    xl: { width: '104px', height: '122px', pad: '6px' },
+    stampGrid: { width: '118px', height: '138px', pad: '6px' },
   };
 
   const dim = pixelDims[size] || pixelDims.md;
@@ -170,14 +171,14 @@ export function Avatar({
         padding: dim.pad,
       }}
       className={`perforated-stamp relative inline-flex items-center justify-center shrink-0 select-none transition-transform duration-200 ${
-        selected ? 'perforated-stamp-selected' : ''
-      } ${className}`}
+        onTag ? 'perforated-stamp-on-tag' : ''
+      } ${selected ? 'perforated-stamp-selected' : ''} ${className}`}
     >
       <div
         className={`w-full h-full overflow-hidden relative bg-[#F5EEDB] ${
           selected
-            ? 'ring-2 ring-[#1B4332] outline outline-1 outline-[#C9963B]'
-            : 'ring-1 ring-[#1B4332]/40'
+            ? 'ring-2 ring-[#C9963B]'
+            : 'ring-1 ring-[#1B4332]/25'
         }`}
       >
         {!imgFailed ? (
@@ -209,12 +210,12 @@ export function getChildAvatar(childName = '') {
 }
 
 /**
- * Kulaté červenohnědé poštovní razítko „JEŽÍŠKOVA POŠTA“ otisknuté přes roh známky
+ * Kulaté červenohnědé poštovní razítko „JEŽÍŠKOVA POŠTA“ (jemný poloprůhledný detail opacity-45)
  */
 export function RoundPostmarkSvg({ className = '' }) {
   return (
-    <svg viewBox="0 0 92 92" className={className} fill="none" aria-hidden="true">
-      <g opacity="0.82" transform="rotate(-14 46 46)">
+    <svg viewBox="0 0 92 92" className={`opacity-45 ${className}`} fill="none" aria-hidden="true">
+      <g transform="rotate(-14 46 46)">
         <circle cx="46" cy="46" r="41" stroke="#7A231D" strokeWidth="2.4" strokeDasharray="18 3 9 2" />
         <circle cx="46" cy="46" r="35" stroke="#7A231D" strokeWidth="1.4" />
         <line x1="12" y1="36" x2="80" y2="36" stroke="#7A231D" strokeWidth="1.4" />
