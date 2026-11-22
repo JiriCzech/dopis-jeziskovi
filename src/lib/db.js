@@ -348,6 +348,11 @@ export async function saveLetter(letterData) {
     isChildLetter: Boolean(letterData.isChildLetter),
     introText: letterData.introText || '',
     outroText: letterData.outroText || '',
+    handwrittenPhotoUrl:
+      typeof letterData.handwrittenPhotoUrl === 'string'
+        ? letterData.handwrittenPhotoUrl
+        : '',
+    sealedAt: letterData.sealedAt || null,
     printTheme: ['handwritten', 'fairytale', 'minimal'].includes(letterData.printTheme)
       ? letterData.printTheme
       : 'handwritten',

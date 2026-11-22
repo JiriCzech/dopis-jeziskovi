@@ -53,12 +53,12 @@ const ShoppingItemRow = memo(function ShoppingItemRow({
 
   return (
     <li
-      style={{ backgroundColor: '#F6F0E2' }}
-      className={`rounded-2xl bg-[#F6F0E2] border border-[#E5DBC3] px-4 py-3.5 sm:px-5 sm:py-4 flex items-center justify-between gap-3 sm:gap-4 transition-opacity duration-150 ${
-        item.isBought ? 'opacity-80' : 'shadow-xs'
+      className={`rounded-2xl bg-kraft/75 border-[1.5px] border-fir px-4 py-3.5 sm:px-5 sm:py-4 flex items-center justify-between gap-3 sm:gap-4 transition-all duration-150 ${
+        item.isBought ? 'opacity-70 bg-paper' : 'shadow-xs'
       }`}
     >
       <div className="flex items-start gap-3.5 sm:gap-4 min-w-0 flex-1">
+        {/* Jediné velké, vkusné zaškrtávací políčko */}
         <button
           type="button"
           onClick={() => onToggleBought(item)}
@@ -67,13 +67,13 @@ const ShoppingItemRow = memo(function ShoppingItemRow({
               ? `Odznačit dárek ${titleText}`
               : `Označit dárek ${titleText} jako zabalený`
           }
-          className={`mt-1 w-7 h-7 rounded-lg border-2 flex items-center justify-center shrink-0 transition ${
+          className={`mt-1 w-8 h-8 rounded-xl border-2 flex items-center justify-center shrink-0 transition ${
             item.isBought
               ? 'bg-fir border-fir text-white shadow-xs'
-              : 'bg-[#FFFDF9] border-[#B9AA8E] hover:border-fir'
+              : 'bg-sheet border-fir/60 hover:border-fir'
           }`}
         >
-          {item.isBought && <Check className="w-4 h-4 stroke-[3]" />}
+          {item.isBought && <Check className="w-5 h-5 stroke-[3]" />}
         </button>
 
         <div className="space-y-1 min-w-0 flex-1">
@@ -81,7 +81,7 @@ const ShoppingItemRow = memo(function ShoppingItemRow({
             <button
               type="button"
               onClick={() => onToggleBought(item)}
-              className={`text-left text-lg sm:text-xl font-bold leading-snug break-words transition ${
+              className={`text-left font-handwritten text-2xl sm:text-[28px] font-bold leading-snug break-words transition ${
                 item.isBought
                   ? 'line-through decoration-slate-text-muted/60 text-slate-text-muted'
                   : 'text-slate-text'
@@ -91,26 +91,26 @@ const ShoppingItemRow = memo(function ShoppingItemRow({
             </button>
 
             {item.kind === 'idea' && (
-              <span className="px-2.5 py-0.5 rounded-full bg-gold-soft text-slate-text text-xs font-semibold">
+              <span className="px-2.5 py-0.5 rounded-full bg-gold-soft border border-gold/45 text-slate-text text-xs font-bold">
                 Tajný nápad
               </span>
             )}
           </div>
 
           {noteText && (
-            <p className="text-base text-slate-text-muted leading-snug break-words">
+            <p className="text-base italic text-slate-text-muted leading-snug break-words">
               {noteText}
             </p>
           )}
 
           {item.kind === 'claim' && item.orphanStatus === 'wish_deleted' && (
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-gold-soft text-slate-text text-sm font-semibold">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-gold-soft border border-gold/50 text-slate-text text-sm font-semibold">
               <AlertTriangle className="w-4 h-4 text-gold shrink-0" />
               <span>Obdarovaný toto přání ze svého dopisu smazal</span>
             </div>
           )}
           {item.kind === 'claim' && item.orphanStatus === 'account_deleted' && (
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-crimson-soft text-crimson text-sm font-semibold">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-crimson-soft border border-crimson/30 text-crimson text-sm font-semibold">
               <AlertTriangle className="w-4 h-4 shrink-0" />
               <span>Uživatel si zrušil účet, dopis už není dostupný</span>
             </div>
@@ -122,7 +122,7 @@ const ShoppingItemRow = memo(function ShoppingItemRow({
                 href={urlLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-sm font-semibold text-fir hover:underline"
+                className="inline-flex items-center gap-1 text-sm font-bold text-fir hover:underline"
               >
                 <span>Ukázka dárku</span>
                 <ExternalLink className="w-3.5 h-3.5 shrink-0" />
@@ -161,22 +161,28 @@ const ShoppingItemRow = memo(function ShoppingItemRow({
         </div>
       </div>
 
+      {/* 3D ilustrace zabaleného dárku s indikátorem zabalení přímo u ilustrace */}
       <div
         onClick={() => onToggleBought(item)}
-        className="cursor-pointer shrink-0 select-none"
+        className="cursor-pointer shrink-0 select-none flex flex-col items-center"
         title={
           item.isBought
-            ? 'Zabalený dárek pod stromeček'
-            : 'Kliknutím označíš jako koupené a zabalené'
+            ? 'Dárek je kompletně připravený a zabalený'
+            : 'Kliknutím označíš dárek jako připravený a zabalený'
         }
       >
         <WrappedPresentSvg
           seed={`${item.id}-${titleText}`}
           isBought={item.isBought}
-          className={`w-14 h-14 sm:w-20 sm:h-20 transition-transform duration-200 ${
+          className={`w-16 h-16 sm:w-20 sm:h-20 transition-transform duration-200 ${
             item.isBought ? 'scale-105' : 'opacity-90 hover:scale-105'
           }`}
         />
+        {item.isBought && (
+          <span className="mt-0.5 px-2 py-0.5 rounded-full bg-fir text-white text-[10px] font-bold tracking-wide">
+            Zabaleno
+          </span>
+        )}
       </div>
     </li>
   );
@@ -221,7 +227,7 @@ export function ShoppingListPage() {
       pills.push({
         name,
         targetUid: card.ownerProfile?.uid || null,
-        avatarId: childVisual ? childVisual.avatarId : card.ownerProfile?.avatarId || 'star',
+        avatarId: childVisual ? childVisual.avatarId : card.ownerProfile?.avatarId || 'carp',
         avatarBg: childVisual ? childVisual.avatarBg : card.ownerProfile?.avatarBg || '#F5E6D3',
       });
     });
@@ -424,20 +430,21 @@ export function ShoppingListPage() {
     <div className="space-y-6 animate-page-transition min-w-0">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-fairytale font-bold text-[32px] sm:text-[36px] leading-tight text-slate-text">
+          <h1 className="font-fairytale font-bold text-[32px] sm:text-[38px] leading-tight text-slate-text">
             Můj nákupní seznam
           </h1>
           {totalCount > 0 && (
-            <p className="text-base font-medium text-slate-text-muted mt-0.5">
+            <p className="text-base font-bold text-fir mt-0.5">
               Připraveno pod stromeček: {boughtCount} z {totalCount}
             </p>
           )}
         </div>
 
+        {/* Jedno centrální velké tlačítko + Přidat tajný nápad */}
         <button
           type="button"
           onClick={openNewIdeaModal}
-          className="min-h-[48px] inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-crimson hover:bg-crimson-dark text-white text-base font-bold shadow-sm transition shrink-0"
+          className="min-h-[50px] inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl bg-crimson hover:bg-crimson-dark text-white text-base font-bold shadow-sm border border-gold/45 transition shrink-0"
         >
           <Plus className="w-5 h-5 shrink-0" />
           <span>Přidat tajný nápad</span>
@@ -445,14 +452,14 @@ export function ShoppingListPage() {
       </div>
 
       {recipientKeys.length === 0 ? (
-        <div className="stationery-sheet paper-grain-overlay rounded-3xl border border-[#E5DBC3] p-10 sm:p-12 text-center space-y-3 relative overflow-hidden">
+        <div className="stationery-sheet rounded-3xl p-10 sm:p-12 text-center space-y-3 relative overflow-hidden">
           <div className="stationery-inner-frame" aria-hidden="true" />
           <div className="relative z-10 max-w-md mx-auto space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-gold-soft text-gold flex items-center justify-center mx-auto">
+            <div className="w-12 h-12 rounded-2xl bg-gold-soft text-fir border border-gold/45 flex items-center justify-center mx-auto">
               <Gift className="w-6 h-6" />
             </div>
             <h2 className="font-fairytale font-bold text-2xl sm:text-3xl text-slate-text">
-              Zatím tu je klid jako před Štědrým večerem
+              Ježíškův pytel je zatím prázdný
             </h2>
             <p className="text-base text-slate-text-muted leading-relaxed">
               Vyber si někoho z blízkých v záložce <strong>Komu koupit dárek</strong> a podívej se,
@@ -465,15 +472,16 @@ export function ShoppingListPage() {
           {recipientKeys.map((recipient) => (
             <section
               key={recipient}
-              className="stationery-sheet rounded-3xl border border-[#E5DBC3] p-4 sm:p-5 space-y-3.5"
+              className="stationery-sheet rounded-3xl p-4 sm:p-6 space-y-3.5 relative overflow-hidden"
             >
-              <div className="px-2 pt-1 flex items-center justify-between gap-3">
-                <h2 className="font-fairytale font-bold text-2xl sm:text-[28px] text-slate-text leading-none">
+              <div className="stationery-inner-frame" aria-hidden="true" />
+              <div className="relative z-10 px-2 pt-1 flex items-center justify-between gap-3">
+                <h2 className="font-fairytale font-bold text-2xl sm:text-[30px] text-fir leading-none">
                   {formatForRecipient(recipient)}
                 </h2>
               </div>
 
-              <ul className="space-y-3">
+              <ul className="relative z-10 space-y-3">
                 {grouped[recipient].map((item) => (
                   <ShoppingItemRow
                     key={item.id}
@@ -504,29 +512,34 @@ export function ShoppingListPage() {
             <div
               role="dialog"
               aria-modal="true"
-              style={{ backgroundColor: '#FFFDF9' }}
-              className="w-full max-w-lg rounded-2xl bg-[#FFFDF9] border border-[#E5DEC9] shadow-2xl p-6 animate-slide-up max-h-[90vh] overflow-y-auto"
+              style={{ backgroundColor: '#FFFDF8' }}
+              className="w-full max-w-lg rounded-2xl bg-[#FFFDF8] border-[1.5px] border-fir shadow-2xl p-6 animate-slide-up max-h-[90vh] overflow-y-auto relative"
             >
-              <div className="flex items-center justify-between gap-3 mb-5">
+              <div
+                className="pointer-events-none absolute inset-2 rounded-xl border border-gold/40"
+                aria-hidden="true"
+              />
+              <div className="relative z-10 flex items-center justify-between gap-3 mb-5">
                 <h2 className="font-fairytale font-bold text-2xl sm:text-3xl text-slate-text">
                   {editingIdea ? 'Upravit tajný nápad' : 'Přidat tajný nápad'}
                 </h2>
                 <button
                   type="button"
                   onClick={() => setIdeaModalOpen(false)}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-text-muted hover:text-slate-text hover:bg-[#F6F1E7] transition"
+                  className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-text-muted hover:text-slate-text hover:bg-paper transition"
                   aria-label="Zavřít"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleSaveIdea} className="space-y-5">
+              <form onSubmit={handleSaveIdea} className="relative z-10 space-y-5">
                 <div>
                   <span className="block text-base font-bold text-slate-text mb-2">
                     Pro koho <span className="text-crimson">*</span>
                   </span>
 
+                  {/* Klikací štítky (pills) s 3D známkami a jmény členů rodiny a dětí */}
                   <div className="flex flex-wrap gap-2">
                     {familyRecipients.map((person) => {
                       const active = !isCustomPerson && selectedPillName === person.name;
@@ -538,10 +551,10 @@ export function ShoppingListPage() {
                             setIsCustomPerson(false);
                             setSelectedPillName(person.name);
                           }}
-                          className={`min-h-[44px] inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-base font-semibold transition ${
+                          className={`min-h-[46px] inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border-[1.5px] text-base font-bold transition ${
                             active
                               ? 'bg-fir text-white border-fir shadow-xs'
-                              : 'bg-[#F6F1E7] text-slate-text border-[#E5DEC9] hover:bg-[#EAE1D0]'
+                              : 'bg-paper text-slate-text border-paper-warm hover:bg-kraft'
                           }`}
                         >
                           <Avatar
@@ -560,10 +573,10 @@ export function ShoppingListPage() {
                         setIsCustomPerson(true);
                         setSelectedPillName('');
                       }}
-                      className={`min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border text-base font-semibold transition ${
+                      className={`min-h-[46px] inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border-[1.5px] text-base font-bold transition ${
                         isCustomPerson
                           ? 'bg-fir text-white border-fir shadow-xs'
-                          : 'bg-[#F6F1E7] text-slate-text border-[#E5DEC9] hover:bg-[#EAE1D0]'
+                          : 'bg-paper text-slate-text border-paper-warm hover:bg-kraft'
                       }`}
                     >
                       <Plus className="w-4 h-4 shrink-0" />
@@ -579,8 +592,7 @@ export function ShoppingListPage() {
                         value={customPersonName}
                         onChange={(e) => setCustomPersonName(e.target.value)}
                         placeholder="Napiš jméno (např. Paní učitelka, Sousedi)..."
-                        style={{ backgroundColor: '#F6F1E7' }}
-                        className="w-full min-h-[48px] px-4 py-2.5 rounded-xl border border-[#E5DEC9] bg-[#F6F1E7] text-base text-slate-text focus:outline-none focus:ring-2 focus:ring-fir/30 focus:border-fir"
+                        className="w-full min-h-[48px] px-4 py-2.5 rounded-xl border border-paper-warm bg-paper text-base text-slate-text focus:outline-none focus:ring-2 focus:ring-fir/30 focus:border-fir"
                         autoFocus
                       />
                     </div>
@@ -601,8 +613,7 @@ export function ShoppingListPage() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Např. Domácí pralinky"
-                    style={{ backgroundColor: '#F6F1E7' }}
-                    className="w-full min-h-[48px] px-4 py-2.5 rounded-xl border border-[#E5DEC9] bg-[#F6F1E7] text-base text-slate-text focus:outline-none focus:ring-2 focus:ring-fir/30 focus:border-fir"
+                    className="w-full min-h-[48px] px-4 py-2.5 rounded-xl border border-paper-warm bg-paper text-base text-slate-text focus:outline-none focus:ring-2 focus:ring-fir/30 focus:border-fir"
                   />
                 </div>
 
@@ -620,8 +631,7 @@ export function ShoppingListPage() {
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     placeholder="Např. velikost nebo barva..."
-                    style={{ backgroundColor: '#F6F1E7' }}
-                    className="w-full min-h-[48px] px-4 py-2.5 rounded-xl border border-[#E5DEC9] bg-[#F6F1E7] text-base text-slate-text focus:outline-none focus:ring-2 focus:ring-fir/30 focus:border-fir"
+                    className="w-full min-h-[48px] px-4 py-2.5 rounded-xl border border-paper-warm bg-paper text-base text-slate-text focus:outline-none focus:ring-2 focus:ring-fir/30 focus:border-fir"
                   />
                 </div>
 
@@ -638,8 +648,7 @@ export function ShoppingListPage() {
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     placeholder="https://..."
-                    style={{ backgroundColor: '#F6F1E7' }}
-                    className="w-full min-h-[48px] px-4 py-2.5 rounded-xl border border-[#E5DEC9] bg-[#F6F1E7] text-base text-slate-text focus:outline-none focus:ring-2 focus:ring-fir/30 focus:border-fir"
+                    className="w-full min-h-[48px] px-4 py-2.5 rounded-xl border border-paper-warm bg-paper text-base text-slate-text focus:outline-none focus:ring-2 focus:ring-fir/30 focus:border-fir"
                   />
                 </div>
 
@@ -654,14 +663,14 @@ export function ShoppingListPage() {
                     type="button"
                     onClick={() => setIdeaModalOpen(false)}
                     disabled={submittingIdea}
-                    className="min-h-[48px] px-5 py-2.5 rounded-xl border border-[#E5DEC9] bg-[#F6F1E7] text-base font-semibold text-slate-text hover:bg-[#EAE1D0] transition"
+                    className="min-h-[48px] px-5 py-2.5 rounded-xl border border-paper-warm bg-paper text-base font-semibold text-slate-text hover:bg-kraft transition"
                   >
                     Zrušit
                   </button>
                   <button
                     type="submit"
                     disabled={submittingIdea}
-                    className="min-h-[48px] inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-fir hover:bg-fir-dark text-white text-base font-bold shadow-sm transition disabled:opacity-60"
+                    className="min-h-[48px] inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-fir hover:bg-fir-hover text-white text-base font-bold shadow-sm transition disabled:opacity-60"
                   >
                     <Check className="w-5 h-5 shrink-0" />
                     <span>

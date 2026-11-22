@@ -35,10 +35,14 @@ export function ConfirmDialog({
       <div
         role="dialog"
         aria-modal="true"
-        style={{ backgroundColor: '#FFFDF9' }}
-        className="w-full max-w-md rounded-2xl bg-[#FFFDF9] border border-[#E5DEC9] shadow-2xl p-6 animate-slide-up"
+        style={{ backgroundColor: '#FFFDF8' }}
+        className="w-full max-w-md rounded-2xl bg-[#FFFDF8] border-[1.5px] border-fir shadow-2xl p-6 animate-slide-up relative"
       >
-        <div className="flex items-start justify-between gap-4">
+        <div
+          className="pointer-events-none absolute inset-2 rounded-xl border border-gold/40"
+          aria-hidden="true"
+        />
+        <div className="relative z-10 flex items-start justify-between gap-4">
           <div className="flex items-start gap-3.5">
             <div
               className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
@@ -58,19 +62,19 @@ export function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={loading}
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-text-muted hover:text-slate-text hover:bg-[#F6F1E7] transition"
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-text-muted hover:text-slate-text hover:bg-paper transition"
             aria-label="Zavřít"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5">
+        <div className="relative z-10 mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5">
           <button
             type="button"
             onClick={onCancel}
             disabled={loading}
-            className="min-h-[48px] px-5 py-2.5 rounded-xl border border-[#E5DEC9] bg-[#F6F1E7] text-base font-semibold text-slate-text hover:bg-[#EAE1D0] transition"
+            className="min-h-[48px] px-5 py-2.5 rounded-xl border border-paper-warm bg-paper text-base font-semibold text-slate-text hover:bg-kraft transition"
           >
             {cancelLabel}
           </button>
@@ -81,7 +85,7 @@ export function ConfirmDialog({
             className={`min-h-[48px] inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-base font-bold text-white transition disabled:opacity-60 ${
               danger
                 ? 'bg-crimson hover:bg-crimson-dark'
-                : 'bg-fir hover:bg-fir-dark'
+                : 'bg-fir hover:bg-fir-hover'
             }`}
           >
             <Check className="w-5 h-5 shrink-0" />

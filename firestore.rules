@@ -33,6 +33,8 @@ service cloud.firestore {
     //          id (string 1..128), title (string 1..150), url (string 0..1000, empty or http/https),
     //          note (string 0..500), createdAt (timestamp or non-negative number))
     //      - coParentUids: list of strings (optional, max 10 items; immutable for co-parents, editable only by ownerUid)
+    //      - handwrittenPhotoUrl: string (optional, 0..500000 chars, empty, data:image/*;base64,..., or http/https URL)
+    //      - sealedAt: timestamp, non-negative number, or null (optional)
     //      - updatedAt: timestamp or non-negative number (required)
     //      - createdAt: timestamp or non-negative number (optional; immutable once set)
     //
@@ -149,6 +151,15 @@ service cloud.firestore {
         (url == '' || url.matches('^[Hh][Tt][Tt][Pp][Ss]?://.*'));
     }
 
+    // Allows empty string, base64 data:image URL, or http(s) URL (up to 500000 chars)
+    function isValidHandwrittenPhotoUrl(url) {
+      return url is string &&
+        url.size() <= 500000 &&
+        (url == '' ||
+         url.matches('^data:image/[a-zA-Z0-9.+-]+;base64,[a-zA-Z0-9+/=]+$') ||
+         url.matches('^[Hh][Tt][Tt][Pp][Ss]?://.*'));
+    }
+
     // ===============================================================
     // Domain Validators
     // ===============================================================
@@ -213,7 +224,7 @@ service cloud.firestore {
 
     function isValidLetter(data) {
       return hasRequiredFields(['ownerUid', 'recipientName', 'isChildLetter', 'introText', 'outroText', 'printTheme', 'wishes', 'updatedAt']) &&
-        hasOnlyAllowedFields(['ownerUid', 'recipientName', 'isChildLetter', 'introText', 'outroText', 'printTheme', 'wishes', 'coParentUids', 'createdAt', 'updatedAt']) &&
+        hasOnlyAllowedFields(['ownerUid', 'recipientName', 'isChildLetter', 'introText', 'outroText', 'printTheme', 'wishes', 'coParentUids', 'handwrittenPhotoUrl', 'sealedAt', 'createdAt', 'updatedAt']) &&
         isValidUid(data.ownerUid) &&
         isValidNonEmptyString(data.recipientName, 60) &&
         data.isChildLetter is bool &&
@@ -222,6 +233,8 @@ service cloud.firestore {
         data.printTheme in ['handwritten', 'fairytale', 'minimal'] &&
         isValidWishes(data.wishes) &&
         (!('coParentUids' in data) || (data.coParentUids is list && data.coParentUids.size() <= 10 && data.coParentUids.join(',') is string && data.coParentUids.join(',').size() <= 1300)) &&
+        (!('handwrittenPhotoUrl' in data) || isValidHandwrittenPhotoUrl(data.handwrittenPhotoUrl)) &&
+        (!('sealedAt' in data) || data.sealedAt == null || isValidTime(data.sealedAt)) &&
         isValidTime(data.updatedAt) &&
         (!('createdAt' in data) || isValidTime(data.createdAt));
     }

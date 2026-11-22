@@ -53,24 +53,28 @@ export function WishFormModal({ open, initialWish = null, onSave, onClose }) {
       <div
         role="dialog"
         aria-modal="true"
-        style={{ backgroundColor: '#FFFDF9' }}
-        className="w-full max-w-lg rounded-2xl bg-[#FFFDF9] border border-[#E5DEC9] shadow-2xl p-6 animate-slide-up"
+        style={{ backgroundColor: '#FFFDF8' }}
+        className="w-full max-w-lg rounded-2xl bg-[#FFFDF8] border-[1.5px] border-fir shadow-2xl p-6 animate-slide-up relative"
       >
-        <div className="flex items-center justify-between gap-3 mb-5">
+        <div
+          className="pointer-events-none absolute inset-2 rounded-xl border border-gold/40"
+          aria-hidden="true"
+        />
+        <div className="relative z-10 flex items-center justify-between gap-3 mb-5">
           <h3 className="font-fairytale font-bold text-2xl sm:text-3xl text-slate-text leading-tight">
-            {initialWish ? 'Upravit přání' : 'Přidat přání do dopisu'}
+            {initialWish ? 'Upravit přání' : 'Připsat přání do dopisu'}
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-text-muted hover:text-slate-text hover:bg-[#F6F1E7] transition"
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-text-muted hover:text-slate-text hover:bg-paper transition"
             aria-label="Zavřít"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="relative z-10 space-y-4">
           <div>
             <label htmlFor="wish-title" className="block text-base font-bold text-slate-text mb-1.5">
               Název dárku <span className="text-crimson">*</span>
@@ -82,8 +86,7 @@ export function WishFormModal({ open, initialWish = null, onSave, onClose }) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Např. Dřevěná stavebnice Hrad"
-              style={{ backgroundColor: '#F6F1E7' }}
-              className="w-full min-h-[48px] px-4 py-2.5 rounded-xl border border-[#E5DEC9] bg-[#F6F1E7] text-base text-slate-text placeholder:text-slate-text-muted/60 focus:outline-none focus:ring-2 focus:ring-fir/30 focus:border-fir"
+              className="w-full min-h-[48px] px-4 py-2.5 rounded-xl border border-paper-warm bg-paper text-base text-slate-text placeholder:text-slate-text-muted/60 focus:outline-none focus:ring-2 focus:ring-fir/30 focus:border-fir"
               autoFocus
             />
           </div>
@@ -101,15 +104,14 @@ export function WishFormModal({ open, initialWish = null, onSave, onClose }) {
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="Např. velikost M, modrá barva nebo autor knihy"
-                style={{ backgroundColor: '#F6F1E7' }}
-                className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-[#E5DEC9] bg-[#F6F1E7] text-base text-slate-text placeholder:text-slate-text-muted/60 focus:outline-none focus:ring-2 focus:ring-fir/30 focus:border-fir"
+                className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-paper-warm bg-paper text-base text-slate-text placeholder:text-slate-text-muted/60 focus:outline-none focus:ring-2 focus:ring-fir/30 focus:border-fir"
               />
             </div>
           </div>
 
           <div>
             <label htmlFor="wish-url" className="block text-base font-bold text-slate-text mb-1.5">
-              Odkaz na obchod (nepovinné)
+              Odkaz na ukázku (nepovinné)
             </label>
             <div className="relative">
               <LinkIcon className="w-5 h-5 text-slate-text-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -119,8 +121,7 @@ export function WishFormModal({ open, initialWish = null, onSave, onClose }) {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://..."
-                style={{ backgroundColor: '#F6F1E7' }}
-                className="w-full min-h-[48px] pl-11 pr-4 py-2.5 rounded-xl border border-[#E5DEC9] bg-[#F6F1E7] text-base text-slate-text placeholder:text-slate-text-muted/60 focus:outline-none focus:ring-2 focus:ring-fir/30 focus:border-fir"
+                className="w-full min-h-[48px] pl-11 pr-4 py-2.5 rounded-xl border border-paper-warm bg-paper text-base text-slate-text placeholder:text-slate-text-muted/60 focus:outline-none focus:ring-2 focus:ring-fir/30 focus:border-fir"
               />
             </div>
           </div>
@@ -133,16 +134,16 @@ export function WishFormModal({ open, initialWish = null, onSave, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="min-h-[48px] px-5 py-2.5 rounded-xl border border-[#E5DEC9] bg-[#F6F1E7] text-base font-semibold text-slate-text hover:bg-[#EAE1D0] transition"
+              className="min-h-[48px] px-5 py-2.5 rounded-xl border border-paper-warm bg-paper text-base font-semibold text-slate-text hover:bg-kraft transition"
             >
               Zrušit
             </button>
             <button
               type="submit"
-              className="min-h-[48px] inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-fir hover:bg-fir-dark text-white text-base font-bold shadow-sm transition"
+              className="min-h-[48px] inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-fir hover:bg-fir-hover text-white text-base font-bold shadow-sm transition"
             >
               <Check className="w-5 h-5 shrink-0" />
-              <span>{initialWish ? 'Uložit úpravy' : 'Přidat do dopisu'}</span>
+              <span>{initialWish ? 'Uložit úpravy' : 'Připsat do dopisu'}</span>
             </button>
           </div>
         </form>

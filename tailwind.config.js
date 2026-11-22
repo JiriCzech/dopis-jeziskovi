@@ -7,26 +7,29 @@ export default {
   theme: {
     extend: {
       colors: {
-        paper: '#F6F1E7',
-        sheet: '#FFFDF9',
-        'paper-warm': '#E6DEC8',
+        paper: '#F7F2E7',
+        sheet: '#FFFDF8',
+        kraft: '#EFE5D1',
+        'paper-warm': '#E2D6BE',
         fir: {
-          DEFAULT: '#234B3E',
-          dark: '#19382E',
-          soft: '#E3EFEA',
+          DEFAULT: '#1B4332',
+          hover: '#2D6A4F',
+          dark: '#133124',
+          soft: '#E6EFEA',
         },
         crimson: {
-          DEFAULT: '#B23A3A',
-          dark: '#8F2B2B',
-          soft: '#FCEAEA',
+          DEFAULT: '#8E1C1C',
+          dark: '#6E1414',
+          soft: '#FBEAEA',
         },
         gold: {
-          DEFAULT: '#C89646',
+          DEFAULT: '#C9963B',
+          glow: '#E5BE6B',
           soft: '#F9F0DD',
         },
         'slate-text': {
-          DEFAULT: '#242826',
-          muted: '#525A56',
+          DEFAULT: '#1E2421',
+          muted: '#4A544E',
         },
       },
       fontFamily: {
@@ -35,13 +38,13 @@ export default {
         fairytale: ['"Cormorant Garamond"', 'Georgia', 'serif'],
       },
       boxShadow: {
-        soft: '0 10px 34px -8px rgba(36, 40, 38, 0.09)',
-        paper: '0 14px 44px -10px rgba(36, 40, 38, 0.11), 0 2px 10px -2px rgba(36, 40, 38, 0.05)',
-        card: '0 4px 16px -3px rgba(35, 75, 62, 0.07)',
+        soft: '0 10px 30px -6px rgba(27, 67, 50, 0.12), 0 3px 8px -2px rgba(30, 36, 33, 0.06)',
+        paper: '0 16px 44px -10px rgba(27, 67, 50, 0.16), 0 4px 12px -2px rgba(30, 36, 33, 0.08)',
+        card: '0 6px 18px -4px rgba(27, 67, 50, 0.10)',
       },
       animation: {
-        'fade-in': 'fadeIn 0.35s ease-out forwards',
-        'slide-up': 'slideUp 0.35s ease-out forwards',
+        'fade-in': 'fadeIn 0.25s ease-out forwards',
+        'slide-up': 'slideUp 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards',
       },
       keyframes: {
         fadeIn: {
@@ -49,8 +52,8 @@ export default {
           '100%': { opacity: '1' },
         },
         slideUp: {
-          '0%': { opacity: '0', transform: 'translateY(10px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
+          '0%': { opacity: '0', transform: 'translate3d(0, 10px, 0)' },
+          '100%': { opacity: '1', transform: 'translate3d(0, 0, 0)' },
         },
       },
     },

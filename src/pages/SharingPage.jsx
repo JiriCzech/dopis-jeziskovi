@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   Briefcase,
   Check,
@@ -9,7 +9,6 @@ import {
   Home,
   Link as LinkIcon,
   LogOut,
-  Plus,
   Search,
   Trash2,
   TreePine,
@@ -19,7 +18,7 @@ import {
   Wine,
   X,
 } from 'lucide-react';
-import { Avatar } from '../assets/avatars';
+import { Avatar, GiftTagCordSvg } from '../assets/avatars';
 import { useAuth } from '../hooks/useAuth';
 import { useAppData } from '../hooks/useAppData';
 import {
@@ -39,7 +38,7 @@ export const GROUP_ICON_OPTIONS = [
   { id: 'home', label: 'Rodina', Icon: Home },
   { id: 'friends', label: 'Kamarádi', Icon: Wine },
   { id: 'tree', label: 'Vánoce', Icon: TreePine },
-  { id: 'work', label: 'Práce', Icon: Briefcase },
+  { id: 'work', label: 'Kolegové', Icon: Briefcase },
   { id: 'heart', label: 'Blízcí', Icon: Heart },
 ];
 
@@ -68,7 +67,6 @@ export function SharingPage() {
   const [foundUser, setFoundUser] = useState(null);
   const [searchError, setSearchError] = useState('');
 
-  // Tvorba a úprava skupiny
   const [groupFormOpen, setGroupFormOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState(null);
   const [groupName, setGroupName] = useState('');
@@ -212,7 +210,7 @@ export function SharingPage() {
     (c) => c.status === 'pending' && c.requestedBy === authUser?.uid
   );
 
-  // Sestavíme seznam všech propojených lidí k zaškrtnutí do skupiny (z přijatých connections + stávající členové při úpravě)
+  // Všichni potvrzení propojení lidé z connections se status === 'accepted'
   const selectableContactsMap = {};
   acceptedContacts.forEach(({ uid, user }) => {
     if (uid && uid !== authUser?.uid && user) {
@@ -319,47 +317,55 @@ export function SharingPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-page-transition">
       <div>
-        <h1 className="font-fairytale font-bold text-[32px] sm:text-[36px] leading-tight text-slate-text">
-          Sdílení a skupiny
+        <h1 className="font-fairytale font-bold text-[32px] sm:text-[38px] leading-tight text-slate-text">
+          Pozvat blízké a spravovat skupiny
         </h1>
         <p className="text-base text-slate-text-muted mt-0.5">
-          Propoj se s rodinou či přáteli a spravuj své společné okruhy.
+          Propoj se s rodinou, přáteli či kolegy, abyste si mohli číst dopisy a tajně rezervovat dárky.
         </p>
       </div>
 
       {/* 1. Tvůj osobní kód a zvací odkaz */}
-      <section className="stationery-sheet paper-grain-overlay rounded-3xl border border-[#E5DBC3] p-5 sm:p-7 space-y-4">
-        <div>
+      <section className="stationery-sheet rounded-3xl p-5 sm:p-7 space-y-4 relative overflow-hidden">
+        <div className="stationery-inner-frame" aria-hidden="true" />
+        <div className="relative z-10">
           <h2 className="font-fairytale font-bold text-2xl text-slate-text">
             Tvůj osobní kód a zvací odkaz
           </h2>
           <p className="text-sm text-slate-text-muted mt-0.5">
-            Pošli odkaz nebo kód blízkým, aby si tě mohli přidat.
+            Pošli odkaz na WhatsApp nebo Messenger — po kliknutí se babičce či blízkým nabídne propojení jedním klikem.
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-[#F6F1E7] border border-[#E5DEC9]">
-          <div className="font-bold text-xl text-fir break-all">
-            {fullCode}
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl bg-kraft border-[1.5px] border-fir">
+          <div className="flex items-center gap-3 min-w-0">
+            <Avatar avatarId={profile.avatarId} avatarBg={profile.avatarBg} size="md" />
+            <div className="min-w-0">
+              <div className="text-xs font-bold uppercase tracking-wider text-fir">
+                Tvůj osobní kód
+              </div>
+              <div className="font-fairytale font-bold text-2xl sm:text-3xl text-slate-text break-all leading-tight">
+                {fullCode}
+              </div>
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={handleCopyPersonalLink}
-              className="min-h-[46px] whitespace-nowrap inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-fir hover:bg-fir-dark text-white text-sm sm:text-base font-bold shadow-xs transition"
+              className="min-h-[46px] whitespace-nowrap inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-fir hover:bg-fir-hover text-white text-sm sm:text-base font-bold shadow-xs transition"
             >
               {copiedPersonalLink ? (
                 <Check className="w-4 h-4 shrink-0" />
               ) : (
                 <LinkIcon className="w-4 h-4 shrink-0" />
               )}
-              <span>{copiedPersonalLink ? 'Odkaz zkopírován' : 'Zkopírovat odkaz'}</span>
+              <span>{copiedPersonalLink ? 'Odkaz zkopírován' : 'Sdílet odkaz'}</span>
             </button>
             <button
               type="button"
               onClick={handleCopyPersonalCode}
-              style={{ backgroundColor: '#FFFDF9' }}
-              className="min-h-[46px] whitespace-nowrap inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#FFFDF9] border border-[#E5DEC9] hover:bg-[#EAE1D0] text-sm sm:text-base font-bold text-slate-text transition"
+              className="min-h-[46px] whitespace-nowrap inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-sheet border border-fir/45 hover:bg-fir-soft text-sm sm:text-base font-bold text-slate-text transition"
             >
               {copiedPersonal ? (
                 <Check className="w-4 h-4 text-fir shrink-0" />
@@ -372,47 +378,47 @@ export function SharingPage() {
         </div>
       </section>
 
-      {/* 2. Přidat člověka nebo se připojit ke skupině + čekající pozvánky + propojení blízcí */}
-      <section className="stationery-sheet paper-grain-overlay rounded-3xl border border-[#E5DBC3] p-5 sm:p-7 space-y-5">
-        <div>
+      {/* 2. Přidat člověka nebo se připojit ke skupině + dárkové jmenovky blízkých */}
+      <section className="stationery-sheet rounded-3xl p-5 sm:p-7 space-y-5 relative overflow-hidden">
+        <div className="stationery-inner-frame" aria-hidden="true" />
+        <div className="relative z-10">
           <h2 className="font-fairytale font-bold text-2xl text-slate-text">
-            Přidat člověka nebo se připojit ke skupině
+            Přidat blízkého nebo se připojit ke skupině
           </h2>
           <p className="text-sm text-slate-text-muted mt-0.5">
-            Zadej osobní kód člověka (např. <strong>Dana#7392</strong>) nebo kód skupiny (např.{' '}
-            <strong>SKUPINA-8412</strong>).
+            Zadej osobní kód člověka (např. <strong>Dana#7392</strong>) nebo zvací kód skupiny (např.{' '}
+            <strong>SKUPINA-1024</strong>).
           </p>
         </div>
 
-        <form onSubmit={handleSearchOrJoin} className="flex flex-col sm:flex-row gap-2.5">
+        <form onSubmit={handleSearchOrJoin} className="relative z-10 flex flex-col sm:flex-row gap-2.5">
           <div className="relative flex-1 min-w-0">
             <Search className="w-5 h-5 text-slate-text-muted absolute left-4 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Např. Dana#7392 nebo SKUPINA-8412"
-              style={{ backgroundColor: '#F6F1E7' }}
-              className="w-full min-h-[48px] pl-12 pr-4 py-2.5 rounded-xl border border-[#E5DEC9] bg-[#F6F1E7] text-base text-slate-text focus:outline-none focus:ring-2 focus:ring-fir/30 focus:border-fir"
+              placeholder="Např. Dana#7392 nebo SKUPINA-1024"
+              className="w-full min-h-[48px] pl-12 pr-4 py-2.5 rounded-xl border border-paper-warm bg-paper text-base text-slate-text focus:outline-none focus:ring-2 focus:ring-fir/30 focus:border-fir"
             />
           </div>
           <button
             type="submit"
             disabled={searching || !searchInput.trim()}
-            className="min-h-[48px] whitespace-nowrap px-6 py-2.5 rounded-xl bg-fir hover:bg-fir-dark text-white text-base font-bold transition disabled:opacity-50 shrink-0"
+            className="min-h-[48px] whitespace-nowrap px-6 py-2.5 rounded-xl bg-fir hover:bg-fir-hover text-white text-base font-bold transition disabled:opacity-50 shrink-0"
           >
             {searching ? 'Ověřuji...' : 'Potvrdit kód'}
           </button>
         </form>
 
         {searchError && (
-          <p className="text-base text-crimson bg-crimson-soft px-4 py-3 rounded-xl">
+          <p className="relative z-10 text-base text-crimson bg-crimson-soft px-4 py-3 rounded-xl">
             {searchError}
           </p>
         )}
 
         {foundUser && (
-          <div className="p-4 rounded-xl bg-fir-soft border border-fir/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="relative z-10 p-4 rounded-2xl bg-fir-soft border-[1.5px] border-fir flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <Avatar avatarId={foundUser.avatarId} avatarBg={foundUser.avatarBg} size="md" />
               <div className="min-w-0">
@@ -427,7 +433,7 @@ export function SharingPage() {
             <button
               type="button"
               onClick={() => handleSendInvite(foundUser)}
-              className="min-h-[48px] whitespace-nowrap inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-fir hover:bg-fir-dark text-white text-base font-bold transition shrink-0"
+              className="min-h-[48px] whitespace-nowrap inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-fir hover:bg-fir-hover text-white text-base font-bold transition shrink-0"
             >
               <UserPlus className="w-5 h-5 shrink-0" />
               <span>Odeslat pozvánku</span>
@@ -437,7 +443,7 @@ export function SharingPage() {
 
         {/* Čekající pozvánky */}
         {(incomingRequests.length > 0 || outgoingRequests.length > 0) && (
-          <div className="space-y-3 pt-4 border-t border-[#E5DEC9]">
+          <div className="relative z-10 space-y-3 pt-4 border-t border-gold/35">
             <h3 className="text-base font-bold text-slate-text">Čekající pozvánky</h3>
 
             {incomingRequests.map((req) => {
@@ -446,7 +452,7 @@ export function SharingPage() {
               return (
                 <div
                   key={req.id}
-                  className="p-4 rounded-xl bg-gold-soft/70 border border-gold/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  className="p-4 rounded-2xl bg-gold-soft/80 border-[1.5px] border-gold flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <Avatar
@@ -458,8 +464,8 @@ export function SharingPage() {
                       <div className="font-bold text-slate-text text-lg truncate">
                         {requester.displayName}
                       </div>
-                      <div className="text-xs text-slate-text-muted">
-                        Chce s tebou sdílet dopisy
+                      <div className="text-xs font-semibold text-fir">
+                        Nová žádost o sdílení dopisů
                       </div>
                     </div>
                   </div>
@@ -467,7 +473,7 @@ export function SharingPage() {
                     <button
                       type="button"
                       onClick={() => handleAccept(req.id)}
-                      className="min-h-[46px] whitespace-nowrap inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-fir hover:bg-fir-dark text-white text-base font-bold transition"
+                      className="min-h-[46px] whitespace-nowrap inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-fir hover:bg-fir-hover text-white text-base font-bold transition"
                     >
                       <UserCheck className="w-5 h-5 shrink-0" />
                       <span>Přijmout</span>
@@ -475,7 +481,7 @@ export function SharingPage() {
                     <button
                       type="button"
                       onClick={() => handleDeclineOrRemove(req.id, 'Pozvánka byla odmítnuta.')}
-                      className="min-h-[46px] whitespace-nowrap inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[#E5DEC9] bg-[#FFFDF9] text-base font-semibold text-crimson hover:bg-crimson-soft transition"
+                      className="min-h-[46px] whitespace-nowrap inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-paper-warm bg-sheet text-base font-semibold text-crimson hover:bg-crimson-soft transition"
                     >
                       <X className="w-5 h-5 shrink-0" />
                       <span>Odmítnout</span>
@@ -492,14 +498,18 @@ export function SharingPage() {
               return (
                 <div
                   key={req.id}
-                  style={{ backgroundColor: '#F6F1E7' }}
-                  className="p-3.5 rounded-xl bg-[#F6F1E7] border border-[#E5DEC9] flex flex-wrap items-center justify-between gap-3"
+                  className="p-3.5 rounded-2xl bg-kraft/75 border border-fir/40 flex flex-wrap items-center justify-between gap-3"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <Avatar avatarId={target.avatarId} avatarBg={target.avatarBg} size="sm" />
-                    <span className="text-base text-slate-text">
-                      Pozvánka pro <strong>{target.displayName}</strong> čeká na potvrzení
-                    </span>
+                    <div>
+                      <div className="text-base font-bold text-slate-text">
+                        {target.displayName}
+                      </div>
+                      <div className="text-xs font-semibold text-gold">
+                        Čeká na potvrzení pozvánky
+                      </div>
+                    </div>
                   </div>
                   <button
                     type="button"
@@ -514,8 +524,8 @@ export function SharingPage() {
           </div>
         )}
 
-        {/* Seznam propojených blízkých */}
-        <div className="space-y-3 pt-4 border-t border-[#E5DEC9]">
+        {/* Seznam propojených blízkých jako dárkové jmenovky s 3D známkami a statusy */}
+        <div className="relative z-10 space-y-3 pt-4 border-t border-gold/35">
           <h3 className="text-base font-bold text-slate-text">
             Tvoji propojení blízcí ({acceptedContacts.length})
           </h3>
@@ -525,19 +535,31 @@ export function SharingPage() {
               Zatím nemáš žádné přímé propojení. Pošli někomu svůj odkaz nebo zadej jeho kód výše.
             </p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {acceptedContacts.map(({ connectionId, user }) => (
                 <div
                   key={connectionId}
-                  style={{ backgroundColor: '#F6F1E7' }}
-                  className="p-3.5 rounded-2xl bg-[#F6F1E7] border border-[#E5DEC9] flex items-center justify-between gap-3"
+                  className="relative rounded-2xl bg-kraft border-[1.5px] border-fir p-4 pl-6 flex items-center justify-between gap-3 shadow-xs overflow-hidden"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <Avatar avatarId={user.avatarId} avatarBg={user.avatarBg} size="sm" />
+                  <div
+                    className="pointer-events-none absolute inset-1.5 rounded-xl border border-gold/45"
+                    aria-hidden="true"
+                  />
+                  <GiftTagCordSvg className="w-10 h-8 absolute -top-1 -left-1 pointer-events-none" />
+                  <div className="relative z-10 flex items-center gap-3 min-w-0">
+                    <Avatar avatarId={user.avatarId} avatarBg={user.avatarBg} size="md" />
                     <div className="min-w-0">
-                      <div className="font-bold text-slate-text truncate">{user.displayName}</div>
-                      <div className="text-xs text-slate-text-muted truncate">
-                        {user.displayName}#{user.tag}
+                      <div className="font-fairytale font-bold text-2xl text-slate-text truncate leading-tight">
+                        {user.displayName}
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs text-slate-text-muted truncate">
+                          {user.displayName}#{user.tag}
+                        </span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-fir-soft border border-fir/25 text-[11px] font-bold text-fir">
+                          <Check className="w-3 h-3 shrink-0" />
+                          <span>Propojeno</span>
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -545,7 +567,7 @@ export function SharingPage() {
                     type="button"
                     onClick={() => handleDeclineOrRemove(connectionId, 'Propojení bylo odebráno.')}
                     title="Odebrat propojení"
-                    className="p-2 rounded-xl text-slate-text-muted hover:text-crimson hover:bg-crimson-soft/50 transition shrink-0"
+                    className="relative z-10 p-2 rounded-xl text-slate-text-muted hover:text-crimson hover:bg-crimson-soft/60 transition shrink-0"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -556,13 +578,14 @@ export function SharingPage() {
         </div>
       </section>
 
-      {/* 3. Skupiny */}
-      <section className="stationery-sheet paper-grain-overlay rounded-3xl border border-[#E5DBC3] p-5 sm:p-7 space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* 3. Správa skupin (Rodina, Kamarádi, Kolegové) */}
+      <section className="stationery-sheet rounded-3xl p-5 sm:p-7 space-y-5 relative overflow-hidden">
+        <div className="stationery-inner-frame" aria-hidden="true" />
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="font-fairytale font-bold text-2xl text-slate-text flex items-center gap-2">
               <Users className="w-5 h-5 text-fir shrink-0" />
-              <span>Skupiny</span>
+              <span>Skupiny (Rodina, Kamarádi, Kolegové)</span>
             </h2>
             <p className="text-sm text-slate-text-muted mt-0.5">
               Všichni členové jedné skupiny si automaticky vidí své dopisy navzájem.
@@ -571,7 +594,7 @@ export function SharingPage() {
           <button
             type="button"
             onClick={openNewGroupForm}
-            className="min-h-[46px] whitespace-nowrap inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-fir hover:bg-fir-dark text-white text-sm sm:text-base font-bold shadow-xs transition"
+            className="min-h-[46px] whitespace-nowrap inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-fir hover:bg-fir-hover text-white text-sm sm:text-base font-bold shadow-xs transition"
           >
             <FolderPlus className="w-4 h-4 shrink-0" />
             <span>Nová skupina</span>
@@ -581,11 +604,10 @@ export function SharingPage() {
         {groupFormOpen && (
           <form
             onSubmit={handleSaveGroup}
-            style={{ backgroundColor: '#F6F1E7' }}
-            className="rounded-2xl bg-[#F6F1E7] border border-fir/35 p-4 sm:p-5 space-y-5 animate-slide-up"
+            className="relative z-10 rounded-2xl bg-kraft border-[1.5px] border-fir p-4 sm:p-5 space-y-5 animate-slide-up"
           >
             <div className="flex items-center justify-between gap-2">
-              <h3 className="text-base font-bold text-slate-text">
+              <h3 className="font-fairytale font-bold text-2xl text-slate-text">
                 {editingGroup ? `Upravit skupinu „${editingGroup.name}“` : 'Založit novou skupinu'}
               </h3>
               <button
@@ -613,16 +635,15 @@ export function SharingPage() {
                 maxLength={40}
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
-                placeholder="Např. Rodina, Kamarádi, Práce..."
-                style={{ backgroundColor: '#FFFDF9' }}
-                className="w-full min-h-[48px] px-3.5 py-2 rounded-xl border border-[#E5DEC9] bg-[#FFFDF9] text-base"
+                placeholder="Např. Naše rodina, Kamarádi, Kolegové..."
+                className="w-full min-h-[48px] px-3.5 py-2 rounded-xl border border-paper-warm bg-sheet text-base"
                 required
               />
             </div>
 
             <div>
               <span className="block text-sm font-bold text-slate-text mb-2">
-                Motiv skupiny
+                Vánoční ikonka skupiny
               </span>
               <div className="flex flex-wrap gap-2">
                 {GROUP_ICON_OPTIONS.map(({ id, label, Icon }) => {
@@ -632,10 +653,10 @@ export function SharingPage() {
                       key={id}
                       type="button"
                       onClick={() => setGroupIcon(id)}
-                      className={`min-h-[42px] inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-sm font-semibold transition ${
+                      className={`min-h-[42px] inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border-[1.5px] text-sm font-bold transition ${
                         active
                           ? 'bg-fir text-white border-fir'
-                          : 'bg-[#FFFDF9] text-slate-text border-[#E5DEC9] hover:bg-[#EAE1D0]/60'
+                          : 'bg-sheet text-slate-text border-paper-warm hover:bg-fir-soft'
                       }`}
                     >
                       <Icon className="w-4 h-4 shrink-0" />
@@ -646,10 +667,10 @@ export function SharingPage() {
               </div>
             </div>
 
-            {/* Výběr členů ze svých propojených kontaktů (přehledné checkboxy) */}
+            {/* Výběr členů ze svých propojených kontaktů (connections se status === 'accepted') */}
             <div>
               <span className="block text-sm font-bold text-slate-text mb-2">
-                Vyber členy ze svých propojených kontaktů
+                Zaškrtni propojené lidi do skupiny
               </span>
               {selectableContacts.length === 0 ? (
                 <p className="text-sm text-slate-text-muted">
@@ -663,18 +684,17 @@ export function SharingPage() {
                     return (
                       <label
                         key={user.uid}
-                        style={{ backgroundColor: checked ? '#E3EFEA' : '#FFFDF9' }}
-                        className={`min-h-[52px] flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition ${
+                        className={`min-h-[54px] flex items-center gap-3 p-3 rounded-xl border-[1.5px] cursor-pointer transition ${
                           checked
-                            ? 'border-fir bg-[#E3EFEA]'
-                            : 'border-[#E5DEC9] bg-[#FFFDF9] hover:bg-[#EAE1D0]/40'
+                            ? 'border-fir bg-fir-soft'
+                            : 'border-paper-warm bg-sheet hover:bg-paper'
                         }`}
                       >
                         <input
                           type="checkbox"
                           checked={checked}
                           onChange={() => toggleMemberInSelection(user.uid)}
-                          className="w-5 h-5 accent-[#234B3E] rounded cursor-pointer shrink-0"
+                          className="w-5 h-5 accent-[#1B4332] rounded cursor-pointer shrink-0"
                         />
                         <Avatar avatarId={user.avatarId} avatarBg={user.avatarBg} size="xs" />
                         <div className="min-w-0 flex-1">
@@ -693,16 +713,13 @@ export function SharingPage() {
             </div>
 
             {/* Soukromí dětských dopisů */}
-            <div
-              style={{ backgroundColor: '#FFFDF9' }}
-              className="p-3.5 rounded-xl bg-[#FFFDF9] border border-[#E5DEC9]"
-            >
+            <div className="p-3.5 rounded-xl bg-sheet border border-paper-warm">
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={showChildLetters}
                   onChange={(e) => setShowChildLetters(e.target.checked)}
-                  className="mt-1 w-5 h-5 accent-[#234B3E] rounded cursor-pointer shrink-0"
+                  className="mt-1 w-5 h-5 accent-[#1B4332] rounded cursor-pointer shrink-0"
                 />
                 <div>
                   <div className="text-sm font-bold text-slate-text">
@@ -723,13 +740,13 @@ export function SharingPage() {
                   setGroupFormOpen(false);
                   setEditingGroup(null);
                 }}
-                className="min-h-[44px] px-4 py-2 rounded-xl border border-[#E5DEC9] bg-[#FFFDF9] text-sm font-semibold"
+                className="min-h-[44px] px-4 py-2 rounded-xl border border-paper-warm bg-sheet text-sm font-semibold"
               >
                 Zrušit
               </button>
               <button
                 type="submit"
-                className="min-h-[44px] px-5 py-2 rounded-xl bg-fir hover:bg-fir-dark text-white text-sm font-bold"
+                className="min-h-[44px] px-5 py-2 rounded-xl bg-fir hover:bg-fir-hover text-white text-sm font-bold"
               >
                 {editingGroup ? 'Uložit změny' : 'Založit skupinu'}
               </button>
@@ -738,11 +755,11 @@ export function SharingPage() {
         )}
 
         {groups.length === 0 ? (
-          <p className="text-sm text-slate-text-muted">
+          <p className="relative z-10 text-sm text-slate-text-muted">
             Zatím nejsi v žádné skupině. Založ skupinu tlačítkem výše nebo zadej zvací kód.
           </p>
         ) : (
-          <div className="space-y-3">
+          <div className="relative z-10 space-y-3">
             {groups.map((g) => {
               const isFounder = g.createdBy === authUser?.uid;
               const codeCopied = copiedGroupId === g.id;
@@ -757,18 +774,17 @@ export function SharingPage() {
               return (
                 <div
                   key={g.id}
-                  style={{ backgroundColor: '#F6F1E7' }}
-                  className="p-4 rounded-2xl bg-[#F6F1E7] border border-[#E5DEC9] space-y-3"
+                  className="p-4 rounded-2xl bg-kraft border-[1.5px] border-fir space-y-3"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex items-start gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-fir-soft text-fir flex items-center justify-center shrink-0 mt-0.5">
+                      <div className="w-10 h-10 rounded-xl bg-fir-soft text-fir border border-fir/25 flex items-center justify-center shrink-0 mt-0.5">
                         {renderGroupIcon(g.icon, 'w-5 h-5')}
                       </div>
                       <div className="min-w-0">
                         <div className="font-bold text-slate-text text-base flex flex-wrap items-center gap-2">
                           <span>{g.name}</span>
-                          <span className="px-2 py-0.5 rounded-full bg-[#FFFDF9] border border-[#E5DEC9] text-xs font-medium text-slate-text-muted">
+                          <span className="px-2 py-0.5 rounded-full bg-sheet border border-fir/25 text-xs font-medium text-slate-text-muted">
                             {g.showChildLetters === false
                               ? 'Jen osobní dopisy'
                               : 'Včetně dětských dopisů'}
@@ -786,8 +802,7 @@ export function SharingPage() {
                           <button
                             type="button"
                             onClick={() => openEditGroupForm(g)}
-                            style={{ backgroundColor: '#FFFDF9' }}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FFFDF9] border border-[#E5DEC9] text-xs font-semibold text-slate-text hover:bg-[#EAE1D0]"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sheet border border-fir/35 text-xs font-bold text-slate-text hover:bg-fir-soft"
                           >
                             <Edit3 className="w-3.5 h-3.5 shrink-0" />
                             <span>Upravit</span>
@@ -806,8 +821,7 @@ export function SharingPage() {
                         <button
                           type="button"
                           onClick={() => handleLeaveGroup(g)}
-                          style={{ backgroundColor: '#FFFDF9' }}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FFFDF9] border border-[#E5DEC9] text-xs font-semibold text-crimson hover:bg-crimson-soft"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sheet border border-crimson/35 text-xs font-bold text-crimson hover:bg-crimson-soft"
                         >
                           <LogOut className="w-3.5 h-3.5 shrink-0" />
                           <span>Opustit skupinu</span>
@@ -817,10 +831,7 @@ export function SharingPage() {
                   </div>
 
                   {g.inviteCode && (
-                    <div
-                      style={{ backgroundColor: '#FFFDF9' }}
-                      className="px-3.5 py-2.5 rounded-xl bg-[#FFFDF9] border border-[#E5DEC9] flex flex-wrap items-center justify-between gap-2"
-                    >
+                    <div className="px-3.5 py-2.5 rounded-xl bg-sheet border border-fir/30 flex flex-wrap items-center justify-between gap-2">
                       <div className="text-xs sm:text-sm text-slate-text">
                         <span className="text-slate-text-muted">Zvací kód skupiny: </span>
                         <strong className="font-bold text-fir">{g.inviteCode}</strong>
@@ -829,7 +840,7 @@ export function SharingPage() {
                         <button
                           type="button"
                           onClick={() => handleCopyGroupLink(g)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-fir hover:bg-fir-dark text-white text-xs font-bold transition"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-fir hover:bg-fir-hover text-white text-xs font-bold transition"
                         >
                           {copiedGroupLinkId === g.id ? (
                             <Check className="w-3.5 h-3.5 shrink-0" />
@@ -839,13 +850,13 @@ export function SharingPage() {
                           <span>
                             {copiedGroupLinkId === g.id
                               ? 'Odkaz zkopírován'
-                              : 'Sdílet zvací odkaz'}
+                              : 'Sdílet odkaz'}
                           </span>
                         </button>
                         <button
                           type="button"
                           onClick={() => handleCopyGroupCode(g)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F6F1E7] hover:bg-[#EAE1D0] border border-[#E5DEC9] text-xs font-bold text-slate-text transition"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-paper hover:bg-kraft border border-paper-warm text-xs font-bold text-slate-text transition"
                         >
                           {codeCopied ? (
                             <Check className="w-3.5 h-3.5 text-fir shrink-0" />
