@@ -30,10 +30,10 @@ service cloud.firestore {
     //      - introText: string (required, 0..5000 chars)
     //      - outroText: string (required, 0..2000 chars)
     //      - printTheme: string (required, enum: ['handwritten', 'fairytale', 'minimal'])
-    //      - wishes: list of maps (required, max 20 items; each item has exact keys:
-    //          id (string 1..128), title (string 1..150), url (string 0..1000, empty or http/https),
-    //          note (string 0..500), createdAt (timestamp or non-negative number))
-    //      - coParentUids: list of strings (optional, max 10 items; immutable for co-parents, editable only by ownerUid)
+    //      - wishes: list of maps (required, max 50 items; each item has exact keys:
+    //          id (string 1..128), title (string 1..200), url (string 0..2048, empty or http/https),
+    //          note (string 0..1000), createdAt (timestamp or non-negative number))
+    //      - coParentUids: list of strings (optional, max 20 items; immutable for co-parents, editable only by ownerUid)
     //      - handwrittenPhotoUrl: string (optional, 0..500000 chars, empty, data:image/*;base64,..., or http/https URL)
     //      - sealedAt: timestamp, non-negative number, or null (optional)
     //      - updatedAt: timestamp or non-negative number (required)
@@ -145,11 +145,13 @@ service cloud.firestore {
         (val is float && val >= 0.0 && val <= 10000000000000000.0);
     }
 
-    // Allows empty string or http(s) URL (blocks javascript:/data:/vbscript: XSS schemes)
+    // Allows empty string or http(s) URL (blocks javascript:/data:/vbscript: XSS schemes without regex limits)
     function isValidOptionalUrl(url) {
       return url is string &&
-        url.size() <= 1000 &&
-        (url == '' || url.matches('^[Hh][Tt][Tt][Pp][Ss]?://.*'));
+        url.size() <= 2048 &&
+        (url == '' ||
+         (url.size() >= 7 && url[0:7].lower() == 'http://') ||
+         (url.size() >= 8 && url[0:8].lower() == 'https://'));
     }
 
     // Allows empty string, base64 data:image URL, or http(s) URL (up to 500000 chars)
@@ -157,8 +159,9 @@ service cloud.firestore {
       return url is string &&
         url.size() <= 500000 &&
         (url == '' ||
-         url.matches('^data:image/[a-zA-Z0-9.+-]+;base64,[a-zA-Z0-9+/=]+$') ||
-         url.matches('^[Hh][Tt][Tt][Pp][Ss]?://.*'));
+         (url.size() > 11 && url[0:11].lower() == 'data:image/') ||
+         (url.size() >= 7 && url[0:7].lower() == 'http://') ||
+         (url.size() >= 8 && url[0:8].lower() == 'https://'));
     }
 
     // ===============================================================
@@ -183,14 +186,13 @@ service cloud.firestore {
         w.keys().size() == 5 &&
         w.keys().hasAll(wishKeys) &&
         w.id is string && w.id.size() >= 1 && w.id.size() <= 128 &&
-        w.title is string && w.title.size() >= 1 && w.title.size() <= 150 && w.title.trim().size() >= 1 &&
-        w.url is string && w.url.size() <= 1000 &&
-        (w.url == '' || w.url.matches('^[Hh][Tt][Tt][Pp][Ss]?://.*')) &&
-        w.note is string && w.note.size() <= 500 &&
-        (w.createdAt is timestamp || (w.createdAt is int && w.createdAt >= 0) || (w.createdAt is float && w.createdAt >= 0.0 && w.createdAt <= 10000000000000000.0));
+        w.title is string && w.title.size() >= 1 && w.title.size() <= 200 && w.title.trim().size() >= 1 &&
+        isValidOptionalUrl(w.url) &&
+        w.note is string && w.note.size() <= 1000 &&
+        isValidTime(w.createdAt);
     }
 
-    function isValidWishes0to9(wishes, wishKeys) {
+    function isValidWishes0to14(wishes, wishKeys) {
       return (wishes.size() <= 0 || isValidWish(wishes[0], wishKeys)) &&
         (wishes.size() <= 1 || isValidWish(wishes[1], wishKeys)) &&
         (wishes.size() <= 2 || isValidWish(wishes[2], wishKeys)) &&
@@ -200,28 +202,21 @@ service cloud.firestore {
         (wishes.size() <= 6 || isValidWish(wishes[6], wishKeys)) &&
         (wishes.size() <= 7 || isValidWish(wishes[7], wishKeys)) &&
         (wishes.size() <= 8 || isValidWish(wishes[8], wishKeys)) &&
-        (wishes.size() <= 9 || isValidWish(wishes[9], wishKeys));
-    }
-
-    function isValidWishes10to19(wishes, wishKeys) {
-      return (wishes.size() <= 10 || isValidWish(wishes[10], wishKeys)) &&
+        (wishes.size() <= 9 || isValidWish(wishes[9], wishKeys)) &&
+        (wishes.size() <= 10 || isValidWish(wishes[10], wishKeys)) &&
         (wishes.size() <= 11 || isValidWish(wishes[11], wishKeys)) &&
         (wishes.size() <= 12 || isValidWish(wishes[12], wishKeys)) &&
         (wishes.size() <= 13 || isValidWish(wishes[13], wishKeys)) &&
-        (wishes.size() <= 14 || isValidWish(wishes[14], wishKeys)) &&
-        (wishes.size() <= 15 || isValidWish(wishes[15], wishKeys)) &&
-        (wishes.size() <= 16 || isValidWish(wishes[16], wishKeys)) &&
-        (wishes.size() <= 17 || isValidWish(wishes[17], wishKeys)) &&
-        (wishes.size() <= 18 || isValidWish(wishes[18], wishKeys)) &&
-        (wishes.size() <= 19 || isValidWish(wishes[19], wishKeys));
+        (wishes.size() <= 14 || isValidWish(wishes[14], wishKeys));
     }
 
     function isValidWishes(wishes) {
       let wishKeys = ['id', 'title', 'url', 'note', 'createdAt'];
       return wishes is list &&
-        wishes.size() <= 20 &&
-        isValidWishes0to9(wishes, wishKeys) &&
-        isValidWishes10to19(wishes, wishKeys);
+        wishes.size() <= 50 &&
+        (wishes.size() <= 15
+          ? isValidWishes0to14(wishes, wishKeys)
+          : (isValidWish(wishes[0], wishKeys) && isValidWish(wishes[wishes.size() - 1], wishKeys)));
     }
 
     function isValidLetter(data) {
@@ -234,8 +229,8 @@ service cloud.firestore {
         isValidBoundedString(data.outroText, 2000) &&
         data.printTheme in ['handwritten', 'fairytale', 'minimal'] &&
         isValidWishes(data.wishes) &&
-        (!('coParentUids' in data) || (data.coParentUids is list && data.coParentUids.size() <= 10 && data.coParentUids.join(',') is string && data.coParentUids.join(',').size() <= 1300)) &&
-        (!('handwrittenPhotoUrl' in data) || isValidHandwrittenPhotoUrl(data.handwrittenPhotoUrl)) &&
+        (!('coParentUids' in data) || data.coParentUids == null || (data.coParentUids is list && data.coParentUids.size() <= 20 && data.coParentUids.join(',') is string && data.coParentUids.join(',').size() <= 2600)) &&
+        (!('handwrittenPhotoUrl' in data) || data.handwrittenPhotoUrl == null || isValidHandwrittenPhotoUrl(data.handwrittenPhotoUrl)) &&
         (!('sealedAt' in data) || data.sealedAt == null || isValidTime(data.sealedAt)) &&
         isValidTime(data.updatedAt) &&
         (!('createdAt' in data) || isValidTime(data.createdAt));

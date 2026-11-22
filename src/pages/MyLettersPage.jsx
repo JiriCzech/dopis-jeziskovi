@@ -274,6 +274,13 @@ export function MyLettersPage() {
         setSealPulseKey((k) => k + 1);
         return saved;
       } catch (err) {
+        console.error('[MyLettersPage] Chyba ukládání dopisu/přání do Firestore:', {
+          path: `letters/${letterToSave.id}`,
+          code: err?.code || 'unknown',
+          message: err?.message || String(err),
+          wishCount: (letterToSave.wishes || []).length,
+          payload: letterToSave,
+        });
         setSaveState('saved');
         notify(err.message || 'Automatické uložení dopisu se nezdařilo.', 'error');
         return null;
@@ -431,7 +438,10 @@ export function MyLettersPage() {
       setDraft(nextDraft);
       setWishModalOpen(false);
       setEditingWish(null);
-      await persistLetterImmediate(nextDraft);
+      const saved = await persistLetterImmediate(nextDraft);
+      if (!saved) {
+        setDraft(curr);
+      }
     },
     [persistLetterImmediate]
   );

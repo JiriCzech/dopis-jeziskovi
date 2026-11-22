@@ -385,9 +385,9 @@ export async function saveLetter(letterData) {
       : 'handwritten',
     wishes: (letterData.wishes || []).map((w) => ({
       id: w.id || generateRandomId('wish'),
-      title: (w.title || '').trim(),
-      url: normalizeUrl(w.url),
-      note: (w.note || '').trim(),
+      title: (w.title || '').trim().slice(0, 200),
+      url: normalizeUrl(w.url).slice(0, 2048),
+      note: (w.note || '').trim().slice(0, 1000),
       createdAt: w.createdAt || now,
     })),
     createdAt: letterData.createdAt || now,
@@ -401,8 +401,19 @@ export async function saveLetter(letterData) {
     return state.letters[id];
   }
 
-  await setDoc(doc(db, 'letters', id), payload, { merge: true });
-  return { id, ...payload };
+  try {
+    await setDoc(doc(db, 'letters', id), payload, { merge: true });
+    return { id, ...payload };
+  } catch (err) {
+    console.error('[Firestore] Chyba při ukládání dopisu:', {
+      path: `letters/${id}`,
+      code: err?.code || 'unknown',
+      message: err?.message || String(err),
+      wishCount: payload.wishes.length,
+      payload,
+    });
+    throw err;
+  }
 }
 
 export async function deleteLetter(letterId) {

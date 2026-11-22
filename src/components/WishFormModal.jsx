@@ -118,6 +118,7 @@ export function WishFormModal({ open, initialWish = null, onSave, onClose }) {
               <input
                 id="wish-url"
                 type="text"
+                maxLength={2000}
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://..."
