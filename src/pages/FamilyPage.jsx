@@ -528,13 +528,7 @@ export function FamilyPage() {
         <div className="stationery-sheet rounded-3xl p-10 sm:p-12 text-center space-y-4 max-w-xl mx-auto relative overflow-hidden">
           <div className="stationery-inner-frame" aria-hidden="true" />
           <div className="relative z-10 space-y-3">
-            <div className="w-20 h-20 rounded-2xl overflow-hidden border-[1.5px] border-fir shadow-sm bg-[#E8DEC8] mx-auto">
-              <img
-                src="/assets/kaprik.png"
-                alt="Kapřík"
-                className="w-full h-full object-cover"
-              />
-            </div>
+            <WaxSealSvg className="w-20 h-20 mx-auto" />
             <h2 className="font-fairytale font-bold text-2xl sm:text-3xl text-slate-text">
               {familyCards.length === 0
                 ? 'Zatím tu je klid jako před Štědrým večerem'

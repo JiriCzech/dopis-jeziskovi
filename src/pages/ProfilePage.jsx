@@ -8,7 +8,6 @@ import {
   RedWhiteTwineCordSvg,
   RoundPostmarkSvg,
 } from '../assets/avatars';
-import { KaprikGuide } from '../components/KaprikGuide';
 import { useAuth } from '../hooks/useAuth';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 
@@ -100,19 +99,7 @@ export function ProfilePage({ isSetup = false }) {
 
   return (
     <div className="max-w-xl mx-auto space-y-8 animate-page-transition py-2">
-      {/* 1. Kapr průvodce nahoře nad obsahem stránky */}
-      <KaprikGuide
-        pose="vitej"
-        size="compact"
-        bubbleDirection="left"
-        message={
-          isFirstSetup
-            ? 'Ahoj! Než napíšeš dopis Ježíškovi, napiš, jak ti doma říkají, a vyber si svou poštovní známku na obálky.'
-            : 'Tady si můžeš kdykoliv upravit jméno nebo vyměnit svou poštovní známku.'
-        }
-      />
-
-      {/* 2. Realistická papírová dárková jmenovka s nalepenou známkou a kroucenou červeno-bílou šňůrkou */}
+      {/* 1. Realistická papírová dárková jmenovka s nalepenou známkou a kroucenou červeno-bílou šňůrkou */}
       <div className="relative pt-8">
         <RedWhiteTwineCordSvg className="w-14 h-16 absolute -top-2 left-1/2 -translate-x-1/2 z-20 pointer-events-none" />
 

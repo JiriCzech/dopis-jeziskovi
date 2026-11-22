@@ -55,6 +55,10 @@ export default {
           '0%': { opacity: '0', transform: 'translate3d(0, 10px, 0)' },
           '100%': { opacity: '1', transform: 'translate3d(0, 0, 0)' },
         },
+        float: {
+          '0%, 100%': { transform: 'translate3d(0, 0, 0)' },
+          '50%': { transform: 'translate3d(0, -5px, 0)' },
+        },
       },
     },
   },

@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import { Avatar, FairytaleOrnamentSvg } from '../assets/avatars';
+import { KaprikGuide } from './KaprikGuide';
 import { useAuth } from '../hooks/useAuth';
 import { useAppData } from '../hooks/useAppData';
 import {
@@ -236,13 +237,6 @@ export function Layout({ children }) {
       <header className="no-print relative z-20 bg-sheet/95 backdrop-blur-md border-b-[1.5px] border-fir sticky top-0 shadow-xs">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 min-h-[72px] py-2 flex items-center justify-between gap-2.5">
           <NavLink to="/" className="flex items-center gap-2.5 group shrink-0">
-            <div className="w-11 h-11 rounded-xl overflow-hidden border-[1.5px] border-fir shadow-xs bg-[#E8DEC8] shrink-0 group-hover:scale-105 transition">
-              <img
-                src="/assets/kaprik.png"
-                alt="Kapřík — Ježíškova pošta"
-                className="w-full h-full object-cover"
-              />
-            </div>
             <div>
               <div className="font-fairytale font-bold text-fir text-xl sm:text-2xl leading-none whitespace-nowrap">
                 Ježíškova pošta
@@ -328,6 +322,9 @@ export function Layout({ children }) {
       <main className="relative z-10 flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10 min-w-0">
         {children}
       </main>
+
+      {/* Celopostavový 3D kapr průvodce volně v prostoru aplikace */}
+      <KaprikGuide variant="floating" />
 
       {/* Útulná vánoční patička aplikace */}
       <footer className="no-print relative z-10 max-w-5xl w-full mx-auto px-4 sm:px-6 pt-4 pb-8 text-center">

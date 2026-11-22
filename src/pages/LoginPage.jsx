@@ -32,13 +32,8 @@ export function LoginPage() {
           </p>
         </header>
 
-        {/* 2. Velký 3D Kapřík v portrétním medailonu + skutečná mluvící bublina */}
-        <KaprikGuide
-          pose="vitej"
-          size="hero"
-          bubbleDirection="left"
-          message="Ahoj! Jsem kapřík a pomůžu ti poslat dopis Ježíškovi nebo se tajně podívat, co si přeje rodina."
-        />
+        {/* 2. Velký celopostavový 3D Kapřík + mluvící bublina */}
+        <KaprikGuide variant="login" contextKey="login" />
 
         {pendingInviteCode && (
           <div className="px-5 py-3 rounded-2xl bg-[#FFFDF8] border-[1.5px] border-[#1B4332] text-sm sm:text-base text-[#1E2421] shadow-xs">

@@ -27,7 +27,6 @@ import { useAppData } from '../hooks/useAppData';
 import { WishFormModal } from '../components/WishFormModal';
 import { PrintPreviewModal } from '../components/PrintPreviewModal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { KaprikGuide } from '../components/KaprikGuide';
 
 function autoResizeTextarea(el) {
   if (!el) return;
@@ -143,8 +142,6 @@ export function MyLettersPage() {
   const {
     authUser,
     profile,
-    showOnboardingBanner,
-    dismissOnboardingBanner,
     notify,
   } = useAuth();
   const {
@@ -189,6 +186,18 @@ export function MyLettersPage() {
   useEffect(() => {
     latestDraftRef.current = draft;
   }, [draft]);
+
+  useEffect(() => {
+    if (!draft) return;
+    window.dispatchEvent(
+      new CustomEvent('kaprik:letter-state', {
+        detail: {
+          isSealed: Boolean(draft.sealedAt),
+          justSealed: ritualStage === 'sealing' || ritualStage === 'done',
+        },
+      })
+    );
+  }, [draft?.id, draft?.sealedAt, ritualStage]);
 
   // Synchronizace aktivního dopisu z centrální paměti AppDataContext (0 ms při přepnutí záložky)
   useEffect(() => {
@@ -522,32 +531,6 @@ export function MyLettersPage() {
 
   return (
     <div className="space-y-6 animate-page-transition min-w-0">
-      {/* Jednorázová vřelá kapříkova bublina po prvním přihlášení */}
-      {showOnboardingBanner && (
-        <div className="max-w-[780px] mx-auto">
-          <KaprikGuide
-            pose="vitej"
-            size="compact"
-            bubbleDirection="left"
-            onDismiss={dismissOnboardingBanner}
-            message={
-              <>
-                Vítej! Svůj dopis můžeš začít psát rovnou tady. Vánoční známku a kód pro pozvání
-                rodiny najdeš kdykoliv v{' '}
-                <Link to="/profil" className="font-bold text-fir underline hover:text-fir-hover">
-                  profilu
-                </Link>{' '}
-                nebo v sekci{' '}
-                <Link to="/sdileni" className="font-bold text-fir underline hover:text-fir-hover">
-                  Sdílení a skupiny
-                </Link>
-                .
-              </>
-            }
-          />
-        </div>
-      )}
-
       {/* Záložky dopisů nad dopisním papírem: Můj dopis (Jirka), Julinka, Šárinka a + Napsat za dítě */}
       <div className="max-w-[780px] mx-auto flex flex-wrap items-center gap-2.5">
         {myLetters.map((l) => {
@@ -847,27 +830,20 @@ export function MyLettersPage() {
             </div>
           </div>
 
-          {/* Fyzický rituál odeslání (Kapřík + tlačítko Zapečetit a poslat Ježíškovi) */}
+          {/* Fyzický rituál odeslání (výzva + tlačítko Zapečetit a poslat Ježíškovi) */}
           <div className="mt-8 pt-6 border-t border-gold/40 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <KaprikGuide
-              pose="dopis"
-              size="compact"
-              bubbleDirection="left"
-              className="flex-1 w-full"
-              message={
-                draft.sealedAt ? (
-                  <>
-                    <strong className="text-fir">Dopis je zapečetěný a u Ježíška!</strong> Kdykoliv
-                    do něj můžeš připsat další přání a znovu ho přepečetit.
-                  </>
-                ) : (
-                  <>
-                    Krásný dopis! Pojďme ho vložit do obálky, natisknout známku a poslat
-                    Ježíškovi.
-                  </>
-                )
-              }
-            />
+            <p className="text-base leading-relaxed text-slate-text-muted text-center sm:text-left">
+              {draft.sealedAt ? (
+                <>
+                  <strong className="text-fir">Dopis je zapečetěný a u Ježíška!</strong> Kdykoliv do
+                  něj můžeš připsat další přání a znovu ho přepečetit.
+                </>
+              ) : (
+                <>
+                  Až budeš mít všechna přání sepsaná, vlož dopis do obálky a pošli ho Ježíškovi.
+                </>
+              )}
+            </p>
 
             <button
               type="button"
@@ -975,13 +951,7 @@ export function MyLettersPage() {
                 <div className="stationery-sheet rounded-3xl p-6 sm:p-8 max-w-md mx-auto space-y-5 animate-slide-up relative">
                   <div className="stationery-inner-frame" aria-hidden="true" />
                   <div className="relative z-10 flex flex-col items-center gap-3">
-                    <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-fir shadow-md bg-[#E8DEC8]">
-                      <img
-                        src="/assets/kaprik.png"
-                        alt="Kapřík"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+                    <WaxSealSvg className="w-20 h-20" pressed />
                     <h3 className="font-fairytale font-bold text-3xl text-fir">
                       Dopis letí k Ježíškovi!
                     </h3>
