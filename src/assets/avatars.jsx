@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 /**
- * 6 teplých barev podkladu pro 3D poštovní známky
+ * Zachováno pro zpětnou kompatibilitu importů (známky mají vlastní ručně kreslený papírový podklad #F5EEDB)
  */
 export const AVATAR_BG_COLORS = [
-  { id: 'cream', hex: '#F5E6D3', name: 'Vanilkový pergamen' },
+  { id: 'cream', hex: '#F5EEDB', name: 'Teplý papír' },
   { id: 'spruce', hex: '#DCECE5', name: 'Šalvějové jehličí' },
   { id: 'apple', hex: '#F7DFDF', name: 'Svíčková karmínová' },
   { id: 'honey', hex: '#FBF0D9', name: 'Zlatavý med' },
@@ -13,257 +13,182 @@ export const AVATAR_BG_COLORS = [
 ];
 
 /**
- * 8 bohatě ilustrovaných 3D vánočních motivů stylizovaných jako poštovní známka
+ * 6 ručně kreslených poštovních známek v českém ladovském stylu (public/assets/stamps/)
  */
 export const AVATAR_OPTIONS = [
-  { id: 'carp', label: 'Vánoční kapr' },
-  { id: 'piglet', label: 'Zlaté prasátko' },
-  { id: 'bell', label: 'Zvoneček' },
-  { id: 'gingerbread', label: 'Perníček' },
-  { id: 'star', label: 'Betlémská hvězda' },
-  { id: 'twig', label: 'Smrková větvička' },
-  { id: 'stocking', label: 'Punčocha' },
-  { id: 'candle', label: 'Svíčka' },
+  { id: 'prasatko', label: 'Zlaté prasátko', src: '/assets/stamps/prasatko.png' },
+  { id: 'liska', label: 'Zimní liška', src: '/assets/stamps/liska.png' },
+  { id: 'zajic', label: 'Zimní zajíček', src: '/assets/stamps/zajic.png' },
+  { id: 'sova', label: 'Zimní sova', src: '/assets/stamps/sova.png' },
+  { id: 'srnecek', label: 'Zimní srneček', src: '/assets/stamps/srnecek.png' },
+  { id: 'jezek', label: 'Zimní ježek', src: '/assets/stamps/jezek.png' },
 ];
 
-function renderAvatarArtwork(avatarId) {
-  switch (avatarId) {
-    case 'carp':
-      return (
-        <img
-          src="/assets/kaprik.png"
-          alt="Vánoční kapr"
-          className="w-full h-full object-cover rounded-[3px]"
-        />
-      );
+const LEGACY_STAMP_MAP = {
+  prasatko: 'prasatko',
+  liska: 'liska',
+  zajic: 'zajic',
+  sova: 'sova',
+  srnecek: 'srnecek',
+  jezek: 'jezek',
+  // Mapování starších ID z databáze na 6 ručně kreslených známek
+  piglet: 'prasatko',
+  carp: 'liska',
+  bell: 'zajic',
+  star: 'srnecek',
+  gingerbread: 'jezek',
+  twig: 'sova',
+  stocking: 'zajic',
+  candle: 'sova',
+};
 
-    case 'piglet':
+export function normalizeStampId(avatarId) {
+  return LEGACY_STAMP_MAP[avatarId] || 'prasatko';
+}
+
+function renderFallbackAnimalSvg(stampId) {
+  switch (stampId) {
+    case 'liska':
       return (
-        <svg viewBox="0 0 64 64" className="w-full h-full" fill="none" aria-hidden="true">
-          <defs>
-            <radialGradient id="pig3d" cx="35%" cy="28%" r="70%">
-              <stop offset="0%" stopColor="#FFF0B8" />
-              <stop offset="55%" stopColor="#E5B95C" />
-              <stop offset="100%" stopColor="#A6741E" />
-            </radialGradient>
-            <radialGradient id="snout3d" cx="40%" cy="35%" r="65%">
-              <stop offset="0%" stopColor="#FAD2C8" />
-              <stop offset="100%" stopColor="#C98878" />
-            </radialGradient>
-          </defs>
-          <ellipse cx="32" cy="53" rx="14" ry="3.5" fill="rgba(27,67,50,0.18)" />
-          <path d="M18 24 L14 12 L26 18 Z" fill="url(#pig3d)" stroke="#6E4B10" strokeWidth="1.8" strokeLinejoin="round" />
-          <path d="M46 24 L50 12 L38 18 Z" fill="url(#pig3d)" stroke="#6E4B10" strokeWidth="1.8" strokeLinejoin="round" />
-          <circle cx="32" cy="34" r="16.5" fill="url(#pig3d)" stroke="#6E4B10" strokeWidth="2" />
-          <path d="M22 22 C26 19 33 19 37 21" stroke="#FFFDF8" strokeWidth="2" strokeLinecap="round" opacity="0.65" />
-          <circle cx="21" cy="37" r="3" fill="#D96B6B" opacity="0.55" />
-          <circle cx="43" cy="37" r="3" fill="#D96B6B" opacity="0.55" />
-          <circle cx="25" cy="30" r="2.3" fill="#1E2421" />
-          <circle cx="24.3" cy="29.3" r="0.8" fill="#FFFDF8" />
-          <circle cx="39" cy="30" r="2.3" fill="#1E2421" />
-          <circle cx="38.3" cy="29.3" r="0.8" fill="#FFFDF8" />
-          <ellipse cx="32" cy="38.5" rx="7.2" ry="5.2" fill="url(#snout3d)" stroke="#6E4B10" strokeWidth="1.7" />
-          <circle cx="29.5" cy="38.5" r="1.4" fill="#5C371C" />
-          <circle cx="34.5" cy="38.5" r="1.4" fill="#5C371C" />
-          <path d="M32 7 L33.5 11.5 L38 13 L33.5 14.5 L32 19 L30.5 14.5 L26 13 L30.5 11.5 Z" fill="#E5BE6B" stroke="#9E6E24" strokeWidth="0.8" />
+        <svg viewBox="0 0 80 80" className="w-full h-full" fill="none" aria-hidden="true">
+          <rect width="80" height="80" fill="#F5EEDB" />
+          <path d="M18 64 C24 48 56 48 62 64" fill="#C85A28" stroke="#1E2421" strokeWidth="2.2" />
+          <path d="M22 36 L16 14 L34 26 Z" fill="#C85A28" stroke="#1E2421" strokeWidth="2.2" strokeLinejoin="round" />
+          <path d="M58 36 L64 14 L46 26 Z" fill="#C85A28" stroke="#1E2421" strokeWidth="2.2" strokeLinejoin="round" />
+          <path d="M20 36 C20 22 60 22 60 36 C60 48 46 56 40 56 C34 56 20 48 20 36 Z" fill="#D96B34" stroke="#1E2421" strokeWidth="2.2" />
+          <path d="M22 40 C28 40 35 48 40 55 C45 48 52 40 58 40 C55 50 46 56 40 56 C34 56 25 50 22 40 Z" fill="#FFFDF8" />
+          <circle cx="31" cy="36" r="2.5" fill="#1E2421" />
+          <circle cx="49" cy="36" r="2.5" fill="#1E2421" />
+          <circle cx="40" cy="49" r="3" fill="#1E2421" />
+          <path d="M26 56 Q40 62 54 56" stroke="#8E1C1C" strokeWidth="6" strokeLinecap="round" />
         </svg>
       );
-
-    case 'bell':
+    case 'zajic':
       return (
-        <svg viewBox="0 0 64 64" className="w-full h-full" fill="none" aria-hidden="true">
-          <defs>
-            <linearGradient id="bell3d" x1="16" y1="18" x2="48" y2="46" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#FFF0B8" />
-              <stop offset="45%" stopColor="#DFAC4C" />
-              <stop offset="100%" stopColor="#8F6014" />
-            </linearGradient>
-          </defs>
-          <ellipse cx="32" cy="54" rx="15" ry="3" fill="rgba(27,67,50,0.18)" />
-          <circle cx="32" cy="13" r="3.5" stroke="#7A5210" strokeWidth="2" fill="#F9F0DD" />
-          <circle cx="32" cy="48.5" r="4.5" fill="#8E1C1C" stroke="#5A1010" strokeWidth="1.8" />
-          <path
-            d="M32 17 C21.5 17 18.5 25 17.5 35.5 L12.5 44.5 H51.5 L46.5 35.5 C45.5 25 42.5 17 32 17 Z"
-            fill="url(#bell3d)"
-            stroke="#6E4B10"
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
-          <path d="M24 23 C22 26 21.5 31 21 36" stroke="#FFFDF8" strokeWidth="2.4" strokeLinecap="round" opacity="0.8" />
-          <path d="M26 17 L19 12 L22 20 Z" fill="#8E1C1C" stroke="#5A1010" strokeWidth="1.2" />
-          <path d="M38 17 L45 12 L42 20 Z" fill="#8E1C1C" stroke="#5A1010" strokeWidth="1.2" />
-          <circle cx="32" cy="17.5" r="2.6" fill="#B22828" stroke="#5A1010" strokeWidth="1.2" />
+        <svg viewBox="0 0 80 80" className="w-full h-full" fill="none" aria-hidden="true">
+          <rect width="80" height="80" fill="#F5EEDB" />
+          <path d="M31 34 C25 10 19 10 24 36" fill="#C59B6D" stroke="#1E2421" strokeWidth="2.2" />
+          <path d="M49 34 C55 10 61 10 56 36" fill="#C59B6D" stroke="#1E2421" strokeWidth="2.2" />
+          <circle cx="40" cy="46" r="17" fill="#D2AC80" stroke="#1E2421" strokeWidth="2.2" />
+          <circle cx="33" cy="42" r="2.4" fill="#1E2421" />
+          <circle cx="47" cy="42" r="2.4" fill="#1E2421" />
+          <ellipse cx="40" cy="49" rx="3.2" ry="2.2" fill="#8E1C1C" />
+          <path d="M27 60 Q40 66 53 60" stroke="#1B4332" strokeWidth="5.5" strokeLinecap="round" />
         </svg>
       );
-
-    case 'gingerbread':
+    case 'sova':
       return (
-        <svg viewBox="0 0 64 64" className="w-full h-full" fill="none" aria-hidden="true">
-          <defs>
-            <radialGradient id="ginger3d" cx="35%" cy="25%" r="75%">
-              <stop offset="0%" stopColor="#DFA56D" />
-              <stop offset="60%" stopColor="#B5743C" />
-              <stop offset="100%" stopColor="#7A481D" />
-            </radialGradient>
-          </defs>
-          <ellipse cx="32" cy="55" rx="14" ry="3" fill="rgba(27,67,50,0.18)" />
-          <circle cx="32" cy="19.5" r="9.5" fill="url(#ginger3d)" stroke="#5E3512" strokeWidth="2" />
-          <path
-            d="M25 28 L13.5 31 C11 31.8 11 36.5 14 37 L24 36 L22 50 C21.5 53 26 54 27.5 51 L32 42.5 L36.5 51 C38 54 42.5 53 42 50 L40 36 L50 37 C53 36.5 53 31.8 50.5 31 L39 28 Z"
-            fill="url(#ginger3d)"
-            stroke="#5E3512"
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
-          <circle cx="28.5" cy="18" r="1.6" fill="#FFFDF8" />
-          <circle cx="35.5" cy="18" r="1.6" fill="#FFFDF8" />
-          <path d="M28 23 C30 25.5 34 25.5 36 23" stroke="#FFFDF8" strokeWidth="2" strokeLinecap="round" />
-          <circle cx="32" cy="33" r="2.3" fill="#8E1C1C" stroke="#FFFDF8" strokeWidth="1" />
-          <circle cx="32" cy="39.5" r="2.3" fill="#1B4332" stroke="#FFFDF8" strokeWidth="1" />
+        <svg viewBox="0 0 80 80" className="w-full h-full" fill="none" aria-hidden="true">
+          <rect width="80" height="80" fill="#F5EEDB" />
+          <ellipse cx="40" cy="46" rx="20" ry="22" fill="#9E7B56" stroke="#1E2421" strokeWidth="2.2" />
+          <circle cx="32" cy="38" r="7" fill="#FFFDF8" stroke="#1E2421" strokeWidth="2" />
+          <circle cx="48" cy="38" r="7" fill="#FFFDF8" stroke="#1E2421" strokeWidth="2" />
+          <circle cx="32" cy="38" r="3" fill="#1E2421" />
+          <circle cx="48" cy="38" r="3" fill="#1E2421" />
+          <path d="M37 44 L43 44 L40 50 Z" fill="#C9963B" stroke="#1E2421" strokeWidth="1.6" />
         </svg>
       );
-
-    case 'star':
+    case 'srnecek':
       return (
-        <svg viewBox="0 0 64 64" className="w-full h-full" fill="none" aria-hidden="true">
-          <defs>
-            <radialGradient id="star3d" cx="38%" cy="32%" r="70%">
-              <stop offset="0%" stopColor="#FFF7D6" />
-              <stop offset="50%" stopColor="#E5BE6B" />
-              <stop offset="100%" stopColor="#9E6E1E" />
-            </radialGradient>
-          </defs>
-          <circle cx="32" cy="32" r="20" fill="#E5BE6B" opacity="0.22" />
-          <path d="M32 6 L32 12 M32 52 L32 58 M6 32 L12 32 M52 32 L58 32" stroke="#C9963B" strokeWidth="2.2" strokeLinecap="round" />
-          <path
-            d="M32 11 L37.8 24.2 L52 25.8 L41.2 35.4 L44.2 49.2 L32 42 L19.8 49.2 L22.8 35.4 L12 25.8 L26.2 24.2 Z"
-            fill="url(#star3d)"
-            stroke="#7A5210"
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
-          <circle cx="32" cy="31" r="4.8" fill="#FFFDF8" opacity="0.9" />
-          <circle cx="32" cy="31" r="2.2" fill="#C9963B" />
+        <svg viewBox="0 0 80 80" className="w-full h-full" fill="none" aria-hidden="true">
+          <rect width="80" height="80" fill="#F5EEDB" />
+          <path d="M24 30 L14 18 L20 36 Z" fill="#B88454" stroke="#1E2421" strokeWidth="2" />
+          <path d="M56 30 L66 18 L60 36 Z" fill="#B88454" stroke="#1E2421" strokeWidth="2" />
+          <ellipse cx="40" cy="44" rx="17" ry="19" fill="#C89664" stroke="#1E2421" strokeWidth="2.2" />
+          <circle cx="32" cy="41" r="2.6" fill="#1E2421" />
+          <circle cx="48" cy="41" r="2.6" fill="#1E2421" />
+          <ellipse cx="40" cy="51" rx="4" ry="3" fill="#1E2421" />
+          <circle cx="33" cy="29" r="1.8" fill="#FFFDF8" />
+          <circle cx="45" cy="28" r="1.8" fill="#FFFDF8" />
+          <circle cx="40" cy="33" r="1.6" fill="#FFFDF8" />
         </svg>
       );
-
-    case 'twig':
+    case 'jezek':
       return (
-        <svg viewBox="0 0 64 64" className="w-full h-full" fill="none" aria-hidden="true">
-          <path d="M13 49 C24 38 36 28 51 15" stroke="#5E3E26" strokeWidth="3" strokeLinecap="round" />
-          <path d="M22 40 L16 30 M22 40 L32 43" stroke="#1B4332" strokeWidth="2.6" strokeLinecap="round" />
-          <path d="M29 34 L23 22 M29 34 L41 37" stroke="#1B4332" strokeWidth="2.6" strokeLinecap="round" />
-          <path d="M37 27 L32 15 M37 27 L49 29" stroke="#2D6A4F" strokeWidth="2.6" strokeLinecap="round" />
-          <path d="M44 21 L41 11 M44 21 L54 21" stroke="#2D6A4F" strokeWidth="2.3" strokeLinecap="round" />
-          <circle cx="23.5" cy="43.5" r="3.8" fill="#8E1C1C" stroke="#520E0E" strokeWidth="1.4" />
-          <circle cx="22.5" cy="42.5" r="1" fill="#FFFDF8" opacity="0.8" />
-          <circle cx="30" cy="45.5" r="3.4" fill="#B22828" stroke="#520E0E" strokeWidth="1.4" />
-          <circle cx="28" cy="39.5" r="3.2" fill="#8E1C1C" stroke="#520E0E" strokeWidth="1.4" />
+        <svg viewBox="0 0 80 80" className="w-full h-full" fill="none" aria-hidden="true">
+          <rect width="80" height="80" fill="#F5EEDB" />
+          <path d="M16 44 C16 22 64 22 64 44 Z" fill="#5C4938" stroke="#1E2421" strokeWidth="2.2" />
+          <ellipse cx="40" cy="48" rx="18" ry="14" fill="#D8B894" stroke="#1E2421" strokeWidth="2.2" />
+          <circle cx="33" cy="45" r="2.4" fill="#1E2421" />
+          <circle cx="47" cy="45" r="2.4" fill="#1E2421" />
+          <circle cx="40" cy="51" r="3" fill="#8E1C1C" />
+          <path d="M26 58 Q40 64 54 58" stroke="#8E1C1C" strokeWidth="5" strokeLinecap="round" />
         </svg>
       );
-
-    case 'stocking':
-      return (
-        <svg viewBox="0 0 64 64" className="w-full h-full" fill="none" aria-hidden="true">
-          <defs>
-            <linearGradient id="stock3d" x1="20" y1="18" x2="48" y2="54" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#B82E2E" />
-              <stop offset="60%" stopColor="#8E1C1C" />
-              <stop offset="100%" stopColor="#5E1010" />
-            </linearGradient>
-          </defs>
-          <path d="M22 14 C18 10 14 14 18 18" stroke="#9E6E24" strokeWidth="2.2" strokeLinecap="round" />
-          <path
-            d="M22 20 H40 V38 C40 43 47 43 49 48 C50.5 52 46 56 40 55 L27 52 C22 51 21 46 22 41 Z"
-            fill="url(#stock3d)"
-            stroke="#4F0D0D"
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
-          <path d="M41 44 C45 45 48 47 48.5 50.5 C46 54 42 54.5 39.5 54" fill="#E5BE6B" opacity="0.6" />
-          <rect
-            x="18.5"
-            y="12.5"
-            width="25"
-            height="9.5"
-            rx="4.7"
-            fill="#FFFDF8"
-            stroke="#1B4332"
-            strokeWidth="2"
-          />
-          <path d="M31 28 V34 M28 31 H34" stroke="#E5BE6B" strokeWidth="2.2" strokeLinecap="round" />
-        </svg>
-      );
-
-    case 'candle':
+    case 'prasatko':
     default:
       return (
-        <svg viewBox="0 0 64 64" className="w-full h-full" fill="none" aria-hidden="true">
-          <circle cx="32" cy="17" r="10" fill="#E5BE6B" opacity="0.35" />
-          <path
-            d="M32 9 C36 14 37 19.5 32 22.5 C27 19.5 28 14 32 9 Z"
-            fill="#E5BE6B"
-            stroke="#9E6E24"
-            strokeWidth="1.5"
-          />
-          <circle cx="32" cy="18" r="2" fill="#FFFDF8" />
-          <line x1="32" y1="22.5" x2="32" y2="26" stroke="#1E2421" strokeWidth="1.8" strokeLinecap="round" />
-          <rect
-            x="23"
-            y="26"
-            width="18"
-            height="24"
-            rx="3"
-            fill="#8E1C1C"
-            stroke="#520E0E"
-            strokeWidth="2"
-          />
-          <path d="M23 29 C26 32 29 29 31 33 C33 36 35 30 41 29" fill="#FFFDF8" />
-          <path
-            d="M16.5 50 H47.5 C47.5 53.5 43 55.5 32 55.5 C21 55.5 16.5 53.5 16.5 50 Z"
-            fill="#E5BE6B"
-            stroke="#7A5210"
-            strokeWidth="2"
-          />
+        <svg viewBox="0 0 80 80" className="w-full h-full" fill="none" aria-hidden="true">
+          <rect width="80" height="80" fill="#F5EEDB" />
+          <path d="M22 30 L16 16 L30 23 Z" fill="#E6BE6A" stroke="#1E2421" strokeWidth="2.2" strokeLinejoin="round" />
+          <path d="M58 30 L64 16 L50 23 Z" fill="#E6BE6A" stroke="#1E2421" strokeWidth="2.2" strokeLinejoin="round" />
+          <circle cx="40" cy="44" r="19" fill="#F0CF82" stroke="#1E2421" strokeWidth="2.2" />
+          <circle cx="32" cy="39" r="2.5" fill="#1E2421" />
+          <circle cx="48" cy="39" r="2.5" fill="#1E2421" />
+          <ellipse cx="40" cy="48" rx="7.5" ry="5.5" fill="#E5A598" stroke="#1E2421" strokeWidth="2" />
+          <circle cx="37.5" cy="48" r="1.5" fill="#1E2421" />
+          <circle cx="42.5" cy="48" r="1.5" fill="#1E2421" />
+          <path d="M26 60 Q40 65 54 60" stroke="#8E1C1C" strokeWidth="5" strokeLinecap="round" />
         </svg>
       );
   }
 }
 
 /**
- * Zoubkovaná 3D poštovní známka se zlatým okrajem — vizuální identita napříč aplikací
+ * Zoubkovaná poštovní známka s ručně kresleným zimním zvířátkem (skutečný zoubkovaný okraj bez dvojitého boxu)
  */
-export function Avatar({ avatarId = 'carp', avatarBg = '#F5E6D3', size = 'md', className = '' }) {
-  const sizeClasses = {
-    xs: 'w-8 h-8 p-[2px]',
-    sm: 'w-10 h-10 p-[2.5px]',
-    md: 'w-13 h-13 p-[3px]',
-    lg: 'w-16 h-16 p-1',
-    xl: 'w-22 h-22 p-1.5',
-  };
+export function Avatar({
+  avatarId = 'prasatko',
+  size = 'md',
+  selected = false,
+  className = '',
+}) {
+  const stampId = normalizeStampId(avatarId);
+  const option = AVATAR_OPTIONS.find((o) => o.id === stampId) || AVATAR_OPTIONS[0];
+  const [imgFailed, setImgFailed] = useState(false);
+
+  useEffect(() => {
+    setImgFailed(false);
+  }, [stampId]);
 
   const pixelDims = {
-    xs: { width: '32px', height: '34px' },
-    sm: { width: '40px', height: '42px' },
-    md: { width: '50px', height: '54px' },
-    lg: { width: '64px', height: '68px' },
-    xl: { width: '84px', height: '90px' },
+    xs: { width: '36px', height: '42px', pad: '3px' },
+    sm: { width: '44px', height: '52px', pad: '4px' },
+    md: { width: '58px', height: '68px', pad: '5px' },
+    lg: { width: '76px', height: '88px', pad: '6px' },
+    xl: { width: '104px', height: '122px', pad: '8px' },
+    stampGrid: { width: '118px', height: '138px', pad: '8px' },
   };
+
+  const dim = pixelDims[size] || pixelDims.md;
 
   return (
     <div
-      style={pixelDims[size] || pixelDims.md}
-      className={`postage-stamp-frame rounded-[6px] flex flex-col items-center justify-center shrink-0 select-none overflow-hidden ${sizeClasses[size] || sizeClasses.md} ${className}`}
+      style={{
+        width: dim.width,
+        height: dim.height,
+        padding: dim.pad,
+      }}
+      className={`perforated-stamp relative inline-flex items-center justify-center shrink-0 select-none transition-transform duration-200 ${
+        selected ? 'perforated-stamp-selected' : ''
+      } ${className}`}
     >
       <div
-        style={{ backgroundColor: avatarBg || '#F5E6D3' }}
-        className="w-full h-full rounded-[4px] border border-[#C9963B]/75 flex items-center justify-center overflow-hidden relative"
+        className={`w-full h-full overflow-hidden relative bg-[#F5EEDB] ${
+          selected
+            ? 'ring-2 ring-[#1B4332] outline outline-1 outline-[#C9963B]'
+            : 'ring-1 ring-[#1B4332]/40'
+        }`}
       >
-        {renderAvatarArtwork(avatarId)}
-        {(size === 'lg' || size === 'xl') && (
-          <span className="absolute bottom-0.5 right-1 px-1 rounded bg-[#FFFDF8]/90 border border-[#C9963B]/50 text-[8px] font-bold tracking-tighter text-[#1B4332] leading-tight">
-            24·XII
-          </span>
+        {!imgFailed ? (
+          <img
+            src={option.src}
+            alt={option.label}
+            onError={() => setImgFailed(true)}
+            className="w-full h-full object-cover block"
+          />
+        ) : (
+          renderFallbackAnimalSvg(stampId)
         )}
       </div>
     </div>
@@ -272,16 +197,112 @@ export function Avatar({ avatarId = 'carp', avatarBg = '#F5E6D3', size = 'md', c
 
 export function getChildAvatar(childName = '') {
   const clean = (childName || '').trim();
-  const childAvatars = ['bell', 'gingerbread', 'star', 'stocking', 'piglet', 'candle', 'carp', 'twig'];
-  const childBgs = ['#FBF0D9', '#F7DFDF', '#DCECE5', '#E3ECF5', '#EDE4F2', '#F5E6D3'];
+  const stamps = ['prasatko', 'liska', 'zajic', 'sova', 'srnecek', 'jezek'];
   let hash = 0;
   for (let i = 0; i < clean.length; i++) {
     hash = (hash * 31 + clean.charCodeAt(i)) >>> 0;
   }
   return {
-    avatarId: childAvatars[hash % childAvatars.length],
-    avatarBg: childBgs[hash % childBgs.length],
+    avatarId: stamps[hash % stamps.length],
+    avatarBg: '#F5EEDB',
   };
+}
+
+/**
+ * Kulaté červenohnědé poštovní razítko „JEŽÍŠKOVA POŠTA“ otisknuté přes roh známky
+ */
+export function RoundPostmarkSvg({ className = '' }) {
+  return (
+    <svg viewBox="0 0 92 92" className={className} fill="none" aria-hidden="true">
+      <g opacity="0.82" transform="rotate(-14 46 46)">
+        <circle cx="46" cy="46" r="41" stroke="#7A231D" strokeWidth="2.4" strokeDasharray="18 3 9 2" />
+        <circle cx="46" cy="46" r="35" stroke="#7A231D" strokeWidth="1.4" />
+        <line x1="12" y1="36" x2="80" y2="36" stroke="#7A231D" strokeWidth="1.4" />
+        <line x1="12" y1="56" x2="80" y2="56" stroke="#7A231D" strokeWidth="1.4" />
+        <text
+          x="46"
+          y="27"
+          textAnchor="middle"
+          fill="#7A231D"
+          fontSize="7.5"
+          fontWeight="800"
+          letterSpacing="1.2"
+        >
+          JEŽÍŠKOVA
+        </text>
+        <text
+          x="46"
+          y="49.5"
+          textAnchor="middle"
+          fill="#7A231D"
+          fontSize="9.5"
+          fontWeight="800"
+          letterSpacing="1.6"
+        >
+          24 · XII
+        </text>
+        <text
+          x="46"
+          y="69"
+          textAnchor="middle"
+          fill="#7A231D"
+          fontSize="7.5"
+          fontWeight="800"
+          letterSpacing="1.5"
+        >
+          POŠTA
+        </text>
+      </g>
+    </svg>
+  );
+}
+
+/**
+ * Kroucená červeno-bílá šňůrka se zlatým kroužkem v dírce dárkové jmenovky
+ */
+export function RedWhiteTwineCordSvg({ className = '' }) {
+  return (
+    <svg viewBox="0 0 56 64" className={className} fill="none" aria-hidden="true">
+      {/* Kroucená červeno-bílá šňůrka vedoucí z dírky nahoru */}
+      <path
+        d="M28 45 C25 32 30 16 26 2"
+        stroke="#FFFDF8"
+        strokeWidth="4.6"
+        strokeLinecap="round"
+      />
+      <path
+        d="M28 45 C25 32 30 16 26 2"
+        stroke="#8E1C1C"
+        strokeWidth="4.2"
+        strokeLinecap="round"
+        strokeDasharray="4.5 5"
+      />
+      <path
+        d="M28 45 C31 33 24 18 32 3"
+        stroke="#8E1C1C"
+        strokeWidth="2.8"
+        strokeLinecap="round"
+        strokeDasharray="3.5 4.5"
+      />
+      {/* Zlatý kroužek dírky v papíru */}
+      <circle
+        cx="28"
+        cy="47"
+        r="8.5"
+        fill="#F7F2E7"
+        stroke="#C9963B"
+        strokeWidth="3.2"
+      />
+      <circle
+        cx="28"
+        cy="47"
+        r="5.5"
+        fill="#F7F2E7"
+        stroke="#1B4332"
+        strokeWidth="1"
+      />
+    </svg>
+  );
 }
 
 /**
@@ -297,14 +318,12 @@ export function PaperClipSvg({ className = '' }) {
           <stop offset="100%" stopColor="#855E1A" />
         </linearGradient>
       </defs>
-      {/* Stín sponky */}
       <path
         d="M15 22 V62 C15 71 29 71 29 62 V16 C29 6 10 6 10 16 V65 C10 78 34 78 34 65 V24"
         stroke="rgba(27,67,50,0.22)"
         strokeWidth="4.2"
         strokeLinecap="round"
       />
-      {/* Mosazný drát sponky */}
       <path
         d="M14 20 V60 C14 69 28 69 28 60 V14 C28 4 9 4 9 14 V63 C9 76 33 76 33 63 V22"
         stroke="url(#brassClip)"
@@ -315,9 +334,6 @@ export function PaperClipSvg({ className = '' }) {
   );
 }
 
-/**
- * Smrková větvička s kyvadlově se pohupující zlatou hvězdičkou a červenou mašlí
- */
 export function SpruceCornerSvg({ className = '' }) {
   return (
     <svg viewBox="0 0 140 120" className={className} fill="none" aria-hidden="true">
@@ -357,9 +373,6 @@ export function SpruceCornerSvg({ className = '' }) {
   );
 }
 
-/**
- * Svíčkově karmínová 3D vosková pečeť (#8E1C1C) s vyraženou zlatou hvězdou
- */
 export function WaxSealSvg({ className = '', pressed = false }) {
   return (
     <svg
@@ -423,9 +436,6 @@ export function WaxSealSvg({ className = '', pressed = false }) {
   );
 }
 
-/**
- *Detail dírky papírové dárkové jmenovky s provlečenou zlatou šňůrkou
- */
 export function GiftTagCordSvg({ className = '' }) {
   return (
     <svg viewBox="0 0 64 48" className={className} fill="none" aria-hidden="true">
@@ -643,10 +653,6 @@ export function TagPostalStampSvg({ className = '' }) {
   );
 }
 
-/**
- * 5 pestrých 3D izometrických ilustrací zabalených vánočních dárků pro Nákupní seznam
- * Při zaškrtnutí (isBought) se u ilustrace zobrazí zlatá pečeť s fajfkou potvrzující zabalení.
- */
 export function WrappedPresentSvg({ seed = '', isBought = false, className = '' }) {
   const str = String(seed || 'gift');
   let hash = 0;

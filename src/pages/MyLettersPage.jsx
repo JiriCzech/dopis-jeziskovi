@@ -532,7 +532,7 @@ export function MyLettersPage() {
             onDismiss={dismissOnboardingBanner}
             message={
               <>
-                „Vítej! Svůj dopis můžeš začít psát rovnou tady. Vánoční obrázek a kód pro pozvání
+                Vítej! Svůj dopis můžeš začít psát rovnou tady. Vánoční známku a kód pro pozvání
                 rodiny najdeš kdykoliv v{' '}
                 <Link to="/profil" className="font-bold text-fir underline hover:text-fir-hover">
                   profilu
@@ -541,7 +541,7 @@ export function MyLettersPage() {
                 <Link to="/sdileni" className="font-bold text-fir underline hover:text-fir-hover">
                   Sdílení a skupiny
                 </Link>
-                .“
+                .
               </>
             }
           />
@@ -862,8 +862,8 @@ export function MyLettersPage() {
                   </>
                 ) : (
                   <>
-                    „Krásný dopis! Pojďme ho vložit do obálky, natisknout známku a poslat
-                    Ježíškovi.“
+                    Krásný dopis! Pojďme ho vložit do obálky, natisknout známku a poslat
+                    Ježíškovi.
                   </>
                 )
               }

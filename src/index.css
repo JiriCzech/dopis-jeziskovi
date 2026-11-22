@@ -140,15 +140,35 @@
     0 4px 0 0 #1B4332;
 }
 
-/* Zoubkovaná 3D poštovní známka se zlatým okrajem */
-.postage-stamp-frame {
-  position: relative;
+/* Skutečná zoubkovaná poštovní známka (perforovaný bílý/krémový okraj přes CSS masku + drop-shadow, žádný dvojitý obdélníkový box) */
+.perforated-stamp {
   background-color: #FFFDF8;
-  padding: 3px;
-  border: 1.5px dashed #C9963B;
+  -webkit-mask-image: radial-gradient(circle at 5px 5px, transparent 3.2px, black 3.5px);
+  -webkit-mask-position: -5px -5px;
+  -webkit-mask-size: 10px 10px;
+  mask-image: radial-gradient(circle at 5px 5px, transparent 3.2px, black 3.5px);
+  mask-position: -5px -5px;
+  mask-size: 10px 10px;
+  filter: drop-shadow(0 4px 8px rgba(27, 67, 50, 0.22));
+}
+
+.perforated-stamp-selected {
+  background-color: #FBF3DC;
+  filter: drop-shadow(0 8px 14px rgba(27, 67, 50, 0.32));
+}
+
+/* Realistická papírová dárková jmenovka v profilu (#F5EEDB se zkosenými horními rohy) */
+.profile-paper-tag {
+  background-color: #F5EEDB;
+  background-image:
+    radial-gradient(circle at 50% 42%, rgba(255, 253, 248, 0.65) 0%, rgba(235, 224, 198, 0.55) 100%),
+    radial-gradient(rgba(27, 67, 50, 0.03) 1px, transparent 0);
+  background-size: 100% 100%, 18px 18px;
+  clip-path: polygon(28px 0%, calc(100% - 28px) 0%, 100% 28px, 100% 100%, 0% 100%, 0% 28px);
+  border-radius: 0 0 22px 22px;
   box-shadow:
-    0 3px 8px rgba(27, 67, 50, 0.16),
-    inset 0 0 0 1.5px #1B4332;
+    0 14px 32px -8px rgba(45, 38, 26, 0.2),
+    0 3px 8px -2px rgba(45, 38, 26, 0.1);
 }
 
 /* GPU-akcelerované padání sněhových vloček (výhradně transform: translate3d a opacity) */

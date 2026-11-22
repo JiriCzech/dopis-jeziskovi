@@ -32,12 +32,12 @@ export function LoginPage() {
           </p>
         </header>
 
-        {/* 2. Velký 3D Kapřík + skutečná mluvící bublina */}
+        {/* 2. Velký 3D Kapřík v portrétním medailonu + skutečná mluvící bublina */}
         <KaprikGuide
           pose="vitej"
           size="hero"
           bubbleDirection="left"
-          message="„Ahoj! Jsem kapřík a pomůžu ti poslat dopis Ježíškovi nebo se tajně podívat, co si přeje rodina.“"
+          message="Ahoj! Jsem kapřík a pomůžu ti poslat dopis Ježíškovi nebo se tajně podívat, co si přeje rodina."
         />
 
         {pendingInviteCode && (

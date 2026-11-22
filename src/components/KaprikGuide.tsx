@@ -22,6 +22,9 @@ const POSE_SRC_MAP: Record<KaprikPose, string> = {
 
 const FALLBACK_SRC = '/assets/kaprik.png';
 
+/**
+ * Znovupoužitelný 3D průvodce Kapřík v klenutém portrétním medailonu se skutečnou mluvící bublinou
+ */
 export function KaprikGuide({
   pose = 'default',
   message,
@@ -46,40 +49,37 @@ export function KaprikGuide({
   const isHero = size === 'hero';
   const isTopLayout = bubbleDirection === 'top';
 
-  // Rozložení:
-  // - Pokud je bubbleDirection === 'top', kapřík je всегда nahoře a bublina pod ním se zobáčkem nahoru.
-  // - Pokud je bubbleDirection === 'left', na mobilu (< sm) u hero scény je kapřík nahoře (zobáček nahoru)
-  //   a od sm výše je kapřík vlevo a bublina vpravo (zobáček doleva přímo ke kapříkovi).
   const containerLayoutClass = isTopLayout
     ? 'flex-col items-center'
     : isHero
       ? 'flex-col sm:flex-row items-center'
       : 'flex-row items-center';
 
-  const imageSizeClass = isHero
-    ? 'w-[180px] h-[180px] sm:w-[240px] sm:h-[240px] md:w-[268px] md:h-[268px]'
-    : 'w-[84px] h-[84px] sm:w-[104px] sm:h-[104px]';
+  // Klenutý portrétní medailon (poměr stran 4/5, zaoblený oblouk nahoře)
+  const medallionSizeClass = isHero
+    ? 'w-[164px] h-[205px] sm:w-[196px] sm:h-[245px]'
+    : 'w-[76px] h-[95px] sm:w-[88px] sm:h-[110px]';
 
   return (
-    <div className={`flex ${containerLayoutClass} gap-4 sm:gap-7 ${className}`}>
-      {/* 3D Kapřík volně v prostoru — bez rámečku, splynutí krémového pozadí přes mix-blend-multiply a jemný radiální okraj */}
-      <div className={`relative shrink-0 select-none flex items-center justify-center ${imageSizeClass}`}>
+    <div className={`flex ${containerLayoutClass} gap-5 sm:gap-7 ${className}`}>
+      {/* Portrétní medailon kapříka — klenutý oblouk, jedlově zelený rám #1B4332 a vnitřní zlatá linka #C9963B */}
+      <div
+        className={`relative shrink-0 select-none rounded-t-full rounded-b-3xl border-2 border-[#1B4332] bg-[#E8DEC8] shadow-md overflow-hidden ${medallionSizeClass}`}
+      >
         <img
           src={imgSrc}
           onError={handleImgError}
           alt="Vánoční kapřík — průvodce Ježíškovou poštou"
-          style={{
-            mixBlendMode: 'multiply',
-            WebkitMaskImage:
-              'radial-gradient(circle at 50% 48%, rgba(0,0,0,1) 58%, rgba(0,0,0,0.88) 73%, rgba(0,0,0,0) 97%)',
-            maskImage:
-              'radial-gradient(circle at 50% 48%, rgba(0,0,0,1) 58%, rgba(0,0,0,0.88) 73%, rgba(0,0,0,0) 97%)',
-          }}
-          className="w-full h-full object-contain pointer-events-none"
+          className="w-full h-full object-cover object-top pointer-events-none"
+        />
+        {/* Tenká vnitřní zlatá linka medailonu */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-1.5 rounded-t-full rounded-b-[18px] border border-[#C9963B]/65 ring-1 ring-inset ring-[#C9963B]/40"
         />
       </div>
 
-      {/* Skutečná mluvící bublina se zobáčkem mířícím přímo ke kapříkovi */}
+      {/* Skutečná mluvící bublina se zobáčkem mířícím přímo ke kapříkovi (bez uvozovek) */}
       <div
         style={{ backgroundColor: '#FFFDF8' }}
         className={`relative rounded-[24px] bg-[#FFFDF8] border-[1.5px] border-[#1B4332] shadow-soft ${
@@ -88,7 +88,7 @@ export function KaprikGuide({
             : 'px-4 py-3.5 sm:px-5 sm:py-4 flex-1 text-left'
         }`}
       >
-        {/* Zobáček nahoru (pro mobilní zobrazení pod kapříkem nebo když bubbleDirection === 'top') */}
+        {/* Trojúhelníkový zobáček nahoru (na mobilu u hero scény nebo při bubbleDirection === 'top') */}
         <span
           aria-hidden="true"
           style={{ backgroundColor: '#FFFDF8' }}
@@ -101,7 +101,7 @@ export function KaprikGuide({
           }`}
         />
 
-        {/* Zobáček doleva (míří přímo ke kapříkovi stojícímu vlevo) */}
+        {/* Trojúhelníkový zobáček doleva (míří přímo k medailonu kapříka) */}
         {!isTopLayout && (
           <span
             aria-hidden="true"
@@ -117,7 +117,7 @@ export function KaprikGuide({
             className={`${
               isHero
                 ? 'text-lg sm:text-[19px] leading-relaxed font-medium text-[#1E2421]'
-                : 'text-sm sm:text-base leading-relaxed font-medium text-[#1E2421]'
+                : 'text-base leading-relaxed font-medium text-[#1E2421]'
             }`}
           >
             {message}
