@@ -22,7 +22,9 @@
     print-color-adjust: exact !important;
   }
 
-  /* Skryjeme celé běžné rozhraní aplikace mimo tiskový portál */
+  /* Skryjeme celé běžné rozhraní aplikace mimo tiskový portál, stejně tak podpůrné stohy papírů a 3D rekvizity */
+  .no-print,
+  .print-hide,
   body.printing-letter #root,
   body.printing-letter .no-print,
   body.printing-letter header,

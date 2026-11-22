@@ -259,14 +259,20 @@ export function FamilyPage() {
           </div>
         ) : (
           <div className="space-y-6 animate-letter-slide-out">
-            {/* Vysunutý dopisní arch (#FFFDF8) */}
-            <article className="stationery-sheet rounded-[28px] p-6 sm:p-11 relative overflow-hidden">
-              <div className="stationery-inner-frame" aria-hidden="true" />
+            {/* Vysunutý list ručního dopisního papíru (#F9F1DF) */}
+            <article className="relative p-6 sm:p-11 rounded-[20px] handmade-letter-paper overflow-hidden">
+              <img
+                src="/assets/vetvicka-3d.png"
+                alt=""
+                draggable={false}
+                aria-hidden="true"
+                className="w-24 sm:w-32 h-auto absolute top-3 right-4 pointer-events-none select-none z-20 drop-shadow-[0_6px_12px_rgba(27,67,50,0.18)]"
+              />
 
               <div className="relative z-10">
-                <div className="flex items-center justify-between gap-4 pb-6 border-b border-gold/40">
+                <div className="flex items-center justify-between gap-4 pb-5 border-b border-[#8B7355]/25 pr-24 sm:pr-28">
                   <div className="flex items-center gap-4 min-w-0">
-                    <Avatar avatarId={avatarId} avatarBg={avatarBg} size="lg" />
+                    <Avatar avatarId={avatarId} avatarBg={avatarBg} size="lg" onTag />
                     <div className="min-w-0">
                       <h1 className="font-fairytale font-bold text-[32px] sm:text-[38px] leading-tight text-slate-text break-words">
                         {activeCard.recipientName}
@@ -280,18 +286,15 @@ export function FamilyPage() {
                   </div>
                 </div>
 
-                {/* Připnutá fotka ručně psaného papírového dopisu, pokud ji autor nahrál */}
+                {/* Připnutá papírová fotografie ručně psaného dopisu se 3D mosaznou sponkou */}
                 {letter?.handwrittenPhotoUrl && (
-                  <div className="mt-6 mb-4 relative pt-3">
-                    <PaperClipSvg className="w-8 h-14 absolute -top-2 left-6 z-20 pointer-events-none" />
-                    <div className="rounded-2xl bg-kraft/80 border-[1.5px] border-fir p-4 shadow-sm">
-                      <div className="font-fairytale font-bold text-lg text-fir mb-2 pl-6">
-                        Přiložená fotka ručně psaného dopisu
-                      </div>
+                  <div className="mt-6 mb-4 relative pt-5 max-w-md mx-auto">
+                    <PaperClipSvg className="w-9 h-14 sm:w-10 sm:h-16 absolute -top-2 left-8 z-30 pointer-events-none" />
+                    <div className="-rotate-1 bg-[#FFFDF8] p-3 pb-4 rounded-xl shadow-[0_10px_24px_rgba(30,36,33,0.16)] border border-[#E2D6BE]">
                       <img
                         src={letter.handwrittenPhotoUrl}
                         alt={`Ručně psaný dopis — ${activeCard.recipientName}`}
-                        className="max-h-[380px] w-full object-contain rounded-xl bg-sheet border border-fir/25 mx-auto"
+                        className="max-h-[360px] w-full object-contain rounded-lg bg-paper mx-auto"
                       />
                     </div>
                   </div>
@@ -302,19 +305,19 @@ export function FamilyPage() {
                     {activeCard.recipientName} zatím svůj dopis Ježíškovi teprve chystá.
                   </p>
                 ) : (
-                  <div className="mt-6 lined-letter-paper rounded-2xl px-4 py-4 space-y-5">
+                  <div className="mt-6 lined-letter-paper py-2 space-y-5">
                     <div className="font-handwritten text-3xl sm:text-4xl font-bold text-fir w-full">
                       Milý Ježíšku,
                     </div>
 
                     {letter.introText && (
-                      <p className="font-handwritten text-2xl sm:text-[28px] text-slate-text whitespace-pre-line leading-[38px] break-words">
+                      <p className="font-handwritten text-[24px] sm:text-[27px] text-[#1E2421] whitespace-pre-line leading-[38px] break-words">
                         {letter.introText}
                       </p>
                     )}
 
-                    <div className="pt-5 border-t border-gold/35 flex items-end justify-between gap-4">
-                      <p className="font-handwritten text-2xl sm:text-[28px] text-slate-text whitespace-pre-line leading-relaxed break-words">
+                    <div className="pt-5 border-t border-[#8B7355]/25 flex items-end justify-between gap-4">
+                      <p className="font-handwritten text-[24px] sm:text-[27px] text-[#1E2421] whitespace-pre-line leading-relaxed break-words">
                         {letter.outroText || activeCard.recipientName}
                       </p>
                       <WaxSealSvg className="w-16 h-16 sm:w-18 sm:h-18 shrink-0" />
@@ -345,7 +348,7 @@ export function FamilyPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {wishes.map((wish) => {
+                  {wishes.map((wish, idx) => {
                     const isExiting = exitingWishId === wish.id;
                     return (
                       <div
@@ -355,9 +358,12 @@ export function FamilyPage() {
                         }`}
                       >
                         <div className="flex items-start gap-3.5 min-w-0 flex-1">
-                          <span
-                            className="w-3.5 h-3.5 rounded-full border-2 border-gold bg-sheet shadow-inner shrink-0 mt-2"
+                          <img
+                            src={`/assets/darek-${(idx % 3) + 1}-3d.png`}
+                            alt=""
+                            draggable={false}
                             aria-hidden="true"
+                            className="w-8 h-8 object-contain shrink-0 mt-1 drop-shadow-[0_3px_6px_rgba(30,36,33,0.18)] select-none"
                           />
                           <div className="space-y-1 min-w-0 flex-1">
                             <h3 className="font-handwritten text-2xl sm:text-3xl font-bold text-slate-text leading-snug break-words">

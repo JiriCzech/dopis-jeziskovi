@@ -65,26 +65,39 @@
   z-index: 1;
 }
 
-/* Jemné vodorovné linky na dopisním papíře */
+/* Fyzický ruční dopisní papír (#F9F1DF + textura + vícevrstvý stín) */
+.handmade-letter-paper {
+  background-color: #F9F1DF;
+  background-image: url('/assets/papir-textura.png');
+  background-size: 420px 420px;
+  background-blend-mode: multiply;
+  border: 1px solid rgba(139, 115, 85, 0.24);
+  box-shadow:
+    0 18px 40px -12px rgba(30, 36, 33, 0.18),
+    0 4px 12px rgba(30, 36, 33, 0.08),
+    inset 0 0 36px rgba(168, 134, 82, 0.12);
+}
+
+/* Diskrétní teplé vodorovné linky na ručním papíře */
 .lined-letter-paper {
-  background-color: #FFFDF8;
+  background-color: transparent;
   background-image: repeating-linear-gradient(
     to bottom,
     transparent 0px,
     transparent 37px,
-    rgba(201, 150, 59, 0.22) 37px,
-    rgba(201, 150, 59, 0.22) 38px
+    rgba(139, 115, 85, 0.14) 37px,
+    rgba(139, 115, 85, 0.14) 38px
   );
 }
 
 /* Řádek přání přímo na dopisním papíře */
 .letter-wish-line {
-  border-bottom: 1px dashed rgba(201, 150, 59, 0.42);
-  transition: background-color 160ms ease, transform 160ms ease;
+  border-bottom: 1px dashed rgba(139, 115, 85, 0.24);
+  transition: background-color 160ms ease;
 }
 
 .letter-wish-line:hover {
-  background-color: rgba(230, 239, 234, 0.45);
+  background-color: rgba(230, 239, 234, 0.35);
 }
 
 /* Kartička přání v otevřeném dopise rodiny */

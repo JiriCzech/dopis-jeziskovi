@@ -5,19 +5,16 @@ import {
   Camera,
   Check,
   Edit3,
-  ExternalLink,
   Loader2,
   Mail,
   Plus,
   Printer,
-  Star,
   Trash2,
   Users,
   X,
 } from 'lucide-react';
 import {
   Avatar,
-  PaperClipSvg,
   WaxSealSvg,
 } from '../assets/avatars';
 import { useAuth } from '../hooks/useAuth';
@@ -76,25 +73,34 @@ function compressHandwrittenImage(file) {
  */
 const WishLetterLineItem = memo(function WishLetterLineItem({
   wish,
+  index,
   isNewlyAdded,
   onEdit,
   onRemove,
 }) {
+  const giftSrc = `/assets/darek-${(index % 3) + 1}-3d.png`;
+
   return (
     <li
-      className={`letter-wish-line py-3 px-2 sm:px-3 rounded-xl flex items-start justify-between gap-3 ${
+      className={`letter-wish-line py-2.5 px-1.5 sm:px-2.5 rounded-xl flex items-start justify-between gap-3 ${
         isNewlyAdded ? 'animate-wish-enter bg-gold-soft/75 ring-1 ring-gold' : ''
       }`}
     >
-      <div className="flex items-baseline gap-2.5 min-w-0 flex-1">
-        <Star className="w-4 h-4 text-gold fill-gold shrink-0 translate-y-0.5" aria-hidden="true" />
-        <div className="min-w-0 flex-1 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-          <span className="font-handwritten font-bold text-slate-text text-2xl sm:text-[28px] leading-snug break-words">
+      <div className="flex items-start gap-2.5 min-w-0 flex-1">
+        <img
+          src={giftSrc}
+          alt=""
+          draggable={false}
+          aria-hidden="true"
+          className="w-7 h-7 object-contain shrink-0 translate-y-1 drop-shadow-[0_2px_4px_rgba(30,36,33,0.18)] select-none"
+        />
+        <div className="min-w-0 flex-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <span className="font-handwritten font-bold text-[#1E2421] text-[25px] sm:text-[28px] leading-snug break-words">
             {wish.title}
           </span>
           {wish.note && (
             <span className="font-handwritten italic text-xl sm:text-2xl text-slate-text-muted break-words">
-              — {wish.note}
+              ({wish.note})
             </span>
           )}
           {wish.url && (
@@ -103,10 +109,9 @@ const WishLetterLineItem = memo(function WishLetterLineItem({
               target="_blank"
               rel="noopener noreferrer"
               title="Otevřít ukázku dárku"
-              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gold-soft border border-gold/45 text-slate-text text-xs font-sans font-bold hover:bg-gold/30 transition"
+              className="inline-flex items-center gap-0.5 text-xs sm:text-sm font-sans font-semibold text-fir/85 hover:text-fir underline underline-offset-2 transition"
             >
-              <ExternalLink className="w-3 h-3 text-fir shrink-0" />
-              <span>Ukázka</span>
+              <span>Ukázka ↗</span>
             </a>
           )}
         </div>
@@ -529,41 +534,100 @@ export function MyLettersPage() {
 
   return (
     <div className="space-y-6 animate-page-transition min-w-0">
-      {/* Záložky dopisů nad dopisním papírem: Můj dopis (Jirka), Julinka, Šárinka a + Napsat za dítě */}
-      <div className="max-w-[780px] mx-auto flex flex-wrap items-center gap-2.5">
-        {myLetters.map((l) => {
-          const active = l.id === activeLetterId;
-          return (
-            <button
-              key={l.id}
-              type="button"
-              onClick={() => selectLetter(l)}
-              className={`min-h-[48px] px-4 sm:px-5 py-2.5 rounded-2xl text-base font-bold transition border-[1.5px] ${
-                active
-                  ? 'bg-fir text-white border-fir shadow-sm'
-                  : 'bg-sheet text-slate-text border-fir/40 hover:bg-fir-soft'
-              }`}
-            >
-              {l.isChildLetter ? l.recipientName : `Můj dopis (${l.recipientName})`}
-            </button>
-          );
-        })}
+      {/* Skrytý SVG filtr pro přirozený organický okraj ručního papíru (aplikuje se jen na vrstvu pozadí, nikdy na text) */}
+      <svg className="sr-only" aria-hidden="true">
+        <defs>
+          <filter id="handmade-paper-edge">
+            <feTurbulence type="fractalNoise" baseFrequency="0.025" numOctaves="3" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        </defs>
+      </svg>
 
-        <button
-          type="button"
-          onClick={() => setNewChildOpen(true)}
-          className="min-h-[48px] inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-2xl border-[1.5px] border-dashed border-fir text-fir bg-sheet/85 hover:bg-fir-soft text-base font-bold transition"
-        >
-          <Plus className="w-5 h-5 shrink-0" />
-          <span>Napsat za dítě</span>
-        </button>
+      {/* Skrytý input pro nahrání fotky ručně psaného dopisu */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handlePhotoUploadChange}
+        className="hidden"
+      />
+
+      {/* Horní lišta nad blokem dopisních papírů: přepínač dopisů + nahrání fotky + tisk */}
+      <div className="no-print max-w-[780px] mx-auto flex flex-wrap items-center justify-between gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
+          {myLetters.map((l) => {
+            const active = l.id === activeLetterId;
+            return (
+              <button
+                key={l.id}
+                type="button"
+                onClick={() => selectLetter(l)}
+                className={`min-h-[46px] px-4 sm:px-5 py-2 rounded-2xl text-base font-bold transition border-[1.5px] ${
+                  active
+                    ? 'bg-fir text-white border-fir shadow-sm'
+                    : 'bg-sheet text-slate-text border-fir/40 hover:bg-fir-soft'
+                }`}
+              >
+                {l.isChildLetter ? l.recipientName : `Můj dopis (${l.recipientName})`}
+              </button>
+            );
+          })}
+
+          <button
+            type="button"
+            onClick={() => setNewChildOpen(true)}
+            className="min-h-[46px] inline-flex items-center gap-2 px-4 sm:px-5 py-2 rounded-2xl border-[1.5px] border-dashed border-fir text-fir bg-sheet/85 hover:bg-fir-soft text-base font-bold transition"
+          >
+            <Plus className="w-5 h-5 shrink-0" />
+            <span>Napsat za dítě</span>
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            disabled={uploadingPhoto}
+            onClick={() => fileInputRef.current?.click()}
+            className="min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-kraft hover:bg-paper-warm border border-fir/40 text-xs sm:text-sm font-bold text-slate-text transition disabled:opacity-60"
+          >
+            <Camera className="w-4 h-4 text-fir shrink-0" />
+            <span>
+              {uploadingPhoto
+                ? 'Připínám fotku...'
+                : draft.handwrittenPhotoUrl
+                  ? 'Změnit fotku dopisu'
+                  : 'Nahrát fotku papírového dopisu'}
+            </span>
+          </button>
+
+          {draft.isChildLetter && isOwnerOfDraft && (
+            <button
+              type="button"
+              onClick={openCoParentModal}
+              className="min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-sheet hover:bg-fir-soft border border-fir/35 text-xs sm:text-sm font-bold text-slate-text transition"
+            >
+              <Users className="w-4 h-4 text-fir shrink-0" />
+              <span>Spravovat společně</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setPrintOpen(true)}
+            className="min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-sheet hover:bg-fir-soft border border-fir/35 text-xs sm:text-sm font-bold text-slate-text transition"
+          >
+            <Printer className="w-4 h-4 text-fir shrink-0" />
+            <span>Vytisknout</span>
+          </button>
+        </div>
       </div>
 
       {/* Formulář pro přidání dětského dopisu */}
       {newChildOpen && (
         <form
           onSubmit={handleCreateChildLetter}
-          className="max-w-[780px] mx-auto rounded-3xl bg-sheet border-[1.5px] border-fir p-5 shadow-soft flex flex-col sm:flex-row items-stretch sm:items-end gap-3 animate-slide-up"
+          className="no-print max-w-[780px] mx-auto rounded-3xl bg-sheet border-[1.5px] border-fir p-5 shadow-soft flex flex-col sm:flex-row items-stretch sm:items-end gap-3 animate-slide-up"
         >
           <div className="flex-1 min-w-0">
             <label
@@ -605,266 +669,241 @@ export function MyLettersPage() {
         </form>
       )}
 
-      {/* Jeden celistvý dopisní arch (#FFFDF8) s tmavě zeleným okrajem a zlatou vnitřní linkou */}
-      <article
-        key={draft.id}
-        className="stationery-sheet max-w-[780px] mx-auto rounded-[28px] p-5 sm:p-11 relative overflow-hidden animate-page-transition"
-      >
-        <div className="stationery-inner-frame" aria-hidden="true" />
-
-        {/* Skrytý input pro nahrání fotky ručně psaného dopisu */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handlePhotoUploadChange}
-          className="hidden"
+      {/* Hmatatelný blok ručních dopisních papírů (2 pootočené spodní archy + hlavní list s organickými okraji) */}
+      <div className="relative max-w-[780px] mx-auto my-2">
+        <div
+          aria-hidden="true"
+          style={{ filter: 'url(#handmade-paper-edge)' }}
+          className="print:hidden no-print absolute inset-0 -rotate-[0.7deg] translate-y-2 -translate-x-1 rounded-[18px] handmade-letter-paper opacity-90 pointer-events-none"
+        />
+        <div
+          aria-hidden="true"
+          style={{ filter: 'url(#handmade-paper-edge)' }}
+          className="print:hidden no-print absolute inset-0 rotate-[0.5deg] translate-y-3 translate-x-1 rounded-[18px] handmade-letter-paper opacity-85 pointer-events-none"
         />
 
-        <div className="relative z-10">
-          {/* Horní lišta uvnitř dopisního archu */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5 pb-4 mb-6 border-b border-gold/35">
-            <div className="flex flex-wrap items-center gap-2">
-              {draft.isChildLetter && coParentPartnerNames.length > 0 && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-fir-soft border border-fir/25 text-fir text-xs font-bold">
+        <article
+          key={draft.id}
+          className="print-sheet relative p-6 sm:p-12 md:px-14 md:py-12 animate-page-transition"
+        >
+          {/* Organický okraj a textura aplikované jen na vrstvu papíru, aby text zůstal dokonale ostrý */}
+          <div
+            aria-hidden="true"
+            style={{ filter: 'url(#handmade-paper-edge)' }}
+            className="print:hidden no-print absolute inset-0 rounded-[20px] handmade-letter-paper pointer-events-none"
+          />
+
+          {/* 3D smrková větvička se šiškou a zvonečkem v pravém horním rohu papíru */}
+          <img
+            src="/assets/vetvicka-3d.png"
+            alt=""
+            draggable={false}
+            aria-hidden="true"
+            className="print:hidden no-print w-28 sm:w-36 h-auto absolute top-2 right-3 sm:top-3 sm:right-5 pointer-events-none select-none z-20 drop-shadow-[0_6px_12px_rgba(27,67,50,0.18)]"
+          />
+
+          <div className="relative z-10">
+            {draft.isChildLetter && coParentPartnerNames.length > 0 && (
+              <div className="no-print mb-4 pr-28">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-fir-soft/90 border border-fir/25 text-fir text-xs font-bold">
                   <Users className="w-3.5 h-3.5 shrink-0" />
                   <span>Spravujete společně s: {coParentPartnerNames.join(', ')}</span>
                 </span>
-              )}
+              </div>
+            )}
+
+            {/* Připnutá papírová fotografie ručně psaného dopisu se 3D mosaznou sponkou */}
+            {draft.handwrittenPhotoUrl && (
+              <div className="mb-8 relative pt-5 max-w-md mx-auto">
+                <img
+                  src="/assets/sponka-3d.png"
+                  alt=""
+                  draggable={false}
+                  aria-hidden="true"
+                  className="print:hidden no-print w-10 h-16 sm:w-11 sm:h-18 absolute -top-2 left-8 z-30 pointer-events-none select-none drop-shadow-[0_5px_10px_rgba(30,24,14,0.28)]"
+                />
+                <div className="-rotate-1 bg-[#FFFDF8] p-3 pb-4 rounded-xl shadow-[0_12px_28px_rgba(30,36,33,0.16)] border border-[#E2D6BE]">
+                  <button
+                    type="button"
+                    onClick={() => setPhotoPreviewOpen(true)}
+                    className="block w-full overflow-hidden rounded-lg bg-paper"
+                  >
+                    <img
+                      src={draft.handwrittenPhotoUrl}
+                      alt={`Ručně psaný dopis — ${draft.recipientName}`}
+                      className="max-h-[320px] w-full object-contain mx-auto"
+                    />
+                  </button>
+                  <div className="no-print mt-2.5 flex items-center justify-between gap-2 px-1">
+                    <span className="font-handwritten text-xl text-slate-text-muted">
+                      Ručně psaný dopis — {draft.recipientName}
+                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setPhotoPreviewOpen(true)}
+                        className="text-xs font-bold text-fir hover:underline"
+                      >
+                        Zvětšit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleRemoveHandwrittenPhoto}
+                        className="text-xs font-bold text-crimson hover:underline"
+                      >
+                        Odebrat
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Jednolitý tok psaní na jemně linkovaném ručním papíře */}
+            <div className="lined-letter-paper py-2 space-y-6">
+              {/* 1. ÚVOD */}
+              <div>
+                <h1 className="font-handwritten text-4xl sm:text-5xl font-bold text-fir leading-none mb-3 pr-24 sm:pr-32">
+                  Milý Ježíšku,
+                </h1>
+                <label htmlFor="letter-intro-input" className="sr-only">
+                  Úvod dopisu Ježíškovi
+                </label>
+                <textarea
+                  id="letter-intro-input"
+                  ref={introRef}
+                  rows={3}
+                  value={draft.introText}
+                  onChange={(e) => handleTextChange('introText', e.target.value, e.target)}
+                  placeholder="letos jsem se moc snažil/a a pod stromečkem by mi udělalo největší radost..."
+                  className="w-full border-0 bg-transparent p-0 font-handwritten text-[24px] sm:text-[26px] text-[#1E2421] placeholder:text-[#4A544E]/50 leading-[38px] focus:outline-none focus:ring-0 resize-none overflow-hidden"
+                />
+              </div>
+
+              {/* 2. SEZNAM PŘÁNÍ UVNITŘ DOPISU */}
+              <div className="space-y-2 pt-1">
+                <div className="font-handwritten font-bold text-2xl sm:text-3xl text-crimson">
+                  Moje přání pod stromeček:
+                </div>
+
+                {wishes.length > 0 && (
+                  <ul className="space-y-0.5">
+                    {wishes.map((wish, idx) => (
+                      <WishLetterLineItem
+                        key={wish.id}
+                        wish={wish}
+                        index={idx}
+                        isNewlyAdded={newlyAddedWishId === wish.id}
+                        onEdit={handleEditWishClick}
+                        onRemove={handleRemoveWish}
+                      />
+                    ))}
+                  </ul>
+                )}
+
+                {/* Klidné tlačítko přímo na řádku papíru (žádný formulářový rámeček) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingWish(null);
+                    setWishModalOpen(true);
+                  }}
+                  className="no-print w-full text-left py-2 px-1.5 rounded-lg hover:bg-fir-soft/45 transition flex items-center gap-2 group"
+                >
+                  <Plus className="w-5 h-5 text-crimson group-hover:text-fir transition shrink-0" />
+                  <span className="font-handwritten font-bold text-[24px] sm:text-[27px] text-crimson group-hover:text-fir">
+                    Připsat další přání...
+                  </span>
+                </button>
+              </div>
+
+              {/* 3. ZÁVĚR (ROZLOUČENÍ, PODPIS A 3D VOSKOVÁ PEČEŤ) */}
+              <div className="pt-4 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <label htmlFor="letter-outro-input" className="sr-only">
+                    Rozloučení a podpis
+                  </label>
+                  <textarea
+                    id="letter-outro-input"
+                    ref={outroRef}
+                    rows={2}
+                    value={draft.outroText}
+                    onChange={(e) => handleTextChange('outroText', e.target.value, e.target)}
+                    placeholder={`Moc děkuji a měj se krásně,\n${draft.recipientName || ''}`}
+                    className="w-full border-0 bg-transparent p-0 font-handwritten text-[24px] sm:text-[26px] text-[#1E2421] placeholder:text-[#4A544E]/50 leading-[38px] focus:outline-none focus:ring-0 resize-none overflow-hidden"
+                  />
+                </div>
+
+                <div className="flex flex-col items-end gap-1.5 shrink-0 select-none">
+                  <div
+                    key={sealPulseKey}
+                    title="Vosková pečeť Ježíškovy pošty"
+                    className="print:hidden no-print"
+                  >
+                    <WaxSealSvg
+                      className="w-16 h-16 sm:w-20 sm:h-20"
+                      pressed={sealPulseKey > 0}
+                    />
+                  </div>
+                  <div
+                    className="no-print inline-flex items-center gap-1 text-xs font-semibold text-fir/85"
+                    aria-live="polite"
+                  >
+                    {saveState === 'saving' ? (
+                      <>
+                        <Loader2 className="w-3 h-3 text-gold animate-spin" />
+                        <span>Ukládám...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Uloženo u Ježíška ✓</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 ml-auto">
-              {/* Automatické ukládání na pozadí */}
-              <div
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-paper border border-gold/35 text-xs font-bold text-fir"
-                aria-live="polite"
-              >
-                {saveState === 'saving' ? (
+            {/* Rituál zapečetění a odeslání */}
+            <div className="no-print mt-8 pt-6 border-t border-[#8B7355]/25 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-base leading-relaxed text-slate-text-muted text-center sm:text-left">
+                {draft.sealedAt ? (
                   <>
-                    <Loader2 className="w-3.5 h-3.5 text-gold animate-spin" />
-                    <span>Ukládám...</span>
+                    <strong className="text-fir">Dopis je zapečetěný a u Ježíška!</strong> Kdykoliv do
+                    něj můžeš připsat další přání a znovu ho přepečetit.
                   </>
                 ) : (
                   <>
-                    <Check className="w-3.5 h-3.5 text-fir" />
-                    <span>Uloženo u Ježíška</span>
+                    Až budeš mít všechna přání sepsaná, vlož dopis do obálky a pošli ho Ježíškovi.
                   </>
                 )}
-              </div>
+              </p>
 
-              {/* Nahrání fotky ručně psaného papírového dopisu */}
               <button
                 type="button"
-                disabled={uploadingPhoto}
-                onClick={() => fileInputRef.current?.click()}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-kraft hover:bg-paper-warm border border-fir/40 text-xs sm:text-sm font-bold text-slate-text transition disabled:opacity-60"
+                onClick={handleStartEnvelopeRitual}
+                className="min-h-[52px] w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl bg-crimson hover:bg-crimson-dark text-white text-base sm:text-lg font-bold shadow-md border border-gold/50 transition"
               >
-                <Camera className="w-4 h-4 text-fir shrink-0" />
-                <span>
-                  {uploadingPhoto
-                    ? 'Připínám fotku...'
-                    : draft.handwrittenPhotoUrl
-                      ? 'Změnit fotku dopisu'
-                      : 'Nahrát fotku papírového dopisu'}
-                </span>
+                <Mail className="w-5 h-5 shrink-0" />
+                <span>Zapečetit a poslat Ježíškovi</span>
               </button>
+            </div>
 
-              {draft.isChildLetter && isOwnerOfDraft && (
+            {draft.isChildLetter && isOwnerOfDraft && (
+              <div className="no-print mt-5 pt-3 flex justify-end">
                 <button
                   type="button"
-                  onClick={openCoParentModal}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-paper hover:bg-fir-soft border border-fir/35 text-xs sm:text-sm font-bold text-slate-text transition"
+                  onClick={() => setConfirmDeleteOpen(true)}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-text-muted hover:text-crimson transition"
                 >
-                  <Users className="w-4 h-4 text-fir shrink-0" />
-                  <span>Spravovat společně</span>
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setPrintOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-paper hover:bg-fir-soft border border-fir/35 text-xs sm:text-sm font-bold text-slate-text transition"
-              >
-                <Printer className="w-4 h-4 text-fir shrink-0" />
-                <span>Vytisknout</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Připnutá fotka ručně psaného papírového dopisu se zlatou sponkou */}
-          {draft.handwrittenPhotoUrl && (
-            <div className="mb-8 relative pt-4">
-              <PaperClipSvg className="w-9 h-16 absolute -top-2 left-8 z-20 drop-shadow-sm pointer-events-none" />
-              <div className="rounded-2xl bg-kraft/85 border-[1.5px] border-fir p-4 sm:p-5 shadow-card rotate-[-0.4deg]">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 pl-8">
-                  <div>
-                    <div className="font-fairytale font-bold text-xl text-fir">
-                      Připnutý ručně psaný dopis na papíře
-                    </div>
-                    <p className="text-xs text-slate-text-muted">
-                      Pod tuto fotku níže připiš seznam dárků v bodech, aby si je babičky a rodina
-                      mohly tajně zamluvit.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setPhotoPreviewOpen(true)}
-                      className="px-3 py-1.5 rounded-xl bg-sheet border border-fir/30 text-xs font-bold text-fir hover:bg-fir-soft transition"
-                    >
-                      Zvětšit fotku
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleRemoveHandwrittenPhoto}
-                      className="px-3 py-1.5 rounded-xl bg-sheet border border-crimson/30 text-xs font-bold text-crimson hover:bg-crimson-soft transition"
-                    >
-                      Odebrat
-                    </button>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setPhotoPreviewOpen(true)}
-                  className="block w-full overflow-hidden rounded-xl border border-fir/30 bg-sheet shadow-inner"
-                >
-                  <img
-                    src={draft.handwrittenPhotoUrl}
-                    alt={`Ručně psaný dopis — ${draft.recipientName}`}
-                    className="max-h-[340px] w-full object-contain mx-auto"
-                  />
+                  <Trash2 className="w-4 h-4" />
+                  <span>Smazat dopis pro {draft.recipientName}</span>
                 </button>
               </div>
-            </div>
-          )}
-
-          {/* Celistvý linkovaný dopisní arch psaný rukopisem Caveat */}
-          <div className="lined-letter-paper rounded-2xl px-3 sm:px-6 py-4 space-y-6">
-            {/* 1. ÚVOD */}
-            <div>
-              <h1 className="font-handwritten text-4xl sm:text-5xl font-bold text-fir leading-none mb-3">
-                Milý Ježíšku,
-              </h1>
-              <label htmlFor="letter-intro-input" className="sr-only">
-                Úvod dopisu Ježíškovi
-              </label>
-              <textarea
-                id="letter-intro-input"
-                ref={introRef}
-                rows={3}
-                value={draft.introText}
-                onChange={(e) => handleTextChange('introText', e.target.value, e.target)}
-                placeholder="letos jsem se moc snažil/a a pod stromečkem by mi udělalo největší radost..."
-                className="w-full border-0 bg-transparent p-0 font-handwritten text-2xl sm:text-[29px] text-slate-text placeholder:text-slate-text-muted/50 leading-[38px] focus:outline-none focus:ring-0 resize-none overflow-hidden"
-              />
-            </div>
-
-            {/* 2. MOJE PŘÁNÍ (SEZNAM PŘÍMO NA PAPÍŘE) */}
-            <div className="space-y-2 pt-2">
-              <div className="font-handwritten font-bold text-2xl sm:text-3xl text-crimson">
-                Moje přání pod stromeček:
-              </div>
-
-              {wishes.length > 0 && (
-                <ul className="space-y-1">
-                  {wishes.map((wish) => (
-                    <WishLetterLineItem
-                      key={wish.id}
-                      wish={wish}
-                      isNewlyAdded={newlyAddedWishId === wish.id}
-                      onEdit={handleEditWishClick}
-                      onRemove={handleRemoveWish}
-                    />
-                  ))}
-                </ul>
-              )}
-
-              {/* Přirozený klikací řádek přímo na papíře */}
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingWish(null);
-                  setWishModalOpen(true);
-                }}
-                className="w-full text-left py-2.5 px-3 rounded-xl border border-dashed border-gold/70 hover:border-fir hover:bg-fir-soft/60 transition flex items-center gap-2.5 group"
-              >
-                <Plus className="w-5 h-5 text-crimson group-hover:scale-110 transition shrink-0" />
-                <span className="font-handwritten font-bold text-2xl sm:text-[28px] text-crimson group-hover:text-fir">
-                  Připsat další přání...
-                </span>
-              </button>
-            </div>
-
-            {/* 3. ZÁVĚR (ROZLOUČENÍ A PODPIS) */}
-            <div className="pt-4 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <label htmlFor="letter-outro-input" className="sr-only">
-                  Rozloučení a podpis
-                </label>
-                <textarea
-                  id="letter-outro-input"
-                  ref={outroRef}
-                  rows={2}
-                  value={draft.outroText}
-                  onChange={(e) => handleTextChange('outroText', e.target.value, e.target)}
-                  placeholder={`Moc děkuji a měj se krásně,\n${draft.recipientName || ''}`}
-                  className="w-full border-0 bg-transparent p-0 font-handwritten text-2xl sm:text-[29px] text-slate-text placeholder:text-slate-text-muted/50 leading-[38px] focus:outline-none focus:ring-0 resize-none overflow-hidden"
-                />
-              </div>
-
-              <div
-                key={sealPulseKey}
-                title="Vosková pečeť Ježíškovy pošty"
-                className="self-end sm:self-auto shrink-0 select-none"
-              >
-                <WaxSealSvg
-                  className="w-16 h-16 sm:w-20 sm:h-20"
-                  pressed={sealPulseKey > 0}
-                />
-              </div>
-            </div>
+            )}
           </div>
-
-          {/* Fyzický rituál odeslání (výzva + tlačítko Zapečetit a poslat Ježíškovi) */}
-          <div className="mt-8 pt-6 border-t border-gold/40 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-base leading-relaxed text-slate-text-muted text-center sm:text-left">
-              {draft.sealedAt ? (
-                <>
-                  <strong className="text-fir">Dopis je zapečetěný a u Ježíška!</strong> Kdykoliv do
-                  něj můžeš připsat další přání a znovu ho přepečetit.
-                </>
-              ) : (
-                <>
-                  Až budeš mít všechna přání sepsaná, vlož dopis do obálky a pošli ho Ježíškovi.
-                </>
-              )}
-            </p>
-
-            <button
-              type="button"
-              onClick={handleStartEnvelopeRitual}
-              className="min-h-[52px] w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl bg-crimson hover:bg-crimson-dark text-white text-base sm:text-lg font-bold shadow-md border border-gold/50 transition"
-            >
-              <Mail className="w-5 h-5 shrink-0" />
-              <span>Zapečetit a poslat Ježíškovi</span>
-            </button>
-          </div>
-
-          {draft.isChildLetter && isOwnerOfDraft && (
-            <div className="mt-5 pt-3 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setConfirmDeleteOpen(true)}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-text-muted hover:text-crimson transition"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Smazat dopis pro {draft.recipientName}</span>
-              </button>
-            </div>
-          )}
-        </div>
-      </article>
+        </article>
+      </div>
 
       {/* Modální animace rituálu: Obálka, poštovní známka, vosková pečeť a odlet k Ježíškovi */}
       {ritualStage !== 'idle' &&
