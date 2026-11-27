@@ -154,6 +154,7 @@ export function Avatar({
   }, [stampId]);
 
   const pixelDims = {
+    pill: { width: '24px', height: '28px', pad: '1.5px' },
     xs: { width: '36px', height: '42px', pad: '3px' },
     sm: { width: '44px', height: '52px', pad: '4px' },
     nav: { width: '48px', height: '56px', pad: '3.5px' },
@@ -242,46 +243,15 @@ export function PaperClipSvg({ className = '' }) {
 /**
  * 3D vosková pečeť v hluboké karmínové červeni s vyraženou hvězdou
  */
-export function WaxSealSvg({ className = '', pressed = false }) {
+export function WaxSealSvg({ className = '' }) {
   return (
     <img
       src="/assets/pecet-3d.png"
       alt=""
       draggable={false}
       aria-hidden="true"
-      className={`object-contain select-none pointer-events-none drop-shadow-[0_6px_12px_rgba(77,12,12,0.28)] ${className} ${
-        pressed ? 'wax-seal-press' : ''
-      }`}
+      className={`object-contain select-none pointer-events-none drop-shadow-[0_6px_12px_rgba(77,12,12,0.24)] ${className}`}
     />
-  );
-}
-
-const PRESENT_3D_ASSETS = [
-  '/assets/darek-1-3d.png',
-  '/assets/darek-2-3d.png',
-  '/assets/darek-3-3d.png',
-];
-
-export function WrappedPresentSvg({ seed = '', isBought = false, className = '' }) {
-  const str = String(seed || 'gift');
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
-  }
-  const src = PRESENT_3D_ASSETS[hash % PRESENT_3D_ASSETS.length];
-
-  return (
-    <div className={`relative inline-flex items-center justify-center select-none ${className}`}>
-      <img
-        src={src}
-        alt=""
-        draggable={false}
-        aria-hidden="true"
-        className={`w-full h-full object-contain drop-shadow-[0_6px_12px_rgba(30,36,33,0.18)] transition-opacity duration-200 ${
-          isBought ? 'opacity-45' : 'opacity-100'
-        }`}
-      />
-    </div>
   );
 }
 

@@ -9,7 +9,6 @@ import {
   RefreshCw,
   ShoppingBag,
   Star,
-  Undo2,
   UserPlus,
   Users,
   VolumeX,
@@ -30,34 +29,6 @@ import {
   stopChristmasMusicBox,
   toggleChristmasMusicBox,
 } from '../lib/musicBox';
-
-// 15 průsvitných vloček na desktopu, 8 na mobilu (čistá GPU translate3d animace)
-const BG_SNOWFLAKES = [
-  { left: '5%', duration: '24s', delay: '0s', size: '16px', opacity: 0.34, sway: '16px', desktopOnly: false },
-  { left: '16%', duration: '27s', delay: '3s', size: '14px', opacity: 0.28, sway: '-14px', desktopOnly: false },
-  { left: '28%', duration: '23s', delay: '1.5s', size: '17px', opacity: 0.32, sway: '15px', desktopOnly: false },
-  { left: '41%', duration: '29s', delay: '6s', size: '13px', opacity: 0.25, sway: '-16px', desktopOnly: false },
-  { left: '53%', duration: '25s', delay: '0.8s', size: '17px', opacity: 0.32, sway: '18px', desktopOnly: false },
-  { left: '66%', duration: '28s', delay: '4.5s', size: '14px', opacity: 0.26, sway: '-14px', desktopOnly: false },
-  { left: '79%', duration: '24s', delay: '2.2s', size: '18px', opacity: 0.34, sway: '16px', desktopOnly: false },
-  { left: '91%', duration: '26s', delay: '5s', size: '14px', opacity: 0.28, sway: '-12px', desktopOnly: false },
-  // Doplňkové vločky pouze na větších obrazovkách (celkem 15)
-  { left: '11%', duration: '31s', delay: '8s', size: '13px', opacity: 0.24, sway: '14px', desktopOnly: true },
-  { left: '22%', duration: '28s', delay: '4s', size: '15px', opacity: 0.26, sway: '-13px', desktopOnly: true },
-  { left: '35%', duration: '30s', delay: '10s', size: '15px', opacity: 0.25, sway: '-15px', desktopOnly: true },
-  { left: '47%', duration: '32s', delay: '7s', size: '12px', opacity: 0.23, sway: '13px', desktopOnly: true },
-  { left: '60%', duration: '27s', delay: '9s', size: '16px', opacity: 0.28, sway: '-16px', desktopOnly: true },
-  { left: '73%', duration: '33s', delay: '11s', size: '13px', opacity: 0.23, sway: '15px', desktopOnly: true },
-  { left: '85%', duration: '29s', delay: '6.5s', size: '15px', opacity: 0.26, sway: '-14px', desktopOnly: true },
-];
-
-const BG_BOKEH_LIGHTS = [
-  { left: '10%', top: '16%', size: '160px', duration: '20s', delay: '0s', desktopOnly: false },
-  { left: '76%', top: '12%', size: '180px', duration: '24s', delay: '3s', desktopOnly: false },
-  { left: '46%', top: '74%', size: '190px', duration: '22s', delay: '5s', desktopOnly: false },
-  { left: '22%', top: '48%', size: '180px', duration: '21s', delay: '4s', desktopOnly: true },
-  { left: '82%', top: '54%', size: '170px', duration: '25s', delay: '2s', desktopOnly: true },
-];
 
 function getChristmasCountdownText() {
   const now = new Date();
@@ -87,41 +58,9 @@ function getChristmasCountdownText() {
 const AtmosphereBackground = memo(function AtmosphereBackground() {
   return (
     <div
-      className="no-print pointer-events-none fixed inset-0 overflow-hidden z-0 paper-grain-overlay"
+      className="no-print pointer-events-none fixed inset-0 z-0 paper-grain-overlay"
       aria-hidden="true"
-    >
-      {BG_BOKEH_LIGHTS.map((light, i) => (
-        <span
-          key={`bokeh-${i}`}
-          className={`bg-bokeh ${light.desktopOnly ? 'hidden md:block' : ''}`}
-          style={{
-            left: light.left,
-            top: light.top,
-            width: light.size,
-            height: light.size,
-            '--duration': light.duration,
-            '--delay': light.delay,
-          }}
-        />
-      ))}
-
-      {BG_SNOWFLAKES.map((flake, i) => (
-        <span
-          key={`flake-${i}`}
-          className={`bg-snowflake ${flake.desktopOnly ? 'hidden md:block' : ''}`}
-          style={{
-            left: flake.left,
-            fontSize: flake.size,
-            '--duration': flake.duration,
-            '--delay': flake.delay,
-            '--flake-opacity': flake.opacity,
-            '--sway': flake.sway,
-          }}
-        >
-          ❄
-        </span>
-      ))}
-    </div>
+    />
   );
 });
 
@@ -188,7 +127,7 @@ export function Layout({ children, onboardingMode = false }) {
   };
 
   const navLinkClass = ({ isActive }) =>
-    `min-h-[46px] whitespace-nowrap inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl text-[15px] font-bold transition relative ${
+    `min-h-[44px] whitespace-nowrap inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl text-[15px] font-bold transition relative ${
       isActive
         ? 'bg-fir text-white shadow-sm border border-gold/45'
         : 'text-slate-text hover:bg-fir-soft/80'
@@ -197,19 +136,9 @@ export function Layout({ children, onboardingMode = false }) {
   return (
     <div
       className={`min-h-screen flex flex-col ${
-        onboardingMode ? 'pb-10' : 'pb-24'
-      } md:pb-12 relative overflow-x-hidden max-w-full`}
+        onboardingMode ? 'pb-10' : 'pb-32'
+      } md:pb-14 relative overflow-x-hidden max-w-full`}
     >
-      {/* Sdílený SVG filtr pro přirozený organický okraj ručního papíru */}
-      <svg className="sr-only" aria-hidden="true">
-        <defs>
-          <filter id="handmade-paper-edge">
-            <feTurbulence type="fractalNoise" baseFrequency="0.025" numOctaves="3" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
-          </filter>
-        </defs>
-      </svg>
-
       <AtmosphereBackground />
 
       {/* Ukázkový přepínač osob (pouze při ?demo=1 mimo čistý onboarding) */}
@@ -220,13 +149,13 @@ export function Layout({ children, onboardingMode = false }) {
               <span className="font-semibold text-slate-text">
                 Ukázka (přepnout osobu):
               </span>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {demoUsers.map((u) => (
                   <button
                     key={u.uid}
                     type="button"
                     onClick={() => changeDemoPersona(u.uid)}
-                    className={`px-3 py-1 rounded-full border text-sm font-semibold transition ${
+                    className={`min-h-[44px] px-3.5 py-1.5 rounded-full border text-sm font-semibold transition ${
                       u.uid === profile?.uid
                         ? 'bg-fir text-white border-fir'
                         : 'bg-sheet text-slate-text border-paper-warm hover:bg-paper'
@@ -240,19 +169,19 @@ export function Layout({ children, onboardingMode = false }) {
             <button
               type="button"
               onClick={resetDemo}
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-fir hover:underline"
+              className="min-h-[44px] inline-flex items-center gap-1.5 px-2 text-sm font-semibold text-fir hover:underline"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              <RefreshCw className="w-4 h-4" />
               <span>Obnovit ukázku</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* Horní navigace aplikace Dopis Ježíškovi (skrytá během prvního zakládání profilu) */}
+      {/* Klidná horní navigace bez rozptylujících prvků */}
       {!onboardingMode && (
-        <header className="no-print relative z-20 bg-sheet/95 backdrop-blur-md border-b-[1.5px] border-fir sticky top-0 shadow-xs">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 min-h-[72px] md:h-20 py-2 flex items-center justify-between gap-2.5">
+        <header className="no-print relative z-20 bg-sheet/95 backdrop-blur-md border-b border-paper-warm sticky top-0 shadow-xs">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 min-h-[68px] md:h-[74px] py-2 flex items-center justify-between gap-3">
             <NavLink to="/dopis" className="flex items-center gap-2.5 group shrink-0">
               <div>
                 <div className="font-fairytale font-bold text-fir text-xl sm:text-2xl leading-none whitespace-nowrap">
@@ -266,7 +195,7 @@ export function Layout({ children, onboardingMode = false }) {
             </NavLink>
 
             {/* 4 hlavní záložky na desktopu */}
-            <nav className="hidden md:flex items-center gap-1" aria-label="Hlavní navigace">
+            <nav className="hidden md:flex items-center gap-1.5" aria-label="Hlavní navigace">
               <NavLink
                 to="/"
                 end
@@ -302,32 +231,13 @@ export function Layout({ children, onboardingMode = false }) {
               </NavLink>
             </nav>
 
-            {/* Hudební hrací skříňka + Odkaz do profilu vpravo */}
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={handleToggleMusic}
-                title={musicOn ? 'Vypnout vánoční hrací skříňku' : 'Zapnout jemnou vánoční hrací skříňku'}
-                aria-label={musicOn ? 'Vypnout vánoční hrací skříňku' : 'Zapnout vánoční hrací skříňku'}
-                className={`min-h-[42px] inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition ${
-                  musicOn
-                    ? 'bg-fir text-white border-gold/60 shadow-xs'
-                    : 'bg-paper text-slate-text border-paper-warm hover:bg-fir-soft/60'
-                }`}
-              >
-                {musicOn ? (
-                  <Music className="w-4 h-4 text-gold-glow animate-pulse shrink-0" />
-                ) : (
-                  <VolumeX className="w-4 h-4 text-slate-text-muted shrink-0" />
-                )}
-                <span className="hidden sm:inline">{musicOn ? 'Koleda hraje' : 'Koleda'}</span>
-              </button>
-
+            {/* Odkaz do profilu vpravo */}
+            <div className="flex items-center shrink-0">
               {profile && (
                 <NavLink
                   to="/profil"
                   title="Můj profil a poštovní známka"
-                  className="min-h-[56px] inline-flex items-center gap-3 px-2.5 py-1 rounded-2xl hover:bg-fir-soft/60 border border-transparent hover:border-fir/25 transition-colors shrink-0"
+                  className="min-h-[52px] inline-flex items-center gap-2.5 px-2.5 py-1 rounded-2xl hover:bg-fir-soft/60 border border-transparent hover:border-fir/25 transition-colors shrink-0"
                 >
                   <Avatar avatarId={profile.avatarId} avatarBg={profile.avatarBg} size="nav" zoomAnimal />
                   <span className="font-fairytale font-bold text-[18px] leading-none text-slate-text whitespace-nowrap max-w-[110px] sm:max-w-[160px] truncate">
@@ -341,30 +251,51 @@ export function Layout({ children, onboardingMode = false }) {
       )}
 
       {/* Hlavní obsah */}
-      <main className="relative z-10 flex-1 max-w-2xl xl:max-w-3xl w-full mx-auto px-3.5 sm:px-6 lg:pl-20 xl:pl-6 py-4 sm:py-8 min-w-0">
+      <main className="relative z-10 flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 py-5 sm:py-8 min-w-0">
         {children}
       </main>
 
-      {/* Celopostavový 3D kapr průvodce volně v prostoru aplikace */}
+      {/* Tichý Kapřík průvodce (promluví až na kliknutí uživatele) */}
       <KaprikGuide
         variant="floating"
         contextKey={onboardingMode ? 'profil-onboarding' : undefined}
       />
 
-      {/* Patička aplikace */}
-      <footer className="no-print relative z-10 max-w-2xl xl:max-w-3xl w-full mx-auto px-4 sm:px-6 pt-4 pb-8 text-center">
-        <div className="border-t border-fir/20 pt-6 flex flex-col items-center gap-2">
-          <FairytaleOrnamentSvg className="w-40 h-7 opacity-80" />
+      {/* Patička aplikace s nenápadným ovládáním koledy */}
+      <footer className="no-print relative z-10 max-w-3xl w-full mx-auto px-4 sm:px-6 pt-4 pb-8 text-center">
+        <div className="border-t border-fir/15 pt-6 flex flex-col items-center gap-3">
+          <FairytaleOrnamentSvg className="w-36 h-6 opacity-75" />
           <p className="font-fairytale italic text-lg sm:text-xl text-slate-text-muted">
             Dopis Ježíškovi
           </p>
+          {!onboardingMode && (
+            <button
+              type="button"
+              onClick={handleToggleMusic}
+              title={musicOn ? 'Vypnout vánoční hrací skříňku' : 'Pustit jemnou vánoční koledu'}
+              aria-label={musicOn ? 'Vypnout vánoční koledu' : 'Pustit vánoční koledu'}
+              aria-pressed={musicOn}
+              className={`min-h-[44px] inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition ${
+                musicOn
+                  ? 'bg-fir-soft border-fir text-fir'
+                  : 'bg-sheet/80 border-paper-warm text-slate-text-muted hover:text-slate-text hover:bg-sheet'
+              }`}
+            >
+              {musicOn ? (
+                <Music className="w-4 h-4 text-fir shrink-0" />
+              ) : (
+                <VolumeX className="w-4 h-4 text-slate-text-muted shrink-0" />
+              )}
+              <span>{musicOn ? 'Koleda hraje — vypnout' : 'Pustit vánoční koledu'}</span>
+            </button>
+          )}
         </div>
       </footer>
 
       {/* Pevná spodní mobilní navigace (< 768px, skrytá během prvního zakládání profilu) */}
       {!onboardingMode && (
         <nav
-          className="no-print md:hidden fixed bottom-0 inset-x-0 z-40 bg-sheet/95 backdrop-blur-md border-t-[1.5px] border-fir px-1.5 py-1.5 grid grid-cols-4 gap-1 shadow-soft"
+          className="no-print md:hidden fixed bottom-0 inset-x-0 z-40 bg-sheet/95 backdrop-blur-md border-t border-paper-warm px-1.5 py-1.5 grid grid-cols-4 gap-1 shadow-soft"
           aria-label="Mobilní navigace"
         >
           <NavLink
@@ -430,58 +361,70 @@ export function Layout({ children, onboardingMode = false }) {
         </nav>
       )}
 
-      {/* Pojistka proti ukliknutí: 8sekundová lišta dole */}
+      {/* Kompaktní, klidná notifikace s možností Zpět (vpravo dole na desktopu, vlevo od kapříka nad lištou na mobilu) */}
       {undoToast && (
-        <div className="no-print fixed bottom-24 md:bottom-8 inset-x-4 z-50 flex justify-center animate-slide-up">
-          <div className="w-full max-w-xl rounded-2xl bg-fir text-sheet px-5 py-4 shadow-paper border-2 border-gold flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3 text-base sm:text-lg font-bold">
-              <Gift className="w-5 h-5 text-gold-glow shrink-0" />
-              <span>{undoToast.message || 'Přidáno do tvého nákupního seznamu'}</span>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={async () => {
-                  const fn = undoToast.onUndo;
-                  dismissUndoToast();
-                  if (fn) await fn();
-                }}
-                className="min-h-[48px] inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gold hover:bg-gold-glow text-slate-text font-bold text-base shadow-sm transition"
-              >
-                <Undo2 className="w-5 h-5" />
-                <span>Vrátit zpět</span>
-              </button>
-              <button
-                type="button"
-                onClick={dismissUndoToast}
-                className="p-2 text-sheet/80 hover:text-sheet rounded-lg"
-                aria-label="Zavřít"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+        <div className="no-print fixed bottom-20 md:bottom-5 left-3 right-20 sm:left-auto sm:right-24 xl:bottom-6 xl:right-6 z-50 flex justify-start sm:justify-end pointer-events-none animate-fade-in">
+          <div
+            role="status"
+            aria-live="polite"
+            style={{ backgroundColor: '#FFFDF8' }}
+            className="pointer-events-auto w-auto max-w-sm rounded-2xl bg-[#FFFDF8] text-slate-text pl-3.5 pr-1.5 py-1.5 shadow-paper border border-fir/50 flex items-center gap-2"
+          >
+            <span className="w-5 h-5 rounded-full bg-fir-soft text-fir inline-flex items-center justify-center shrink-0">
+              <Check className="w-3.5 h-3.5 stroke-[2.75]" />
+            </span>
+            <span className="font-sans text-sm font-semibold text-slate-text leading-snug">
+              {undoToast.message || 'Hotovo'}
+            </span>
+            <button
+              type="button"
+              onClick={async () => {
+                const fn = undoToast.onUndo;
+                dismissUndoToast();
+                if (fn) await fn();
+              }}
+              className="min-h-[44px] px-2.5 inline-flex items-center justify-center font-sans text-sm font-bold text-fir hover:text-fir-dark underline underline-offset-4 shrink-0 transition"
+            >
+              Zpět
+            </button>
+            <button
+              type="button"
+              onClick={dismissUndoToast}
+              className="min-w-[40px] min-h-[44px] -ml-1.5 inline-flex items-center justify-center text-slate-text-muted hover:text-slate-text rounded-xl hover:bg-paper transition shrink-0"
+              aria-label="Zavřít"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}
 
-      {/* Běžná notifikace */}
+      {/* Běžná kompaktní notifikace */}
       {toast && !undoToast && (
-        <div className="no-print fixed bottom-24 md:bottom-6 right-4 left-4 sm:left-auto sm:max-w-md z-50 animate-slide-up">
+        <div className="no-print fixed bottom-20 md:bottom-5 left-3 right-20 sm:left-auto sm:right-24 xl:bottom-6 xl:right-6 z-50 flex justify-start sm:justify-end pointer-events-none animate-fade-in">
           <div
-            className={`rounded-2xl px-5 py-3.5 shadow-soft border-[1.5px] flex items-center justify-between gap-3 text-base font-bold ${
+            role="status"
+            aria-live="polite"
+            style={toast.type === 'error' ? undefined : { backgroundColor: '#FFFDF8' }}
+            className={`pointer-events-auto w-auto max-w-sm rounded-2xl pl-3.5 pr-1.5 py-1.5 shadow-paper border flex items-center gap-2 text-sm font-semibold ${
               toast.type === 'error'
-                ? 'bg-crimson-soft border-crimson text-crimson'
-                : 'bg-fir text-white border-gold/60'
+                ? 'bg-crimson-soft border-crimson/55 text-crimson'
+                : 'bg-[#FFFDF8] text-slate-text border-fir/50'
             }`}
           >
-            <span>{toast.message}</span>
+            {toast.type !== 'error' && (
+              <span className="w-5 h-5 rounded-full bg-fir-soft text-fir inline-flex items-center justify-center shrink-0">
+                <Check className="w-3.5 h-3.5 stroke-[2.75]" />
+              </span>
+            )}
+            <span className="leading-snug">{toast.message}</span>
             <button
               type="button"
               onClick={dismissToast}
-              className="opacity-80 hover:opacity-100 p-1"
+              className="min-w-[40px] min-h-[44px] -ml-1 inline-flex items-center justify-center text-slate-text-muted hover:text-slate-text rounded-xl hover:bg-paper/60 shrink-0 transition"
               aria-label="Zavřít oznámení"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -506,14 +449,10 @@ export function Layout({ children, onboardingMode = false }) {
               role="dialog"
               aria-modal="true"
               style={{ backgroundColor: '#FFFDF8' }}
-              className="w-full max-w-md rounded-2xl bg-[#FFFDF8] border-[1.5px] border-fir shadow-2xl p-6 animate-slide-up space-y-5 relative"
+              className="w-full max-w-md rounded-2xl bg-[#FFFDF8] border border-paper-warm shadow-2xl p-6 animate-slide-up space-y-5 relative"
             >
-              <div
-                className="pointer-events-none absolute inset-2 rounded-xl border border-gold/40"
-                aria-hidden="true"
-              />
-              <div className="relative z-10 flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3.5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3.5 min-w-0">
                   <div className="w-11 h-11 rounded-2xl bg-fir-soft text-fir border border-fir/25 flex items-center justify-center shrink-0">
                     {isGroupInvite ? (
                       <Users className="w-6 h-6" />
@@ -521,7 +460,7 @@ export function Layout({ children, onboardingMode = false }) {
                       <UserPlus className="w-6 h-6" />
                     )}
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="font-fairytale font-bold text-2xl sm:text-3xl text-slate-text leading-tight">
                       {isGroupInvite ? 'Pozvánka do skupiny' : 'Pozvánka k propojení'}
                     </h3>
@@ -546,14 +485,14 @@ export function Layout({ children, onboardingMode = false }) {
                   type="button"
                   onClick={clearPendingInviteCode}
                   disabled={joiningInvite}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-text-muted hover:text-slate-text hover:bg-paper transition"
+                  className="min-w-[44px] min-h-[44px] -mt-1 -mr-1.5 rounded-xl flex items-center justify-center text-slate-text-muted hover:text-slate-text hover:bg-paper transition shrink-0"
                   aria-label="Zavřít"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="relative z-10 flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5">
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5">
                 <button
                   type="button"
                   onClick={clearPendingInviteCode}

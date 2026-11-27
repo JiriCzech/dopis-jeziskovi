@@ -36,14 +36,10 @@ export function ConfirmDialog({
         role="dialog"
         aria-modal="true"
         style={{ backgroundColor: '#FFFDF8' }}
-        className="w-full max-w-md rounded-2xl bg-[#FFFDF8] border-[1.5px] border-fir shadow-2xl p-6 animate-slide-up relative"
+        className="w-full max-w-md rounded-2xl bg-[#FFFDF8] border border-paper-warm shadow-paper p-6 animate-slide-up relative"
       >
-        <div
-          className="pointer-events-none absolute inset-2 rounded-xl border border-gold/40"
-          aria-hidden="true"
-        />
-        <div className="relative z-10 flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3.5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3.5 min-w-0">
             <div
               className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
                 danger ? 'bg-crimson-soft text-crimson' : 'bg-gold-soft text-gold'
@@ -51,7 +47,7 @@ export function ConfirmDialog({
             >
               <AlertTriangle className="w-6 h-6" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h3 className="font-fairytale font-bold text-2xl text-slate-text leading-tight">
                 {title}
               </h3>
@@ -62,14 +58,14 @@ export function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={loading}
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-text-muted hover:text-slate-text hover:bg-paper transition"
+            className="min-w-[44px] min-h-[44px] -mt-1 -mr-1.5 rounded-xl flex items-center justify-center text-slate-text-muted hover:text-slate-text hover:bg-paper transition shrink-0"
             aria-label="Zavřít"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="relative z-10 mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5">
+        <div className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5">
           <button
             type="button"
             onClick={onCancel}

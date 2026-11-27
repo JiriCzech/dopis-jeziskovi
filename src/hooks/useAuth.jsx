@@ -105,7 +105,7 @@ export function AuthProvider({ children }) {
     setToast({ id: Date.now(), message, type });
   }, []);
 
-  const showUndoToast = useCallback(({ message, onUndo }) => {
+  const showUndoToast = useCallback(({ message, onUndo, duration = 4500 }) => {
     if (undoTimerRef.current) {
       clearTimeout(undoTimerRef.current);
     }
@@ -113,7 +113,7 @@ export function AuthProvider({ children }) {
     undoTimerRef.current = setTimeout(() => {
       setUndoToast(null);
       undoTimerRef.current = null;
-    }, 8000);
+    }, duration);
   }, []);
 
   const dismissUndoToast = useCallback(() => {

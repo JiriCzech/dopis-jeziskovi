@@ -36,36 +36,25 @@
   }
 }
 
-/* Zrnitá pohádková textura papíru (lehký CSS pattern bez CPU-náročného feTurbulence) */
+/* Klidná jemná textura papírnictví bez rušivého pohybu */
 .paper-grain-overlay {
   background-image:
-    radial-gradient(rgba(27, 67, 50, 0.035) 1px, transparent 0),
-    radial-gradient(rgba(201, 150, 59, 0.04) 1px, transparent 0);
+    radial-gradient(rgba(27, 67, 50, 0.03) 1px, transparent 0),
+    radial-gradient(rgba(201, 150, 59, 0.035) 1px, transparent 0);
   background-size: 22px 22px;
   background-position: 0 0, 11px 11px;
 }
 
-/* Bavlněný dopisní arch a karty: pevný tmavě zelený okraj (1.5px #1B4332) + 3D stín */
+/* Bavlněný arch a karty: čistý povrch bez vnořených rámečků */
 .stationery-sheet {
   background-color: #FFFDF8;
-  border: 1.5px solid #1B4332;
+  border: 1px solid #E2D6BE;
   box-shadow:
-    0 14px 36px -10px rgba(27, 67, 50, 0.14),
-    0 3px 0 0 rgba(27, 67, 50, 0.12),
+    0 12px 30px -10px rgba(27, 67, 50, 0.10),
     0 2px 8px rgba(30, 36, 33, 0.05);
 }
 
-/* Vnitřní tenká zlatá dekorativní linka (#C9963B/45) */
-.stationery-inner-frame {
-  position: absolute;
-  inset: 10px;
-  border-radius: 18px;
-  border: 1px solid rgba(201, 150, 59, 0.45);
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* Fyzický ruční dopisní papír (#F9F1DF + textura + vícevrstvý stín) */
+/* Fyzický ruční dopisní papír (#F9F1DF + textura, jeden čistý list bez SVG zkreslení) */
 .handmade-letter-paper {
   background-color: #F9F1DF;
   background-image: url('/assets/papir-textura.png');
@@ -73,9 +62,9 @@
   background-blend-mode: multiply;
   border: 1px solid rgba(139, 115, 85, 0.24);
   box-shadow:
-    0 18px 40px -12px rgba(30, 36, 33, 0.18),
-    0 4px 12px rgba(30, 36, 33, 0.08),
-    inset 0 0 36px rgba(168, 134, 82, 0.12);
+    0 14px 34px -12px rgba(30, 36, 33, 0.14),
+    0 4px 12px rgba(30, 36, 33, 0.06),
+    inset 0 0 32px rgba(168, 134, 82, 0.10);
 }
 
 /* Jemné teplé vodorovné linky přesně zarovnané na řádkování Caveat (36px) */
@@ -93,7 +82,7 @@
   background-position: 0 0;
 }
 
-/* Skrytí posuvníku u horizontálně rolovatelného přepínače dopisů na mobilu */
+/* Skrytí posuvníku u horizontálně rolovatelných filtrů a přepínačů */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -104,32 +93,14 @@
 
 /* Řádek přání přímo na dopisním papíře */
 .letter-wish-line {
-  border-bottom: 1px dashed rgba(139, 115, 85, 0.24);
-  transition: background-color 160ms ease;
+  transition: background-color 150ms ease;
 }
 
 .letter-wish-line:hover {
-  background-color: rgba(230, 239, 234, 0.35);
+  background-color: rgba(255, 253, 248, 0.45);
 }
 
-/* Kartička přání v otevřeném dopise rodiny */
-.gift-tag-card {
-  background-color: #FFFDF8;
-  border: 1.5px solid #1B4332;
-  box-shadow:
-    0 6px 16px -4px rgba(27, 67, 50, 0.1),
-    0 2px 0 0 rgba(27, 67, 50, 0.1);
-  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
-}
-
-.gift-tag-card:hover {
-  transform: translate3d(0, -2px, 0);
-  box-shadow:
-    0 12px 24px -6px rgba(27, 67, 50, 0.16),
-    0 3px 0 0 rgba(27, 67, 50, 0.14);
-}
-
-/* Čistá poštovní známka se zoubkováním pouze po obvodu (bez scale/translate rozmazání na hover) */
+/* Čistá poštovní známka se zoubkováním pouze po obvodu (bez scale rozmazání na hover) */
 .perforated-stamp {
   background-color: #FFFDF8;
   box-shadow: 0 3px 10px rgba(30, 36, 33, 0.12);
@@ -139,7 +110,7 @@
 
 .perforated-stamp:hover {
   box-shadow:
-    0 6px 16px rgba(27, 67, 50, 0.2),
+    0 6px 16px rgba(27, 67, 50, 0.18),
     0 0 0 1.5px rgba(201, 150, 59, 0.65);
 }
 
@@ -151,28 +122,12 @@
 .perforated-stamp-selected {
   background-color: #FFFDF8;
   box-shadow:
-    0 8px 20px rgba(27, 67, 50, 0.26),
+    0 8px 20px rgba(27, 67, 50, 0.24),
     0 0 0 2.5px #1B4332,
     0 0 0 4.5px rgba(201, 150, 59, 0.55);
 }
 
-/* Jemné vznášení průvodce Kapříka (0px -> -5px -> 0px) */
-@keyframes float {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    transform: translate3d(0, -5px, 0);
-  }
-}
-
-.animate-kaprik-float {
-  animation: float 4.5s ease-in-out infinite;
-  will-change: transform;
-}
-
-/* Hravá reakce kapříka při kliknutí (nadskočení a zavrtění) */
+/* Krátká hravá reakce kapříka pouze při kliknutí */
 @keyframes kaprikHop {
   0% {
     transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
@@ -189,172 +144,11 @@
 }
 
 .animate-kaprik-hop {
-  animation: kaprikHop 460ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: kaprikHop 360ms cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
 }
 
-/* GPU-akcelerované padání sněhových vloček (výhradně transform: translate3d a opacity) */
-@keyframes bgSnowfall {
-  0% {
-    transform: translate3d(0, -6vh, 0) rotate(0deg);
-    opacity: 0;
-  }
-  15% {
-    opacity: var(--flake-opacity, 0.34);
-  }
-  50% {
-    transform: translate3d(var(--sway, 16px), 48vh, 0) rotate(90deg);
-  }
-  85% {
-    opacity: var(--flake-opacity, 0.34);
-  }
-  100% {
-    transform: translate3d(0, 103vh, 0) rotate(180deg);
-    opacity: 0;
-  }
-}
-
-.bg-snowflake {
-  position: fixed;
-  top: 0;
-  left: 0;
-  pointer-events: none;
-  user-select: none;
-  z-index: 0;
-  color: #FFFDF8;
-  text-shadow: 0 1px 4px rgba(201, 150, 59, 0.35);
-  will-change: transform, opacity;
-  animation: bgSnowfall var(--duration, 24s) ease-in-out infinite;
-  animation-delay: var(--delay, 0s);
-}
-
-/* GPU-akcelerovaná teplá světýlka (bokeh) v pozadí */
-@keyframes bokehFloat {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(12px, -14px, 0) scale(1.06);
-  }
-}
-
-.bg-bokeh {
-  position: fixed;
-  border-radius: 9999px;
-  background-color: #E5BE6B;
-  opacity: 0.13;
-  filter: blur(28px);
-  pointer-events: none;
-  z-index: 0;
-  will-change: transform;
-  animation: bokehFloat var(--duration, 20s) ease-in-out infinite;
-  animation-delay: var(--delay, 0s);
-}
-
-@media (min-width: 768px) {
-  .bg-bokeh {
-    filter: blur(40px);
-  }
-}
-
-/* Kyvadlový pohyb zlaté hvězdičky na smrkové větvičce */
-@keyframes gentle-swing {
-  0%,
-  100% {
-    transform: rotate(-4deg);
-  }
-  50% {
-    transform: rotate(4deg);
-  }
-}
-
-.hanging-star-swing {
-  transform-origin: 88px 42px;
-  animation: gentle-swing 4.5s ease-in-out infinite;
-}
-
-/* Efekt zatlačení voskové pečeti */
-@keyframes waxSealPress {
-  0% {
-    transform: scale(1.35);
-    opacity: 0;
-  }
-  45% {
-    transform: scale(0.92);
-    opacity: 1;
-  }
-  75% {
-    transform: scale(1.04);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.wax-seal-press {
-  animation: waxSealPress 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-/* Animace složení dopisu a zasunutí do obálky */
-@keyframes letterFoldIntoEnvelope {
-  0% {
-    transform: translate3d(0, -110px, 0) scale(0.96);
-    opacity: 1;
-  }
-  55% {
-    transform: translate3d(0, -30px, 0) scale(0.86, 0.72);
-    opacity: 1;
-  }
-  100% {
-    transform: translate3d(0, 24px, 0) scale(0.78, 0.45);
-    opacity: 0;
-  }
-}
-
-.animate-letter-into-envelope {
-  animation: letterFoldIntoEnvelope 850ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-/* Animace odletu zapečetěné obálky k Ježíškovi */
-@keyframes envelopeFlyToSky {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
-    opacity: 1;
-  }
-  25% {
-    transform: translate3d(0, 14px, 0) scale(0.97) rotate(-1.5deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translate3d(0, -115vh, 0) scale(0.65) rotate(4deg);
-    opacity: 0;
-  }
-}
-
-.animate-envelope-fly-away {
-  animation: envelopeFlyToSky 1150ms cubic-bezier(0.32, 0, 0.2, 1) forwards;
-}
-
-/* Animace vysunutí dopisu z rozpečetěné obálky */
-@keyframes letterSlideOut {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 42px, 0) scale(0.96);
-  }
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-}
-
-.animate-letter-slide-out {
-  animation: letterSlideOut 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-/* Rychlý, lehký přechod obrazovek (150ms GPU transform + opacity) */
+/* Rychlý, lehký přechod obrazovek a modálů (150ms) */
 @keyframes pageFadeSlide {
   0% {
     opacity: 0;
@@ -371,44 +165,29 @@
   animation: pageFadeSlide 150ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-/* Animace nově přidaného přání */
+/* Krátké zvýraznění nově přidaného přání (180ms) */
 @keyframes wishEnter {
   0% {
     opacity: 0;
-    transform: translate3d(0, -5px, 0) scale(0.98);
+    transform: translate3d(0, -4px, 0);
   }
   100% {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 .animate-wish-enter {
-  animation: wishEnter 220ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-/* Výstupní animace při kliknutí na „Tohle koupím já“ */
-@keyframes wishClaimExit {
-  0% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translate3d(0, -4px, 0) scale(0.96);
-  }
-}
-
-.animate-wish-claim-exit {
-  animation: wishClaimExit 200ms ease-out forwards;
-  pointer-events: none;
+  animation: wishEnter 180ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bg-snowflake,
-  .bg-bokeh,
-  .hanging-star-swing,
-  .wax-seal-press {
-    animation: none;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
